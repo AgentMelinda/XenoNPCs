@@ -7,7 +7,6 @@ import net.bullettrain.xenonpcs.combat.DmzAnimHelper;
 import net.bullettrain.xenonpcs.combat.anim.TechniqueAnimSlot;
 import net.bullettrain.xenonpcs.combat.fx.CombatFx;
 import net.bullettrain.xenonpcs.config.XenoServerConfig;
-import net.bullettrain.xenonpcs.network.Bt3CombatPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -239,7 +238,7 @@ public final class NpcChargeMoves {
             flat = new Vec3(0, 0, 1);
         }
         flat = flat.normalize();
-        double range = kick ? Bt3CombatPacket.kickHitRange(charge, bias)
+        double range = kick ? net.bullettrain.xenonpcs.combat.Bt3Landing.kickHitRange(charge, bias)
                 : XenoServerConfig.chargeAttackRange;
         double inflate = kick && bias < 0 ? 1.85 : 1.35;
         var box = npc.getBoundingBox().expandTowards(flat.scale(range)).inflate(inflate);
@@ -263,7 +262,7 @@ public final class NpcChargeMoves {
 
     private static void hitOne(LivingEntity npc, NpcCombatProfile profile, LivingEntity target,
                                boolean kick, float charge, int bias, boolean full) {
-        double range = kick ? Bt3CombatPacket.kickHitRange(charge, bias)
+        double range = kick ? net.bullettrain.xenonpcs.combat.Bt3Landing.kickHitRange(charge, bias)
                 : XenoServerConfig.chargeAttackRange;
         if (npc.distanceTo(target) > range + 1.5) {
             cone(npc, profile, kick, charge, bias, full);
@@ -296,7 +295,7 @@ public final class NpcChargeMoves {
         target.hurt(npc.damageSources().mobAttack(npc), damage);
         if (flat.lengthSqr() > 1.0e-4) {
             if (kick) {
-                CombatKnockback.set(target, Bt3CombatPacket.kickTargetLaunch(flat, charge, bias));
+                CombatKnockback.set(target, net.bullettrain.xenonpcs.combat.Bt3Landing.kickTargetLaunch(flat, charge, bias));
             } else {
                 CombatKnockback.add(target, flat.scale(0.85 * (0.6 + charge))
                         .add(0, 0.18 + charge * 0.15, 0));

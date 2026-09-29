@@ -5,7 +5,6 @@ import net.bullettrain.xenonpcs.combat.VanishShadeFx;
 import net.bullettrain.xenonpcs.combat.fx.CombatFx;
 import net.bullettrain.xenonpcs.combat.fx.CombatFxKind;
 import net.bullettrain.xenonpcs.config.XenoServerConfig;
-import net.bullettrain.xenonpcs.network.Bt3CombatPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -70,7 +69,7 @@ public final class NpcCombatMoves {
      * Whether this NPC's brain may reposition itself.
      *
      * <p>Vanish, chase, backstep and teleportAbove are this mod's own - they land through
-     * {@code Bt3CombatPacket.chaseLanding}, not through anything DragonMineZ does - so they are
+     * {@code Bt3Landing.chaseLanding}, not through anything DragonMineZ does - so they are
      * Xeno specials, and the V7 brain is the ported DMZ tree with none of them.
      *
      * <p>Only the repositioning set asks. {@code guard}, {@code kiai} and {@code zBurst} live in
@@ -95,7 +94,7 @@ public final class NpcCombatMoves {
             return false;
         }
         Vec3 from = npc.position();
-        Vec3 dest = Bt3CombatPacket.vanishLanding(npc, target, side);
+        Vec3 dest = net.bullettrain.xenonpcs.combat.Bt3Landing.vanishLanding(npc, target, side);
         teleportFacing(npc, dest, target);
         VanishShadeFx.spawn(npc, from);
         if (npc.level() instanceof ServerLevel level) {
@@ -120,7 +119,7 @@ public final class NpcCombatMoves {
         if (!NpcResources.spendEnergy(npc, profile, CHASE_COST)) {
             return false;
         }
-        teleportFacing(npc, Bt3CombatPacket.chaseLanding(npc, target), target);
+        teleportFacing(npc, net.bullettrain.xenonpcs.combat.Bt3Landing.chaseLanding(npc, target), target);
         mark(npc, CD_CHASE, CHASE_CD_TICKS);
         return true;
     }

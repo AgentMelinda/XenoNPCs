@@ -6,3 +6,5 @@ out/
 .idea/
 # Third-party jars are not redistributed: put dragonminez-2.1.3.jar here yourself.
 libs/
+# The GitHub wiki is its own repository (AgentMelinda/XenoNPCs.wiki), pushed separately.
+XenoNPCs.wiki/

@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 (Minecraft 1.21.1)
+## 0.0.1 (Minecraft 1.21.1)
 
 First public release of XenoNPCs, the NPC system from XenoPixels Network on its own.
 

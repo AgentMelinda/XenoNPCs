@@ -1,0 +1,54 @@
+name: Release
+
+# Push a tag that starts with "v" (for example v0.0.1) to build XenoNPCs with that version and
+# publish it as a GitHub release.
+on:
+  push:
+    tags: [ "v*" ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Download DragonMineZ
+        run: |
+          mkdir -p libs
+          curl -fsSL -o libs/dragonminez-2.1.3.jar \
+            https://github.com/AgentMelinda/dragonminez/releases/download/v2.1.3-1.21.1-kiweapon-fix/dragonminez-2.1.3.jar
+          want=$(grep -E '^dragonminez_sha256=' gradle.properties | cut -d= -f2)
+          echo "$want  libs/dragonminez-2.1.3.jar" | sha256sum -c -
+
+      # The version is the tag without its "v": v0.0.1 builds xenonpcs-0.0.1.jar.
+      - name: Build and test
+        run: ./gradlew build --no-daemon -PofflineMcMeta -Pmod_version="${GITHUB_REF_NAME#v}"
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          jars=(build/libs/xenonpcs-*.jar)
+          if [ ${#jars[@]} -eq 0 ]; then echo "no jar was built" >&2; exit 1; fi
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${jars[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "${jars[@]}" \
+              --title "XenoNPCs $GITHUB_REF_NAME" --generate-notes
+          fi
