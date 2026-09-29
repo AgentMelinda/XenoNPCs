@@ -1,0 +1,8 @@
+.gradle/
+build/
+run/
+out/
+*.iml
+.idea/
+# Third-party jars are not redistributed: put dragonminez-2.1.3.jar here yourself.
+libs/

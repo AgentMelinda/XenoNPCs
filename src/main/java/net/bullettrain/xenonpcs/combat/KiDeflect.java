@@ -1,0 +1,305 @@
+package net.bullettrain.xenonpcs.combat;
+
+import com.dragonminez.common.compat.CameraAimHelper;
+import com.dragonminez.common.init.entities.ki.AbstractKiProjectile;
+import com.dragonminez.common.stats.character.Resources;
+import net.bullettrain.xenonpcs.combat.fx.CombatFx;
+import net.bullettrain.xenonpcs.config.XenoServerConfig;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Punching an incoming ki blast knocks it back at whoever threw it.
+ *
+ * <p>Deflection is the answer to a ki blast that guarding does not give: guard costs stamina and
+ * still takes chip damage, so a ranged attacker who can spam blasts wins by attrition against a
+ * defender with no way to answer. A punch that returns the blast turns the exchange around and
+ * makes reading the incoming shot worth something.
+ *
+ * <p>Hooked into the ordinary combo attack rather than a key of its own, and checked before the
+ * combo resolves. The attack that deflects is consumed — you cannot deflect and punch in the same
+ * swing.
+ *
+ * <p><b>Priced, not gated.</b> A consumed swing alone did not stop deflection being mashed, so it
+ * also costs stamina and sits behind a very short per-player cooldown. The cost is the real limit:
+ * a cooldown long enough to matter would make a rapid volley undeflectable by construction, where
+ * a stamina price lets a player answer every shot in a burst for exactly as long as they can
+ * afford to. The cooldown only exists so a held attack button cannot clear everything in reach on
+ * consecutive ticks. Failing to pay leaves the swing intact and it lands as an ordinary punch.
+ *
+ * <p><b>Only genuinely incoming blasts count.</b> Being in front of you is not enough — a shot has
+ * to be travelling toward you. Without that, a blast already sailing past, or one two other
+ * players are trading across your view, is punchable, and deflection stops being a read and
+ * becomes a vacuum for any ki in the general direction you are facing.
+ *
+ * <p>The deflected blast has its owner reassigned to the deflector. That is what makes it able
+ * to hurt the original caster at all: DMZ's {@code shouldDamage} refuses a projectile against
+ * its own owner, so a blast merely turned around would sail through the person who fired it.
+ */
+public final class KiDeflect {
+
+    private KiDeflect() {
+    }
+
+    /**
+     * Deflect the best candidate in front of the player, if there is one.
+     *
+     * @return true when a blast was deflected and the attack should be consumed
+     */
+    public static boolean tryDeflect(ServerPlayer player, Resources res) {
+        if (!XenoServerConfig.kiDeflectEnabled) return false;
+        if (!(player.level() instanceof ServerLevel level)) return false;
+        if (onCooldown(player, level)) return false;
+
+        double reach = Math.max(0.5, XenoServerConfig.kiDeflectReach);
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle();
+        AABB punchBox = player.getBoundingBox().inflate(reach);
+
+        AbstractKiProjectile best = null;
+        double bestScore = -1.0;
+        for (AbstractKiProjectile blast : level.getEntitiesOfClass(AbstractKiProjectile.class,
+                punchBox.inflate(1.0), KiDeflect::deflectable)) {
+            // Never your own shot: otherwise a player could fire and immediately punch it for a
+            // free speed boost, which is not a mechanic anyone asked for. Identity by UUID, not by
+            // reference — getOwner() resolves lazily and a null there would have let exactly that
+            // through, and it is also what makes a blast unpunchable twice in a row.
+            if (blast.isOwner(player)) continue;
+
+            AABB hit = blast.getBoundingBox().inflate(1.0);
+            boolean overlapping = punchBox.intersects(hit);
+            Vec3 toBlast = blast.position().add(0.0, blast.getBbHeight() * 0.5, 0.0).subtract(eye);
+            double distance = toBlast.length();
+            if (!overlapping && (distance > reach || distance < 1.0e-3)) continue;
+            if (distance < 1.0e-3) {
+                distance = 1.0e-3;
+            }
+            Vec3 toBlastDir = toBlast.scale(1.0 / distance);
+
+            // Must be in front. A blast passing behind the player was already dodged, and
+            // letting it be punched would make deflection a panic button rather than a read.
+            double facing = look.dot(toBlastDir);
+            if (facing < XenoServerConfig.kiDeflectAimDot) continue;
+
+            // Close punches (2–3 blocks) skip the incoming-velocity test — the blast is already
+            // in the player's face. Farther shots still have to be coming toward you.
+            if (distance > 3.0) {
+                Vec3 motion = blast.getDeltaMovement();
+                if (motion.lengthSqr() > 1.0e-6 && motion.normalize().dot(toBlastDir) > -0.1) continue;
+            }
+
+            // Prefer the one most directly ahead, then the nearest.
+            double score = facing - distance * 0.05;
+            if (score > bestScore) {
+                bestScore = score;
+                best = blast;
+            }
+        }
+        if (best == null) return false;
+
+        // Charged last, so a failed search never bills the player. Not affording it leaves the
+        // swing intact, so the punch resolves as an ordinary attack instead of vanishing.
+        if (!spendStamina(res)) return false;
+
+        markCooldown(player, level);
+        // Ultra Ego (2026-09-29): a weaker blast is not returned but punched out of existence.
+        if (net.bullettrain.xenonpcs.features.transformation.passive.FormPassiveRules.enabled(
+                net.bullettrain.xenonpcs.features.transformation.passive.FormPassiveRules.Kind.PUNCH_BREAK)) {
+            var passive = net.bullettrain.xenonpcs.features.transformation.passive.FormPassives.of(player);
+            if (passive.punchBreaksWeakKi() && best.getOwner() instanceof LivingEntity caster
+                    && net.bullettrain.xenonpcs.features.transformation.passive.FormPassives
+                    .attackerWeaker(caster, player, passive.weakerRatio())) {
+                net.bullettrain.xenonpcs.combat.fx.HakaiFx.blockPuff(level, best.position(), false);
+                best.discard();
+                return true;
+            }
+        }
+        deflect(player, level, best, 1.0f);
+        return true;
+    }
+
+    /**
+     * Per-player deflect gate.
+     *
+     * <p>Deliberately short. Its only job is to stop a held attack button from clearing every
+     * blast in reach on consecutive ticks; the stamina cost is what actually prices the mechanic.
+     */
+    private static final Map<UUID, Integer> NEXT_ALLOWED_TICK = new HashMap<>();
+
+    /** Drop a player's gate on logout so the map cannot grow across a server's uptime. */
+    public static void forget(UUID playerId) {
+        NEXT_ALLOWED_TICK.remove(playerId);
+    }
+
+    private static boolean spendStamina(Resources res) {
+        float cost = XenoServerConfig.kiDeflectStaminaCost;
+        if (cost <= 0f) return true;
+        if (res == null) return true; // no stats to bill; never block the mechanic on missing data
+        if (res.getCurrentStamina() < cost) return false;
+        res.removeStamina(cost);
+        return true;
+    }
+
+    /** Skip anything already gone, and anything mid-clash — that is a different mechanic. */
+    private static boolean deflectable(AbstractKiProjectile blast) {
+        return npcEligibleKind(blast, true, false);
+    }
+
+    /**
+     * Whether an NPC brain may bat this shot. Clash-locked beams are never stolen.
+     * Clashable waves need {@code allowWave}; everything else needs {@code allowBlast}.
+     */
+    public static boolean npcEligibleKind(boolean clashLocked, boolean clashableBeam,
+                                          boolean allowBlast, boolean allowWave) {
+        if (clashLocked) {
+            return false;
+        }
+        return clashableBeam ? allowWave : allowBlast;
+    }
+
+    static boolean npcEligibleKind(AbstractKiProjectile blast, boolean allowBlast, boolean allowWave) {
+        if (blast == null || !blast.isAlive()) {
+            return false;
+        }
+        boolean clashable = false;
+        try {
+            clashable = blast.isClashableBeam();
+        } catch (Throwable ignored) {
+            return false;
+        }
+        return npcEligibleKind(blast.isClashLocked(), clashable, allowBlast, allowWave);
+    }
+
+    /**
+     * NPC ping-pong. No stamina bill. Short cooldown so a volley is a rally, not a vacuum.
+     */
+    public static boolean tryNpcDeflect(LivingEntity npc, float returnDamageScale,
+                                        boolean allowBlast, boolean allowWave) {
+        if (!XenoServerConfig.kiDeflectEnabled || npc == null) {
+            return false;
+        }
+        if (!(npc.level() instanceof ServerLevel level)) {
+            return false;
+        }
+        if (!allowBlast && !allowWave) {
+            return false;
+        }
+        if (onCooldown(npc.getUUID(), level)) {
+            return false;
+        }
+
+        double reach = Math.max(0.5, XenoServerConfig.kiDeflectReach);
+        Vec3 eye = npc.getEyePosition();
+        Vec3 look = npc.getLookAngle();
+        AABB punchBox = npc.getBoundingBox().inflate(reach);
+
+        AbstractKiProjectile best = null;
+        double bestScore = -1.0;
+        for (AbstractKiProjectile blast : level.getEntitiesOfClass(AbstractKiProjectile.class,
+                punchBox.inflate(1.0), b -> npcEligibleKind(b, allowBlast, allowWave))) {
+            if (blast.isOwner(npc)) {
+                continue;
+            }
+            AABB hit = blast.getBoundingBox().inflate(1.0);
+            boolean overlapping = punchBox.intersects(hit);
+            Vec3 toBlast = blast.position().add(0.0, blast.getBbHeight() * 0.5, 0.0).subtract(eye);
+            double distance = toBlast.length();
+            if (!overlapping && (distance > reach || distance < 1.0e-3)) {
+                continue;
+            }
+            if (distance < 1.0e-3) {
+                distance = 1.0e-3;
+            }
+            Vec3 toBlastDir = toBlast.scale(1.0 / distance);
+            double facing = look.dot(toBlastDir);
+            if (facing < XenoServerConfig.kiDeflectAimDot) {
+                continue;
+            }
+            if (distance > 3.0) {
+                Vec3 motion = blast.getDeltaMovement();
+                if (motion.lengthSqr() > 1.0e-6 && motion.normalize().dot(toBlastDir) > -0.1) {
+                    continue;
+                }
+            }
+            double score = facing - distance * 0.05;
+            if (score > bestScore) {
+                bestScore = score;
+                best = blast;
+            }
+        }
+        if (best == null) {
+            return false;
+        }
+        markCooldown(npc.getUUID(), level);
+        deflect(npc, level, best, returnDamageScale);
+        return true;
+    }
+
+    private static boolean onCooldown(UUID id, ServerLevel level) {
+        if (XenoServerConfig.kiDeflectCooldownTicks <= 0) {
+            return false;
+        }
+        Integer next = NEXT_ALLOWED_TICK.get(id);
+        return next != null && level.getServer().getTickCount() < next;
+    }
+
+    private static void markCooldown(UUID id, ServerLevel level) {
+        if (XenoServerConfig.kiDeflectCooldownTicks <= 0) {
+            return;
+        }
+        NEXT_ALLOWED_TICK.put(id, level.getServer().getTickCount() + XenoServerConfig.kiDeflectCooldownTicks);
+    }
+
+    private static boolean onCooldown(ServerPlayer player, ServerLevel level) {
+        return onCooldown(player.getUUID(), level);
+    }
+
+    private static void markCooldown(ServerPlayer player, ServerLevel level) {
+        markCooldown(player.getUUID(), level);
+    }
+
+    private static void deflect(LivingEntity deflector, ServerLevel level, AbstractKiProjectile blast,
+                                float extraDamageScale) {
+        Entity caster = blast.getOwner();
+        Vec3 blastCentre = blast.position().add(0.0, blast.getBbHeight() * 0.5, 0.0);
+
+        Vec3 aim = deflector.getLookAngle().normalize();
+        double speed = Math.max(XenoServerConfig.kiDeflectMinSpeed,
+                blast.getDeltaMovement().length() * XenoServerConfig.kiDeflectSpeedScale);
+        blast.setDeltaMovement(aim.scale(speed));
+        blast.hasImpulse = true;
+        blast.setYRot(CameraAimHelper.yaw(deflector, aim));
+        blast.setXRot(CameraAimHelper.pitch(aim));
+
+        float scale = XenoServerConfig.kiDeflectDamageScale * Math.max(0.05f, extraDamageScale);
+        blast.setKiDamage(blast.getKiDamage() * scale);
+
+        blast.setOwner(deflector);
+        blast.setHomingTarget(caster != null ? caster.getId() : -1);
+
+        level.playSound(null, blastCentre.x, blastCentre.y, blastCentre.z,
+                SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.PLAYERS, 1.0f, 1.35f);
+        level.playSound(null, blastCentre.x, blastCentre.y, blastCentre.z,
+                SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 0.7f, 1.5f);
+        CombatFx.impact(level, blastCentre, aim, CombatFx.Weight.GUARD);
+
+        if (deflector instanceof ServerPlayer player) {
+            player.displayClientMessage(Component.literal("§bDeflected!"), true);
+            if (caster instanceof ServerPlayer casterPlayer) {
+                casterPlayer.displayClientMessage(Component.literal(
+                        "§c" + player.getName().getString() + " deflected your ki blast"), true);
+            }
+        }
+    }
+}

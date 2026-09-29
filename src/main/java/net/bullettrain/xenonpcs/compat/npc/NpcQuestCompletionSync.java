@@ -1,0 +1,49 @@
+package net.bullettrain.xenonpcs.compat.npc;
+
+import net.bullettrain.xenonpcs.XenoNpcsMod;
+import net.minecraft.server.level.ServerPlayer;
+
+import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+public final class NpcQuestCompletionSync {
+    private static final Map<String, Method[]> METHODS = new ConcurrentHashMap<>();
+    private static final java.util.Set<String> WARNED = ConcurrentHashMap.newKeySet();
+
+    private NpcQuestCompletionSync() {}
+
+    public static void flush(ServerPlayer player, String playerDataClassName) {
+        if (player == null) return;
+        try {
+            Method[] methods = METHODS.computeIfAbsent(playerDataClassName,
+                    NpcQuestCompletionSync::resolve);
+            if (methods.length == 0) return;
+            Object data = methods[0].invoke(null, player);
+            methods[1].invoke(data, true);
+            // QuestRewardOriginPolicy reserves XenoSkill points for quests offered by native
+            // Xeno NPCs. A CNPC/Mynpc completion is a third-party giver, so the same declared
+            // reward routed through the policy pays 0 points; the grant is therefore not made
+            // here. The message stays informational only.
+            if (net.bullettrain.xenonpcs.config.XenoServerConfig.parallelQuestEnabled) {
+                player.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                        "§a§lCNPC quest complete"), false);
+            }
+        } catch (ReflectiveOperationException | RuntimeException failure) {
+            if (WARNED.add(playerDataClassName)) {
+                XenoNpcsMod.LOGGER.warn("Could not immediately persist/sync an NPC quest completion: {}",
+                        failure.toString());
+            }
+        }
+    }
+
+    private static Method[] resolve(String className) {
+        try {
+            Class<?> type = Class.forName(className);
+            return new Method[]{type.getMethod("get", net.minecraft.world.entity.player.Player.class),
+                    type.getMethod("save", boolean.class)};
+        } catch (ReflectiveOperationException failure) {
+            return new Method[0];
+        }
+    }
+}

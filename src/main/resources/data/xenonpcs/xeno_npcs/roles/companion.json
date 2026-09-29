@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "role": "companion",
+  "brain": "v5",
+  "body_family": "humanoid",
+  "decision_ticks": {
+    "combat": 10,
+    "active": 10,
+    "idle": 40
+  },
+  "refs": {
+    "job": "xenonpcs:npcs/jobs/companion",
+    "lines": "xenonpcs:npcs/lines/default"
+  }
+}
