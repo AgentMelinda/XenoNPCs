@@ -1,0 +1,16 @@
+**XenoNPCs**
+
+- [Home](Home)
+- [Installing](Installing)
+- [Your First NPC](Your-First-NPC)
+- [The Editor](The-Editor)
+- [DragonMineZ NPCs](DragonMineZ-NPCs)
+- [Combat Brain](Combat-Brain)
+- [Roles, Dialogue and Quests](Roles-Dialogue-Quests)
+- [Making Quests](Making-Quests)
+- [Scripting Basics](Scripting-Basics)
+- [Scripting Reference](Scripting-Reference)
+- [CustomNPCs and My NPCs](CustomNPCs-and-MyNPCs)
+- [Commands](Commands)
+- [Settings](Settings)
+- [FAQ and Troubleshooting](FAQ-and-Troubleshooting)

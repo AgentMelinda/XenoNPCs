@@ -4,6 +4,7 @@ import com.dragonminez.common.stats.StatsCapability;
 import com.dragonminez.common.stats.StatsData;
 import com.dragonminez.common.stats.StatsProvider;
 import com.dragonminez.common.stats.character.Resources;
+import net.bullettrain.xenonpcs.config.XenoServerConfig;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -134,15 +135,47 @@ public class Bt3CombatPacket {
                                            boolean kick, int chargePercent, int verticalBias) { }
 
     /** Hit reach for charged kicks; S-hold extends range. */
-    public static double kickHitRange(float charge, int verticalBias) { return 0.0; }
+    public static double kickHitRange(float charge, int verticalBias) {
+        double base = Math.max(5.5, XenoServerConfig.chargeAttackRange + 0.75);
+        if (verticalBias < 0) {
+            base += XenoServerConfig.kickDownRangeBonus * (0.75 + 0.35 * charge);
+        }
+        return base;
+    }
 
     /**
      * +1 W = launch target upward, -1 S = smash downward, 0 = default arc.
      */
-    public static Vec3 kickTargetLaunch(Vec3 awayFlat, float charge, int verticalBias) { return null; }
+    public static Vec3 kickTargetLaunch(Vec3 awayFlat, float charge, int verticalBias) {
+        double horiz = (0.9 + charge) * (verticalBias == 0 ? 1.0 : 0.55)
+                * Math.max(0.1, XenoServerConfig.kickKnockbackScale);
+        double up;
+        if (verticalBias > 0) {
+            double scale = Math.max(0.1, XenoServerConfig.kickKnockbackScale);
+            double[] d = net.bullettrain.xenonpcs.combat.Bt3ComboChoreography.launcherDelta(
+                    awayFlat.x, awayFlat.z,
+                    XenoServerConfig.comboLauncherHoriz * scale,
+                    XenoServerConfig.comboLauncherUp);
+            return new Vec3(d[0], d[1], d[2]);
+        } else if (verticalBias < 0) {
+            up = -XenoServerConfig.kickDownLaunch * (0.7 + charge * 0.8);
+            horiz *= 0.65;
+        } else {
+            return ballArcLaunch(awayFlat, charge);
+        }
+        return awayFlat.normalize().scale(horiz).add(0, up, 0);
+    }
 
     /** Ballistic hang-time arc for kicks (mash + charged). */
-    private static Vec3 ballArcLaunch(Vec3 awayFlat, float charge) { return null; }
+    private static Vec3 ballArcLaunch(Vec3 awayFlat, float charge) {
+        float c = Math.max(0.25f, Math.min(1.0f, charge));
+        double scale = Math.max(0.1, XenoServerConfig.kickKnockbackScale);
+        double horiz = Math.max(0.7, XenoServerConfig.comboLauncherHoriz * 1.5) * scale * (0.75 + 0.4 * c);
+        double up = Math.max(1.5, XenoServerConfig.comboLauncherUp * 0.95) * (0.8 + 0.35 * c);
+        double[] d = net.bullettrain.xenonpcs.combat.Bt3ComboChoreography.launcherDelta(
+                awayFlat.x, awayFlat.z, horiz, up);
+        return new Vec3(d[0], d[1], d[2]);
+    }
 
     private static double kickVerticalImpulse(ServerPlayer player, float charge, int verticalBias, boolean aerialSelf) { return 0.0; }
 
@@ -260,9 +293,19 @@ public class Bt3CombatPacket {
      *
      * @param side -1 left, +1 right, 0 center-behind
      */
-    public static Vec3 vanishBehind(Entity player, LivingEntity target) { return null; }
+    public static Vec3 vanishBehind(Entity player, LivingEntity target) {
+        return vanishBehind(player, target, 0);
+    }
 
-    public static Vec3 vanishBehind(Entity player, LivingEntity target, int side) { return null; }
+    public static Vec3 vanishBehind(Entity player, LivingEntity target, int side) {
+        return vanishPoint(
+                player.getX(), player.getZ(),
+                target.getX(), target.getY(), target.getZ(),
+                target.yBodyRot, side,
+                Math.max(0.0, XenoServerConfig.vanishGap),
+                Math.max(0.0, XenoServerConfig.vanishSide),
+                Math.max(0.0, XenoServerConfig.vanishNearField));
+    }
 
     /**
      * The vanish landing point, as pure geometry.
@@ -300,13 +343,61 @@ public class Bt3CombatPacket {
      * leaves the fighter standing where they were, which is a wasted move rather than a
      * suffocation.
      */
-    public static Vec3 vanishLanding(Entity player, LivingEntity target, int side) { return null; }
+    public static Vec3 vanishLanding(Entity player, LivingEntity target, int side) {
+        Vec3 preferred = vanishBehind(player, target, side);
+        if (!XenoServerConfig.vanishOpenSpotSearch || isSpotOpen(player, preferred)) {
+            return preferred;
+        }
+        Vec3 centre = vanishBehind(player, target, 0);
+        double dirX = centre.x - target.getX();
+        double dirZ = centre.z - target.getZ();
+        double len = Math.sqrt(dirX * dirX + dirZ * dirZ);
+        if (len > 1.0e-6) {
+            double rightX = -dirZ / len;
+            double rightZ = dirX / len;
+            for (double lateral : new double[]{0.75, -0.75, 1.5, -1.5}) {
+                Vec3 candidate = new Vec3(
+                        preferred.x + rightX * lateral, preferred.y, preferred.z + rightZ * lateral);
+                if (isSpotOpen(player, candidate)) {
+                    return candidate;
+                }
+            }
+            for (double shrink : new double[]{0.75, 0.5}) {
+                Vec3 candidate = new Vec3(
+                        target.getX() + (preferred.x - target.getX()) * shrink,
+                        preferred.y,
+                        target.getZ() + (preferred.z - target.getZ()) * shrink);
+                if (isSpotOpen(player, candidate)) {
+                    return candidate;
+                }
+            }
+        }
+        if (side != 0) {
+            Vec3 mirrored = vanishBehind(player, target, -side);
+            if (isSpotOpen(player, mirrored)) {
+                return mirrored;
+            }
+        }
+        return player.position();
+    }
 
     private static Vec3 openRingLanding(Entity player, LivingEntity target, int preferred,
                                         int slots, double radius) { return null; }
 
     /** Land on the target (or {@link XenoServerConfig#chaseStopGap} short), at their height. */
-    public static Vec3 chaseLanding(Entity player, LivingEntity target) { return null; }
+    public static Vec3 chaseLanding(Entity player, LivingEntity target) {
+        Vec3 flat = new Vec3(target.getX() - player.getX(), 0, target.getZ() - player.getZ());
+        if (flat.lengthSqr() < 1.0e-4) {
+            flat = new Vec3(0, 0, 1);
+        } else {
+            flat = flat.normalize();
+        }
+        double gap = Math.max(0.0, XenoServerConfig.chaseStopGap);
+        return new Vec3(
+                target.getX() - flat.x * gap,
+                target.getY(),
+                target.getZ() - flat.z * gap);
+    }
 
     /** Step away from target horizontally; keep player Y for air combat. */
     public static Vec3 backstepDest(Entity player, LivingEntity target) { return null; }
@@ -314,7 +405,16 @@ public class Bt3CombatPacket {
     /** Used by dragon dash only — small lateral nudge if blocked. */
     private static Vec3 findOpenSpot(ServerPlayer player, LivingEntity target, Vec3 preferred) { return null; }
 
-    public static boolean isSpotOpen(Entity player, Vec3 pos) { return false; }
+    public static boolean isSpotOpen(Entity player, Vec3 pos) {
+        if (player == null || pos == null || player.level() == null) {
+            return false;
+        }
+        var box = player.getBoundingBox().move(
+                pos.x - player.getX(),
+                pos.y - player.getY(),
+                pos.z - player.getZ());
+        return player.level().noCollision(player, box);
+    }
 
     static void playItSound(ServerPlayer player, double x, double y, double z, boolean leave) { }
 
