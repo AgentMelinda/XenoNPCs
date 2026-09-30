@@ -35,7 +35,7 @@ jobs:
           - minecraft: '1.20.1'
             java: '17'
             # Pin the Forge export so re-running a release never builds a moving branch.
-            ref: '7590d04e3fa4aadf790149a6e3c09af91b44c7e1'
+            ref: 'c428ba397df7911709901d1bc87d2b759f5edf73'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -74,7 +74,8 @@ jobs:
           if [ "$MC_VERSION" = '1.21.1' ]; then
             jar="build/libs/xenonpcs-${VERSION}.jar"
           else
-            jar="build/libs/xenonpcs-${VERSION}-${MC_VERSION}.jar"
+            jar="build/libs/xenonpcs-${VERSION}-${MC_VERSION}-all.jar"
+            jar tf "$jar" | grep -Fx 'META-INF/jarjar/mixinextras-forge-0.4.1.jar' >/dev/null
           fi
           test -s "$jar"
           mkdir -p release-assets
@@ -121,7 +122,7 @@ jobs:
           NOTES
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "${jars[@]}" --clobber
-            gh release edit "$RELEASE_TAG" --title "XenoNPCs $RELEASE_TAG — 1.20.1 and 1.21.1" --notes-file release-notes.md
+            gh release edit "$RELEASE_TAG" --draft=false --title "XenoNPCs $RELEASE_TAG — 1.20.1 and 1.21.1" --notes-file release-notes.md
             # Remove the obsolete unlabelled assets only after both replacements are available.
             for old in "xenonpcs-${VERSION}.jar" "xenonpcs-${VERSION}-sources.jar"; do
               if gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | grep -Fxq "$old"; then
