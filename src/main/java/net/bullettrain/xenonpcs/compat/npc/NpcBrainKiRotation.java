@@ -134,14 +134,16 @@ public final class NpcBrainKiRotation {
         if (any != null) {
             return any;
         }
-        if (allows(profile, Band.WAVE)) {
-            return "kiwave";
-        }
-        if (allows(profile, Band.BLAST)) {
-            return "kiblast";
-        }
-        if (allows(profile, Band.DISK)) {
-            return "kienzan";
+        List<String> generic = List.of("kiwave", "kiblast", "kienzan");
+        for (int pass = 0; pass < 2; pass++) {
+            for (int i = 0; i < generic.size(); i++) {
+                String id = generic.get(Math.floorMod(cursor + i, generic.size()));
+                Band band = bandOf(id);
+                if (!allows(profile, band)) continue;
+                if (pass == 0 && preferred != null && !preferred.isEmpty() && !preferred.contains(band)) continue;
+                if (ready != null && !ready.test(id)) continue;
+                return id;
+            }
         }
         return null;
     }

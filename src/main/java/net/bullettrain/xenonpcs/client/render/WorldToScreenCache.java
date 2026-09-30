@@ -18,7 +18,7 @@ import org.joml.Vector4f;
  *
  * <p>The 2D GUI pass sets up its own orthographic projection, so reading
  * {@code RenderSystem.getProjectionMatrix()} <i>during</i> HUD rendering would return the wrong
- * matrix entirely. Capturing it earlier, at {@link RenderLevelStageEvent.Stage#AFTER_LEVEL} — the
+ * matrix entirely. Capturing it earlier, at {@link RenderLevelStageEvent.Stage#AFTER_WEATHER} — the
  * same event NeoForge already fires with the exact matrices and camera used for that frame's 3D
  * pass — is the standard way mods solve this, and it means the HUD layer never needs to touch
  * render state directly.
@@ -51,7 +51,7 @@ public final class WorldToScreenCache {
      */
     @SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.HIGHEST)
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
         PROJECTION.set(event.getProjectionMatrix());
         MODEL_VIEW.set(event.getPoseStack().last().pose());
         cameraPos = event.getCamera().getPosition();

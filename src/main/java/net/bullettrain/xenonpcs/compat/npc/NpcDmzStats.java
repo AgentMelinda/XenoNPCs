@@ -88,9 +88,10 @@ public final class NpcDmzStats {
     public static final Capability<Holder> NPC_DMZ_STATS = CapabilityManager.get(new CapabilityToken<>() {});
 
     private static void attach(net.minecraftforge.event.AttachCapabilitiesEvent<Entity> event) {
-        if (eligible(event.getObject())) {
+        if (eligible(event.getObject())
+                && event.getObject() instanceof net.minecraft.world.entity.LivingEntity living) {
             event.addCapability(new net.minecraft.resources.ResourceLocation(XenoNpcsMod.MOD_ID, "npc_dmz_stats"),
-                    new Holder());
+                    new Holder(living));
         }
     }
 
@@ -102,9 +103,22 @@ public final class NpcDmzStats {
     static final class Holder implements net.minecraftforge.common.capabilities.ICapabilitySerializable<CompoundTag> {
         private NpcStatsAttachment value;
         private final LazyOptional<Holder> self = LazyOptional.of(() -> this);
+        private final net.minecraft.world.entity.LivingEntity host;
 
+        Holder(net.minecraft.world.entity.LivingEntity host) {
+            this.host = host;
+        }
+
+        /**
+         * Bound to its NPC as it is made: DMZ 1.20.1 keeps stats only in the host's attributes
+         * (StatsNpcHostMixin120), and deserializeNBT loads through the stat setters, so a blob
+         * bound after its load would drop every saved stat.
+         */
         NpcStatsAttachment create() {
-            if (value == null) value = new NpcStatsAttachment();
+            if (value == null) {
+                value = new NpcStatsAttachment();
+                bindHost(host, value.data());
+            }
             return value;
         }
 

@@ -35,6 +35,12 @@ import java.util.UUID;
  * server's refusal is surfaced verbatim on the status line.
  */
 public final class DmzFormMakerScreen extends ScaledScreen {
+
+    /** Drawn at the vanilla GUI Scale; see {@link NpcGuiScale}. */
+    @Override
+    protected float computeDynamicScale(float available) {
+        return NpcGuiScale.dynamicScale(super.computeDynamicScale(available));
+    }
     /** Inline colour picker shared by every colour row on this screen; opens over it. */
     private final net.bullettrain.xenonpcs.client.ui.atlas.InlineColorPicker colorPicker = new net.bullettrain.xenonpcs.client.ui.atlas.InlineColorPicker();
     private static final String FRAME = "xeno_editor_panel_w420";

@@ -21,6 +21,12 @@ import java.util.function.Consumer;
 
 /** Browse the effective resource stack instead of guessing a mod's texture path. */
 public final class XenoNpcTexturePickerScreen extends ScaledScreen {
+
+    /** Drawn at the vanilla GUI Scale; see {@link NpcGuiScale}. */
+    @Override
+    protected float computeDynamicScale(float available) {
+        return NpcGuiScale.dynamicScale(super.computeDynamicScale(available));
+    }
     private static final String FRAME = "xeno_editor_panel";
     private static final int WHITE = 0xFFE7EDF3;
     private static final int MUTED = 0xFF8AA4B8;

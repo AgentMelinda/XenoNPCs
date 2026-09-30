@@ -165,6 +165,61 @@ public final class XenoNpcBehaviour {
      */
     private static final double LEASH_HYSTERESIS = 1.5;
 
+    /** How close to home counts as arrived, for an NPC the leash is walking back. */
+    private static final double LEASH_ARRIVAL = 1.5;
+
+    /**
+     * Whether an NPC must refuse a new target: the leash is walking it home. As CustomNPCs' Return
+     * To Start, it is disengaged until it arrives - otherwise its target goal re-acquired the player
+     * the tick after the leash dropped it, and the two turned it back and forth every second
+     * (measured 2026-09-30; owner: "when he is returining to respawn location by foot he is
+     * flickering"). Arbitration off keeps the old free-for-all for comparison.
+     */
+    static boolean refusesNewTarget(boolean arbitration,
+                                    net.bullettrain.xenonpcs.npc.movement.NpcMovementOwner.Claim current,
+                                    boolean newTargetNonNull) {
+        return arbitration && newTargetNonNull
+                && current == net.bullettrain.xenonpcs.npc.movement.NpcMovementOwner.Claim.LEASH;
+    }
+
+    /**
+     * Whether the combat brain sits out this tick: the leash is walking the NPC home. The brain
+     * steers at more than the target - a ki hard lock or ki-sense lock kept pointing it at the
+     * player it had fought - so refusing the target alone left it turning the NPC every tick
+     * against the leash's path (measured: yaw flipping 0/180 at ~0.002 blocks/tick; with the brain
+     * sitting out, a steady walk home).
+     */
+    static boolean brainYieldsToLeash(boolean arbitration,
+                                      net.bullettrain.xenonpcs.npc.movement.NpcMovementOwner.Claim current) {
+        return arbitration && current == net.bullettrain.xenonpcs.npc.movement.NpcMovementOwner.Claim.LEASH;
+    }
+
+    /** {@link #brainYieldsToLeash} for a live NPC. */
+    public static boolean brainYieldsToLeash(net.minecraft.world.entity.LivingEntity npc) {
+        return npc != null && brainYieldsToLeash(XenoServerConfig.npcMovementArbitration,
+                net.bullettrain.xenonpcs.npc.movement.NpcMovementOwner.current(npc));
+    }
+
+    /** Whether the leash lets go: when actually home, not merely back inside the radius. */
+    static boolean leashReleases(boolean arbitration, boolean holding, double distanceSq, double radius) {
+        double release = arbitration && holding ? LEASH_ARRIVAL : radius;
+        return distanceSq <= release * release;
+    }
+
+    /** Whether a stray not already held is grabbed: past the radius and its dead band. */
+    static boolean leashGrabs(double distanceSq, double radius) {
+        double grab = radius + LEASH_HYSTERESIS;
+        return distanceSq > grab * grab;
+    }
+
+    /** {@link #refusesNewTarget} for a live NPC. */
+    public static boolean refusesNewTarget(net.bullettrain.xenonpcs.npc.XenoNpcEntity npc,
+                                           net.minecraft.world.entity.LivingEntity target) {
+        return npc != null && !npc.level().isClientSide()
+                && refusesNewTarget(XenoServerConfig.npcMovementArbitration,
+                net.bullettrain.xenonpcs.npc.movement.NpcMovementOwner.current(npc), target != null);
+    }
+
     /**
      * Returns a strayed NPC to the spot it was created on.
      *
@@ -226,8 +281,8 @@ public final class XenoNpcBehaviour {
         // it crosses back over the line it was dragged across.
         boolean holding = net.bullettrain.xenonpcs.npc.movement.NpcMovementOwner.current(npc)
                 == net.bullettrain.xenonpcs.npc.movement.NpcMovementOwner.Claim.LEASH;
-        double grab = holding ? radius : radius + LEASH_HYSTERESIS;
-        if (distanceSq <= grab * grab) {
+        if (holding ? leashReleases(XenoServerConfig.npcMovementArbitration, true, distanceSq, radius)
+                : !leashGrabs(distanceSq, radius)) {
             if (holding) {
                 net.bullettrain.xenonpcs.npc.movement.NpcMovementOwner.release(npc,
                         net.bullettrain.xenonpcs.npc.movement.NpcMovementOwner.Claim.LEASH);

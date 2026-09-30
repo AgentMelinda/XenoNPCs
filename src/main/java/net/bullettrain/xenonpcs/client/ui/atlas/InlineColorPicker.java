@@ -71,7 +71,7 @@ public final class InlineColorPicker {
         OptionalInt parsed = ColorPickerModel.parseStrictHex(initialHex);
         original = parsed.orElse(net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile
                 .parseHexColor(initialHex).orElse(0xFFFFFF));
-        model = new ColorPickerModel(original);
+        model = ColorPickerModel.opening(original);
         x = Math.max(4, Math.min(uiW - W - 4, anchorX + 4));
         y = Math.max(4, Math.min(uiH - H - 4, anchorY - H / 2));
         Font font = Minecraft.getInstance().font;

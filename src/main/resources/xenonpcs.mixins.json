@@ -6,7 +6,9 @@
   "mixins": [
     "common.KiLaserAimMixin",
     "common.KiWaveAimMixin",
-    "common.StatsProviderNpcGetMixin"
+    "common.StatsProviderNpcGetMixin",
+    "common.StatsNpcHostMixin120",
+    "common.StatsDataNpcHostMixin120"
   ],
   "client": [
     "client.DmzLockOnAccessor",

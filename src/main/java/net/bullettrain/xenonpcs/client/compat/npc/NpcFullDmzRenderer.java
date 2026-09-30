@@ -587,6 +587,7 @@ public final class NpcFullDmzRenderer {
             // IPlayerAnimatable by mixin, so javac can prove a final class does not implement it and
             // rejects the instanceof outright.
             if (proxy instanceof com.dragonminez.client.animation.IPlayerAnimatable animatable) {
+                if (!NpcAnimationClient.readyForPlayback(pending)) return;
                 NpcAnimationClient.apply(proxy, animatable, pending);
                 if (pending.hold() && !pending.stop()) {
                     net.bullettrain.xenonpcs.client.combat.ScriptAnimSpeedClient.put(

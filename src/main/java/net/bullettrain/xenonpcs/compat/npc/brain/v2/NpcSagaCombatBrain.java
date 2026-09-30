@@ -223,7 +223,7 @@ public final class NpcSagaCombatBrain {
                 || NpcChargeMoves.isCharging(npc) || NpcTransformSystem.isHolding(npc.getUUID())) {
             holdFlight(npc);
             if (!senseLocked) {
-                NpcKiAim.applyLook(npc, NpcBrainKiRotation.targetYaw(
+                net.bullettrain.xenonpcs.compat.npc.NpcCombatMotionPolicy.look(npc, NpcBrainKiRotation.targetYaw(
                         victim.getX() - npc.getX(), victim.getZ() - npc.getZ(), npc.getYRot()), 0.0f);
             }
             return;
@@ -258,7 +258,7 @@ public final class NpcSagaCombatBrain {
                 mob.getNavigation().stop();
             }
             if (!senseLocked) {
-                NpcKiAim.applyLook(npc, NpcBrainKiRotation.targetYaw(dx, dz, npc.getYRot()), 0.0f);
+                net.bullettrain.xenonpcs.compat.npc.NpcCombatMotionPolicy.look(npc, NpcBrainKiRotation.targetYaw(dx, dz, npc.getYRot()), 0.0f);
             }
             return;
         }
@@ -268,7 +268,7 @@ public final class NpcSagaCombatBrain {
             land(npc, profile);
         }
         if (!senseLocked) {
-            NpcKiAim.applyLook(npc, NpcBrainKiRotation.targetYaw(dx, dz, npc.getYRot()), 0.0f);
+            net.bullettrain.xenonpcs.compat.npc.NpcCombatMotionPolicy.look(npc, NpcBrainKiRotation.targetYaw(dx, dz, npc.getYRot()), 0.0f);
         }
     }
 
@@ -293,6 +293,7 @@ public final class NpcSagaCombatBrain {
         NEXT_DECISION.put(npc.getUUID(), serverTick + DECISION_INTERVAL);
         NpcSagaCombatContext ctx = NpcSagaCombatContext.snapshot(npc, victim, profile);
         ctx.comboReady = ctx.comboReady && !NpcSagaCombos.active(npc.getUUID());
+        if (net.bullettrain.xenonpcs.compat.npc.NpcCombatMotionPolicy.active(npc)) ctx.vanishReady = ctx.dashReady = false;
         Intent intent = decide(ctx, p -> npc.getRandom().nextFloat() < p);
         execute(npc, profile, victim, intent, serverTick);
     }

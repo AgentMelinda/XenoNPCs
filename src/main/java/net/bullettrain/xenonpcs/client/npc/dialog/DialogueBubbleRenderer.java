@@ -246,6 +246,57 @@ public final class DialogueBubbleRenderer {
             return;
         }
 
+        if (inEntityPass(npc)) {
+            // Drawn by XenoNpcRenderer (renderInEntityPass), which runs earlier in this frame. If it
+            // did not draw - the NPC was culled - its answers are not on screen to be clicked.
+            if (!drawnThisFrame) hits = List.of();
+            drawnThisFrame = false;
+            return;
+        }
+        float partialTick = event.getPartialTick();
+        PoseStack poseStack = new PoseStack();
+        poseStack.last().pose().set((Matrix4fc) event.getPoseStack().last().pose());
+        poseStack.last().normal().set(new Matrix3f((Matrix4fc) event.getPoseStack().last().pose()));
+
+        mc.getMainRenderTarget().bindWrite(false);
+        hits = draw(mc, npc, session, partialTick, poseStack, cameraPos);
+    }
+
+    /** Whether {@link #renderInEntityPass} owns this NPC's dialogue instead of the level pass. */
+    static boolean inEntityPass(Entity entity) {
+        return net.bullettrain.xenonpcs.config.XenoServerConfig.npcBubblesInEntityPass
+                && entity instanceof net.bullettrain.xenonpcs.npc.XenoNpcEntity;
+    }
+
+    private static boolean drawnThisFrame;
+
+    /**
+     * Draws a native NPC's dialogue from its own renderer, in the entity render pass, the way
+     * DragonMineZ's ki-sense BP meter draws above a player. {@code entityPose} is the pose the
+     * renderer was handed, whose origin is the NPC's interpolated position. Option hit boxes are
+     * projected from world positions, so they do not depend on which pass drew them.
+     */
+    public static void renderInEntityPass(LivingEntity npc, PoseStack entityPose, float partialTick) {
+        if (!inEntityPass(npc)) return;
+        DialogueBubbleSession session = DialogueBubbleSession.active();
+        Minecraft mc = Minecraft.getInstance();
+        if (session == null || mc.level == null || session.entityId() != npc.getId() || !npc.isAlive()) {
+            return;
+        }
+        Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
+        if (npc.distanceToSqr(cameraPos) > MAX_DISTANCE_SQ) {
+            return;
+        }
+        hits = draw(mc, npc, session, partialTick, entityPose, npc.getPosition(partialTick));
+        drawnThisFrame = true;
+    }
+
+    /**
+     * The speaker line and the answers. {@code origin} is the world point {@code poseStack}
+     * currently sits at: the camera for the level pass, the NPC for the entity pass.
+     */
+    private static List<OptionHit> draw(Minecraft mc, LivingEntity npc, DialogueBubbleSession session,
+                                        float partialTick, PoseStack poseStack, Vec3 origin) {
         NpcCombatProfile profile = net.bullettrain.xenonpcs.client.compat.npc.NpcAppearanceClient
                 .bubbleProfile(npc);
         // A node may name its own palette; blank means inherit the NPC's, which is what every
@@ -259,11 +310,8 @@ public final class DialogueBubbleRenderer {
         XenoAtlasSprites.Sprite lineSprite = XenoAtlasSprites.get(
                 SpeechBubbleLayout.spriteFor(mc.font, SpeechBubbleLayout.wrap(mc.font, session.text())),
                 lineTheme);
-        float partialTick = event.getPartialTick();
-        Vec3 pos = entity.getPosition(partialTick);
-        Vec3 forward = npc.getLookAngle().multiply(1.0, 0.0, 1.0).normalize();
-        if (forward.lengthSqr() < 1.0e-6) forward = new Vec3(0.0, 0.0, 1.0);
-        Vec3 bubblePos = pos.add(forward.scale(0.16));
+        Vec3 pos = npc.getPosition(partialTick);
+        Vec3 bubblePos = pos;
         MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
 
         List<XenoAtlasSprites.Sprite> optionSprites = new ArrayList<>(options.size());
@@ -282,25 +330,20 @@ public final class DialogueBubbleRenderer {
                 : DialogueBubbleLayout.stackTops(optionHeights);
         List<Float> rowCentres = rowChoices
                 ? DialogueBubbleLayout.rowCentres(optionWidths) : List.of();
-        double optionAnchorHeight = npc.getBbHeight() * OPTION_HEIGHT_FRACTION;
+        double optionAnchorHeight = net.bullettrain.xenonpcs.client.npc.speech.NpcBubbleAnchor.height(npc);
         double speakerAnchorHeight = optionAnchorHeight
                 + (DialogueBubbleLayout.groupHeight(optionHeights, rowChoices)
                 + DialogueBubbleLayout.GAP_BELOW_LINE) * BUBBLE_SCALE;
 
-        PoseStack poseStack = new PoseStack();
-        poseStack.last().pose().set((Matrix4fc) event.getPoseStack().last().pose());
-        poseStack.last().normal().set(new Matrix3f((Matrix4fc) event.getPoseStack().last().pose()));
-
-        mc.getMainRenderTarget().bindWrite(false);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
+        net.bullettrain.xenonpcs.client.npc.speech.BillboardDraw.beginOnTop();
 
         List<OptionHit> found = new ArrayList<>();
         try {
             // The speaker line sits above the complete answer group with a clear gap.
             poseStack.pushPose();
-            translateBillboard(poseStack, bubblePos, cameraPos,
+            translateBillboard(poseStack, bubblePos, origin,
                     speakerAnchorHeight,
                     mc);
             drawLineBubble(poseStack, buffers, session.text(), lineTheme);
@@ -308,7 +351,7 @@ public final class DialogueBubbleRenderer {
 
             // Answers form one non-overlapping group immediately below the speaker line.
             poseStack.pushPose();
-            translateBillboard(poseStack, bubblePos, cameraPos,
+            translateBillboard(poseStack, bubblePos, origin,
                     optionAnchorHeight,
                     mc);
             for (int i = 0; i < options.size(); i++) {
@@ -324,11 +367,11 @@ public final class DialogueBubbleRenderer {
             poseStack.popPose();
         } finally {
             buffers.endBatch();
-            RenderSystem.enableDepthTest();
+            net.bullettrain.xenonpcs.client.npc.speech.BillboardDraw.endOnTop();
             RenderSystem.disableBlend();
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
-        hits = List.copyOf(found);
+        return List.copyOf(found);
     }
 
     private static void translateBillboard(PoseStack poseStack, Vec3 position, Vec3 cameraPosition,
@@ -338,7 +381,8 @@ public final class DialogueBubbleRenderer {
         poseStack.translate(0.0, anchorHeight, 0.0);
         poseStack.mulPose(mc.getEntityRenderDispatcher().cameraOrientation());
         // Negative Y because GUI art is top-down and world space is not.
-        poseStack.scale(BUBBLE_SCALE, -BUBBLE_SCALE, BUBBLE_SCALE);
+        poseStack.scale(net.bullettrain.xenonpcs.client.npc.speech.BubbleBillboardGeometry.X_SIGN * BUBBLE_SCALE,
+                -BUBBLE_SCALE, BUBBLE_SCALE);
     }
 
     /**
@@ -423,29 +467,25 @@ public final class DialogueBubbleRenderer {
      */
     private static OptionHit hitFor(int index, Vec3 base, LivingEntity npc,
                                     XenoAtlasSprites.Sprite sprite, float centreX, float actualTop) {
-        double anchorY = base.y + npc.getBbHeight() * OPTION_HEIGHT_FRACTION;
-        // Local Y grows downward (the pose stack negates it), so the top edge is the smaller
-        // local offset and therefore the higher world position.
-        double worldTop = anchorY - actualTop * BUBBLE_SCALE;
-        double worldBottom = anchorY - (actualTop + sprite.height()) * BUBBLE_SCALE;
-        Vector3f side = new Vector3f(centreX * BUBBLE_SCALE, 0.0f, 0.0f)
-                .rotate(Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation());
-
-        // Scaled GUI units, not raw pixels: a click from a Screen and the crosshair's own centre
-        // are both expressed in that space.
+        double anchorY = base.y + net.bullettrain.xenonpcs.client.npc.speech.NpcBubbleAnchor.height(npc);
+        var rotation = Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation();
         Minecraft mc = Minecraft.getInstance();
         int width = mc.getWindow().getGuiScaledWidth();
         int height = mc.getWindow().getGuiScaledHeight();
-        WorldToScreenCache.ScreenPoint top =
-                WorldToScreenCache.project(new Vec3(base.x + side.x, worldTop, base.z + side.z), width, height);
-        WorldToScreenCache.ScreenPoint bottom =
-                WorldToScreenCache.project(new Vec3(base.x + side.x, worldBottom, base.z + side.z), width, height);
-        if (top == null || bottom == null || top.behindCamera() || bottom.behindCamera()) {
-            return noHit(index);
+        float minX = Float.POSITIVE_INFINITY, minY = Float.POSITIVE_INFINITY;
+        float maxX = Float.NEGATIVE_INFINITY, maxY = Float.NEGATIVE_INFINITY;
+        for (float x : new float[] {centreX - sprite.width() / 2.0f, centreX + sprite.width() / 2.0f}) {
+            for (float y : new float[] {actualTop, actualTop + sprite.height()}) {
+                Vector3f offset = net.bullettrain.xenonpcs.client.npc.speech.BubbleBillboardGeometry
+                        .offset(x, y, BUBBLE_SCALE, rotation);
+                var point = WorldToScreenCache.project(new Vec3(base.x + offset.x,
+                        anchorY + offset.y, base.z + offset.z), width, height);
+                if (point == null || point.behindCamera()) return noHit(index);
+                minX = Math.min(minX, point.x()); minY = Math.min(minY, point.y());
+                maxX = Math.max(maxX, point.x()); maxY = Math.max(maxY, point.y());
+            }
         }
-        float aspect = sprite.height() <= 0
-                ? 1.0f : (float) sprite.width() / (float) sprite.height();
-        return boxFrom(index, top.x(), top.y(), bottom.x(), bottom.y(), aspect);
+        return new OptionHit(index, minX, minY, maxX, maxY);
     }
 
     /** Folds a stored palette name onto an atlas theme. */

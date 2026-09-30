@@ -42,6 +42,17 @@ public final class NpcCounterpartSync {
      * returning null, so a native NPC passes straight through it rather than needing a second
      * branch.
      */
+    /**
+     * 1.20.1: the stat fingerprint, with a host-version term. Before the NPC stats host, the sync
+     * wrote into a DragonMineZ blob that kept nothing (DMZ 1.20.1 stores stats only in its host's
+     * attributes) yet still stored this fingerprint, so those NPCs would never re-sync.
+     */
+    static int statFingerprint(int authority, boolean authoritative) {
+        return 31 * authority + Boolean.hashCode(authoritative) + STAT_HOST_VERSION;
+    }
+
+    private static final int STAT_HOST_VERSION = 0x51A7_0001;
+
     public static boolean isManagedNpc(Entity entity) {
         return isCustomNpc(entity)
                 || entity instanceof net.bullettrain.xenonpcs.npc.XenoNpcEntity;
@@ -103,8 +114,8 @@ public final class NpcCounterpartSync {
         NpcAggroBridge.apply(entity, profile);
 
         CompoundTag persistent = entity.getPersistentData();
-        int fingerprint = 31 * profile.authorityFingerprint()
-                + Boolean.hashCode(XenoServerConfig.npcDmzStatsAuthoritative);
+        int fingerprint = statFingerprint(profile.authorityFingerprint(),
+                XenoServerConfig.npcDmzStatsAuthoritative);
         if (!force && persistent.contains(TAG_LAST_FINGERPRINT, Tag.TAG_INT)
                 && persistent.getInt(TAG_LAST_FINGERPRINT) == fingerprint) {
             return;

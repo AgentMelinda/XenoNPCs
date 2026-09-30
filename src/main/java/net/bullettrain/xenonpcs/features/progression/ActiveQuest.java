@@ -33,6 +33,8 @@ public final class ActiveQuest {
     private double giverY;
     private double giverZ;
     private boolean xenoNpcGiver;
+    /** The entity that gave the quest, so a "kill target hunts player" quest never turns it hostile. */
+    private java.util.UUID giverId;
 
     public ActiveQuest(String id, int target) {
         this.id = id == null ? "" : id;
@@ -64,6 +66,7 @@ public final class ActiveQuest {
     public void setGiver(Entity giver) {
         if (giver == null || giver.level().isClientSide) return;
         xenoNpcGiver = giver instanceof net.bullettrain.xenonpcs.npc.XenoNpcEntity;
+        giverId = giver.getUUID();
         giverDimension = giver.level().dimension().location().toString();
         giverX = giver.getX();
         giverY = giver.getY();
@@ -80,6 +83,9 @@ public final class ActiveQuest {
 
     /** Only an Xeno NPC dialogue may enable this quest's optional XenoSkill-point reward. */
     public boolean xenoNpcGiver() { return xenoNpcGiver; }
+
+    /** The giving entity's UUID, or null for a quest started without one (command, old save). */
+    public java.util.UUID giverId() { return giverId; }
 
     /**
      * Advances this quest.
@@ -177,6 +183,7 @@ public final class ActiveQuest {
             tag.putDouble("GiverZ", giverZ);
         }
         tag.putBoolean("XenoNpcGiver", xenoNpcGiver);
+        if (giverId != null) tag.putUUID("GiverId", giverId);
         ListTag steps = new ListTag();
         for (int value : stepProgress) {
             steps.add(net.minecraft.nbt.IntTag.valueOf(value));
@@ -204,6 +211,7 @@ public final class ActiveQuest {
         quest.giverY = tag.getDouble("GiverY");
         quest.giverZ = tag.getDouble("GiverZ");
         quest.xenoNpcGiver = tag.getBoolean("XenoNpcGiver");
+        if (tag.hasUUID("GiverId")) quest.giverId = tag.getUUID("GiverId");
         ListTag steps = tag.getList("StepProgress", Tag.TAG_INT);
         for (int i = 0; i < Math.min(MAX_STEPS, steps.size()); i++) {
             quest.stepProgress[i] = Math.max(0, steps.getInt(i));

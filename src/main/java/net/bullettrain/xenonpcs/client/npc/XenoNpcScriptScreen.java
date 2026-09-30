@@ -55,6 +55,12 @@ import java.util.function.Consumer;
  * (script tool). In library mode the tabs are the stored scripts themselves.
  */
 public final class XenoNpcScriptScreen extends ScaledScreen {
+
+    /** Drawn at the vanilla GUI Scale; see {@link NpcGuiScale}. */
+    @Override
+    protected float computeDynamicScale(float available) {
+        return NpcGuiScale.dynamicScale(super.computeDynamicScale(available));
+    }
     private static final int GOLD = 0xFFFFC14A;
     private static final int CYAN = 0xFF80D8FF;
     private static final int MUTED = 0xFF8AA4B8;

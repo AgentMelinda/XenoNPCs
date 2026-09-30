@@ -403,23 +403,23 @@ public class XenoNpcEntity extends PathfinderMob
         goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 8.0f) {
             @Override
             public boolean canUse() {
-                return !brainFlying() && super.canUse();
+                return !net.bullettrain.xenonpcs.compat.npc.NpcCombatMotionPolicy.active(XenoNpcEntity.this) && !brainFlying() && super.canUse();
             }
 
             @Override
             public boolean canContinueToUse() {
-                return !brainFlying() && super.canContinueToUse();
+                return !net.bullettrain.xenonpcs.compat.npc.NpcCombatMotionPolicy.active(XenoNpcEntity.this) && !brainFlying() && super.canContinueToUse();
             }
         });
         goalSelector.addGoal(8, new RandomLookAroundGoal(this) {
             @Override
             public boolean canUse() {
-                return !brainFlying() && super.canUse();
+                return !net.bullettrain.xenonpcs.compat.npc.NpcCombatMotionPolicy.active(XenoNpcEntity.this) && !brainFlying() && super.canUse();
             }
 
             @Override
             public boolean canContinueToUse() {
-                return !brainFlying() && super.canContinueToUse();
+                return !net.bullettrain.xenonpcs.compat.npc.NpcCombatMotionPolicy.active(XenoNpcEntity.this) && !brainFlying() && super.canContinueToUse();
             }
         });
 
@@ -1114,6 +1114,8 @@ public class XenoNpcEntity extends PathfinderMob
     public void setTarget(@javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target) {
         if (target != null && !net.bullettrain.xenonpcs.compat.npc.NpcTargetKeeper
                 .isCombatTarget(target)) target = null;
+        // Walking home on the leash: disengaged until it arrives (XenoNpcBehaviour.refusesNewTarget).
+        if (XenoNpcBehaviour.refusesNewTarget(this, target)) target = null;
         net.minecraft.world.entity.LivingEntity previous = getTarget();
         if (!level().isClientSide() && target != null && previous != target
                 && !dispatchingTargetScript) {

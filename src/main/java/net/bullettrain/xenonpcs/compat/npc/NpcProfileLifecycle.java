@@ -197,7 +197,8 @@ public final class NpcProfileLifecycle {
                 NpcNegativeEffectPersistence.capture(npc);
                 boolean aiEvading = npc instanceof Mob mob
                         && net.bullettrain.xenonpcs.npc.NpcAiGoals.isEvading(mob);
-                if (profile.combatBrain && !aiEvading) {
+                if (profile.combatBrain && !aiEvading
+                        && !net.bullettrain.xenonpcs.npc.XenoNpcBehaviour.brainYieldsToLeash(npc)) {
                     LivingEntity steerAt = NpcKiAim.hardLock(event.getServer(), npc);
                     LivingEntity senseLocked = null;
                     if (steerAt == null) {

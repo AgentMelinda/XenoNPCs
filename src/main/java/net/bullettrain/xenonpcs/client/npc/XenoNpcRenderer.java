@@ -137,6 +137,12 @@ public final class XenoNpcRenderer extends MobRenderer<XenoNpcEntity,
                        MultiBufferSource buffers, int light) {
         renderModel(entity, entityYaw, partialTick, pose, buffers, light);
         drawNameplate(entity, pose, buffers, light, partialTick);
+        // Bubbles from the same pose as the nameplate, when XenoServerConfig.npcBubblesInEntityPass
+        // hands them to this pass (each call checks the switch and returns if it is off).
+        net.bullettrain.xenonpcs.client.npc.speech.SpeechBubbleRenderer
+                .renderInEntityPass(entity, pose, partialTick);
+        net.bullettrain.xenonpcs.client.npc.dialog.DialogueBubbleRenderer
+                .renderInEntityPass(entity, pose, partialTick);
     }
 
     private void renderModel(XenoNpcEntity entity, float entityYaw, float partialTick, PoseStack pose,

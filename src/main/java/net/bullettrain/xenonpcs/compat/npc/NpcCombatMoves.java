@@ -76,6 +76,7 @@ public final class NpcCombatMoves {
      * this class too but are ports of DMZ behaviour, so they stay available in every version.
      */
     private static boolean specialsAllowed(LivingEntity npc) {
+        if (net.bullettrain.xenonpcs.compat.npc.NpcCombatMotionPolicy.active(npc)) return false;
         NpcCombatProfile profile = NpcCombatProfile.readCached(npc);
         return profile == null || profile.allowXenoSpecial();
     }

@@ -216,7 +216,7 @@ public final class NpcCombatBrain {
                     : NpcBrainKiRotation.airChaseVelocity(dx, dy, dz, flySpeed);
             applyVelocity(npc, fly[0], fly[1], fly[2]);
             if (!NpcTargetKeeper.isKiSenseLockedOn(npc, victim)) {
-                NpcKiAim.applyLook(npc, NpcBrainKiRotation.targetYaw(dx, dz), 0.0f);
+                net.bullettrain.xenonpcs.compat.npc.NpcCombatMotionPolicy.look(npc, NpcBrainKiRotation.targetYaw(dx, dz), 0.0f);
             }
             return;
         }

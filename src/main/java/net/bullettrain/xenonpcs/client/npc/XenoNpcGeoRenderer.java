@@ -36,7 +36,8 @@ public final class XenoNpcGeoRenderer extends GeoEntityRenderer<XenoNpcEntity> {
             boolean ready = pending.stop()
                     || GeckoLibCache.getBakedAnimations().containsKey(
                             Bt3AnimationBinding.DMZ_ANIMATION_FILE);
-            if (ready && NpcAnimationClient.consume(entity.getUUID(), pending)) {
+            if (ready && NpcAnimationClient.readyForPlayback(pending)
+                    && NpcAnimationClient.consume(entity.getUUID(), pending)) {
                 entity.acceptScriptAnimation(pending.animation(), pending.hold(), pending.stop());
                 NpcAnimationClient.traceGeoDelivery(pending.animation());
             }

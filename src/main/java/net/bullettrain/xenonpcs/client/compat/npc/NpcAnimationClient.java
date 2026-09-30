@@ -169,6 +169,15 @@ public final class NpcAnimationClient {
         }
     }
 
+    /** Social one-shots must wait for the server library to bake on this client. */
+    public static boolean readyForPlayback(Pending pending) {
+        if (pending == null || pending.stop()) return true;
+        String name = pending.animation();
+        boolean social = java.util.Set.of("combat.xeno_wave", "combat.xeno_hi_wave",
+                "combat.xeno_nod", "combat.xeno_spin", "combat.xeno_idle_shift").contains(name);
+        return !social || net.bullettrain.xenonpcs.client.anim.XenoStudioClipCache.has(name);
+    }
+
     /** The clip waiting for this NPC. Null when there is nothing queued. */
     public static Pending peek(UUID npc) {
         return npc == null ? null : PENDING.get(npc);

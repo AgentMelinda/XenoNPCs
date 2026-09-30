@@ -95,11 +95,12 @@ public final class NpcSocialBehaviour {
         if (ready != null && now < ready) {
             return false;
         }
+        if (!XenoAnimApi.playClip(npc, CLIP_GREET)) return false;
         seen.put(player.getUUID(), now + GREET_COOLDOWN);
         // The idle clock is pushed out too: an NPC that waves and then immediately shifts its
         // weight looks twitchy rather than welcoming.
         IDLE_READY.put(npc.getUUID(), now + IDLE_MIN);
-        return XenoAnimApi.playClip(npc, CLIP_GREET);
+        return true;
     }
 
     /** A small gesture now and then, so a standing NPC is not a statue. */

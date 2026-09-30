@@ -15,6 +15,7 @@ public final class XenoNpcBrainV5 {
     private XenoNpcBrainV5() {}
 
     public static void tick(XenoNpcEntity npc) {
+        if (net.bullettrain.xenonpcs.compat.npc.NpcCombatMotionPolicy.hold(npc, npc.getTarget())) return;
         if (net.bullettrain.xenonpcs.compat.npc.NpcFlightOwnership.brainDirectsFlight(npc.getUUID())) {
             npc.getNavigation().stop();
             npc.setNoGravity(true);

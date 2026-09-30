@@ -39,6 +39,12 @@ import java.util.function.IntConsumer;
  * push a control outside its frame.
  */
 public final class XenoNpcAppearanceScreen extends ScaledScreen {
+
+    /** Drawn at the vanilla GUI Scale; see {@link NpcGuiScale}. */
+    @Override
+    protected float computeDynamicScale(float available) {
+        return NpcGuiScale.dynamicScale(super.computeDynamicScale(available));
+    }
     /** Inline colour picker shared by every colour row on this screen; opens over it. */
     private final net.bullettrain.xenonpcs.client.ui.atlas.InlineColorPicker colorPicker = new net.bullettrain.xenonpcs.client.ui.atlas.InlineColorPicker();
     /** The narrow frame, so the visualizer fits beside it the way it does in the editor. */
