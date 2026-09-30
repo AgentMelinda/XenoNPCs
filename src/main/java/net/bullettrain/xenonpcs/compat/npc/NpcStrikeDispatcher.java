@@ -34,6 +34,11 @@ public final class NpcStrikeDispatcher {
                 || !NpcKiCooldowns.ready(caster, data.getId())) {
             return false;
         }
+        // A strike is a melee move: swinging it from up to 8 blocks away was the NPC on a ledge
+        // punching the air above its target (2026-09-30). Same gate as every other melee hit.
+        if (!NpcCombatRanges.withinMelee(caster, target)) {
+            return false;
+        }
         double cost = caster instanceof net.bullettrain.xenonpcs.combat.clone.XenoCloneEntity clone
                 ? net.bullettrain.xenonpcs.combat.clone.CloneCombatBridge.strikeCost(clone, data)
                 : NpcTechniqueMath.strikeCost(NpcDmzStats.strikeDamage(caster, profile), profile, data);
@@ -75,7 +80,8 @@ public final class NpcStrikeDispatcher {
             it.remove();
             Entity raw = caster.level() instanceof ServerLevel level
                     ? level.getEntity(pending.target()) : null;
-            if (!(raw instanceof LivingEntity target) || !valid(caster, target)) continue;
+            if (!(raw instanceof LivingEntity target) || !valid(caster, target)
+                    || !NpcCombatRanges.withinMelee(caster, target)) continue;
             NpcCombatProfile profile = NpcCombatProfile.read(caster);
             StrikeAttackData data = strikeData(caster, pending.technique(), profile);
             if (data == null) continue;

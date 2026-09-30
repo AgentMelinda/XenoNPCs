@@ -500,6 +500,15 @@ public class XenoNpcEntity extends PathfinderMob
         return NpcCombatProfile.readCached(this).fireImmune || super.fireImmune();
     }
 
+    /**
+     * With No Fall Damage there is nothing to fear from a drop, so the navigator may plan one: an
+     * NPC on a ledge above its target walks down to it rather than standing at the edge.
+     */
+    @Override
+    public int getMaxFallDistance() {
+        return NpcCombatProfile.readCached(this).noFallDamage ? 64 : super.getMaxFallDistance();
+    }
+
     @Override
     public boolean causeFallDamage(float distance, float multiplier,
                                    net.minecraft.world.damagesource.DamageSource source) {

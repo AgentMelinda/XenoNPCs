@@ -47,6 +47,11 @@ final class NpcSagaCombos {
         }
         if (role == NpcSagaCombatBrain.ComboRole.STUN || role == NpcSagaCombatBrain.ComboRole.HEAVY) {
             NpcCombatMoves.vanish(npc, victim, 0);
+            // The vanish can fail (cooldown, no landing spot); a finisher thrown from where it
+            // stands would be a punch at nothing.
+            if (!net.bullettrain.xenonpcs.compat.npc.NpcCombatRanges.withinMelee(npc, victim)) {
+                return false;
+            }
             float scale = role == NpcSagaCombatBrain.ComboRole.HEAVY ? 1.75f : 1.25f;
             play(npc, role == NpcSagaCombatBrain.ComboRole.HEAVY
                     ? Bt3AnimationIntent.HEAVY_FINISH : Bt3AnimationIntent.UPPERCUT_RIGHT);

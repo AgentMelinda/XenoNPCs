@@ -325,7 +325,11 @@ public final class NpcSagaCombatBrain {
                     approach(npc, profile, victim, Locomotion.RUN);
                 }
             }
-            case COMBO -> NpcSagaCombos.start(npc, profile, victim, intent.combo(), serverTick);
+            case COMBO -> {
+                if (!NpcSagaCombos.start(npc, profile, victim, intent.combo(), serverTick)) {
+                    approach(npc, profile, victim, Locomotion.RUN);
+                }
+            }
             case HOLD -> {
             }
         }
@@ -349,9 +353,12 @@ public final class NpcSagaCombatBrain {
                 return;
             }
         }
-        if (npc.distanceTo(victim) > NpcSagaCombatContext.MID) {
-            NpcCombatMoves.chase(npc, victim);
+        if (npc.distanceTo(victim) > NpcSagaCombatContext.MID && NpcCombatMoves.chase(npc, victim)) {
+            return;
         }
+        // Close but out of reach - a floor below, across a gap - or the chase refused: walk there,
+        // or step forward off the edge onto the target (2026-09-30).
+        net.bullettrain.xenonpcs.compat.npc.NpcLedgeApproach.apply(npc, victim, 1.2);
     }
 
     private static void cast(LivingEntity npc, NpcCombatProfile profile, LivingEntity victim,
