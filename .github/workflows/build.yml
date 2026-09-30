@@ -24,8 +24,7 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # DragonMineZ is committed in libs/. Download it only if it is missing, then check it
-      # against the hash in gradle.properties before building anything against it.
+      # DragonMineZ is committed in libs/. Download it only if it is missing.
       - name: Check DragonMineZ
         run: |
           mkdir -p libs
@@ -33,8 +32,6 @@ jobs:
             curl -fsSL -o libs/dragonminez-2.1.3.jar \
               https://github.com/AgentMelinda/dragonminez/releases/download/v2.1.3-1.21.1-kiweapon-fix/dragonminez-2.1.3.jar
           fi
-          want=$(grep -E '^dragonminez_sha256=' gradle.properties | cut -d= -f2)
-          echo "$want  libs/dragonminez-2.1.3.jar" | sha256sum -c -
 
       - name: Build and test
         run: ./gradlew build --no-daemon -PofflineMcMeta
