@@ -46,6 +46,25 @@ class NpcFreshProfileDefaultsTest {
     }
 
     @Test
+    void kiManipulationIsLearnedButDoesNotDrawTheKiWeapon() {
+        NpcCombatProfile fresh = NpcCombatProfile.freshDefaults(true, List.of("kimanipulation", "fly"),
+                NpcFreshProfileDefaultsTest::max);
+        assertFalse(fresh.skills.isActive(NpcCombatProfile.KI_WEAPON_SKILL),
+                "an active kimanipulation shows the ki weapon; the KI Weapon toggle owns that");
+        assertEquals(max("kimanipulation"), fresh.skills.level("kimanipulation"));
+        assertFalse(fresh.kiWeaponOn);
+    }
+
+    @Test
+    void aFreshNpcHasBodyTypeTwoAndHairStyleOne() {
+        // 2026-09-30 owner: "default of dmz body type 2 hair on by default and hair number 1".
+        NpcCombatProfile fresh = NpcCombatProfile.freshDefaults(true, IDS, NpcFreshProfileDefaultsTest::max);
+        assertEquals(2, fresh.appearance.bodyType);
+        assertTrue(fresh.hairEnabled);
+        assertEquals(1, fresh.hairStyleId);
+    }
+
+    @Test
     void aSavedProfileKeepsWhatItSays() {
         // The release's default brain: V1 in XenoPixels, V9 in XenoNPCs (NpcBrainPolicy).
         assertEquals(NpcBrainPolicy.resolve(NpcCombatBrainVersion.V1),

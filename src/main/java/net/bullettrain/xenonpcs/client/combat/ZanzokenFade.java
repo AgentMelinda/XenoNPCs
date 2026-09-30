@@ -77,13 +77,13 @@ public final class ZanzokenFade {
      * <p>Deliberately the same call the image renderer makes, with the same configuration, so the
      * two cannot drift apart into "the images faded and the fighter did not".
      */
-    public static float alpha(Entity entity, float partialTick) { return 0.0f; }
+    public static float alpha(Entity entity, float partialTick) { return 1.0f; }
 
     /**
      * {@code buffers}, wrapped to draw at {@code alpha}, or {@code buffers} itself when there is
      * nothing to fade.
      */
-    public static MultiBufferSource wrap(MultiBufferSource buffers, float alpha) { return null; }
+    public static MultiBufferSource wrap(MultiBufferSource buffers, float alpha) { return buffers; }
 
     /**
      * The join map is the fast path. Synched {@code ownerId} can still be the default when
@@ -99,5 +99,5 @@ public final class ZanzokenFade {
      */
     static boolean imageStillStanding(int age, int lifetime, boolean alive, boolean removed) { return false; }
 
-    static float restoreAlpha(float from, int remaining) { return 0.0f; }
+    static float restoreAlpha(float from, int remaining) { return 1.0f; }
 }

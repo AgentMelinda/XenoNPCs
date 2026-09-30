@@ -35,7 +35,7 @@ public final class XenoEffects {
                                    double extraRange) { return false; }
 
     public static Outcome attempt(ServerLevel level, EffectSlot slot, Vec3 pos, Vec3 forward, float scale,
-                                  int targetId) { return null; }
+                                  int targetId) { return Outcome.UNAVAILABLE; }
 
     /**
      * An effect that rides on an entity: AAA moves it with the entity every frame, so it stays
@@ -53,14 +53,14 @@ public final class XenoEffects {
 
     /** As {@link #attempt}, for a hit recorded at {@code gameTick} (the punch hook plays later). */
     static Outcome attemptAt(ServerLevel level, long gameTick, EffectSlot slot, Vec3 pos, Vec3 forward, float scale,
-                             int targetId) { return null; }
+                             int targetId) { return Outcome.UNAVAILABLE; }
 
     private static Outcome attemptAt(ServerLevel level, long gameTick, EffectSlot slot, Vec3 pos, Vec3 forward,
-                                     float scale, int targetId, int boundEntity, EffekSender.Follow follow) { return null; }
+                                     float scale, int targetId, int boundEntity, EffekSender.Follow follow) { return Outcome.UNAVAILABLE; }
 
     private static Outcome attemptAt(ServerLevel level, long gameTick, EffectSlot slot, Vec3 pos, Vec3 forward,
                                      float scale, int targetId, int boundEntity, EffekSender.Follow follow,
-                                     double extraRange) { return null; }
+                                     double extraRange) { return Outcome.UNAVAILABLE; }
 
     private static float categoryScale(EffectGate.Category category) { return 0.0f; }
 

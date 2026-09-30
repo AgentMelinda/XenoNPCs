@@ -39,11 +39,11 @@ public final class CombatSkills {
 
     public static int level(ServerPlayer player, String skillId) { return 0; }
 
-    public static float powerMult(ServerPlayer player) { return 0.0f; }
+    public static float powerMult(ServerPlayer player) { return 1.0f; }
 
     public static float guardBonus(ServerPlayer player) { return 0.0f; }
 
-    public static float sparkingBuildMult(ServerPlayer player) { return 0.0f; }
+    public static float sparkingBuildMult(ServerPlayer player) { return 1.0f; }
 
     public static float ultimateMult(ServerPlayer player) { return 0.0f; }
 

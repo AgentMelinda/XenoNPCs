@@ -338,6 +338,9 @@ public final class NpcFullDmzRenderer {
             if (NpcSkillSet.FLY.equals(entry.getKey())) {
                 continue; // handled above, and the dedicated fields win
             }
+            if (NpcCombatProfile.KI_WEAPON_SKILL.equals(entry.getKey())) {
+                continue; // syncKiWeapon: the KI Weapon toggle alone decides whether it shows
+            }
             applySkill(stats, entry.getKey(), entry.getValue().active(), entry.getValue().level());
         }
     }

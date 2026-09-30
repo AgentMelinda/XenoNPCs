@@ -1,7 +1,7 @@
 {
   "vanish": {
     "category": "player",
-    "subtitle": "subtitles.xenopixelsmod.vanish",
+    "subtitle": "subtitles.xenonpcs.vanish",
     "sounds": [
       {
         "name": "xenonpcs:vanish_out",
@@ -11,7 +11,7 @@
   },
   "hakai_voice": {
     "category": "player",
-    "subtitle": "subtitles.xenopixelsmod.hakai_voice",
+    "subtitle": "subtitles.xenonpcs.hakai_voice",
     "sounds": [
       {
         "name": "xenonpcs:hakai_voice",
@@ -21,7 +21,7 @@
   },
   "hakai_charge": {
     "category": "player",
-    "subtitle": "subtitles.xenopixelsmod.hakai_charge",
+    "subtitle": "subtitles.xenonpcs.hakai_charge",
     "sounds": [
       {
         "name": "xenonpcs:hakai_charge",

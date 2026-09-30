@@ -1326,17 +1326,31 @@ public final class NpcCombatProfile {
         // (XenoNPCs) setBrainVersion has nothing to switch from.
         if (profile.brainVersion == NpcCombatBrainVersion.V9) profile.applyV9SafeDefaults();
         profile.grantAllSkills(skillIds, maxLevel);
+        // 2026-09-30 owner: new NPCs start as DMZ body type 2 with hair on, hair style 1.
+        profile.appearance.bodyType = FRESH_BODY_TYPE;
+        profile.hairEnabled = true;
+        profile.hairStyleId = FRESH_HAIR_STYLE;
         return profile;
     }
 
+    /** DMZ body type a new NPC starts with. */
+    public static final int FRESH_BODY_TYPE = 2;
+    /** DMZ hair style a new NPC starts with (0 would mean "the race's default"). */
+    public static final int FRESH_HAIR_STYLE = 1;
+
     /** Every listed DMZ skill on at its max level, keeping the Fly row in step with the fly skill. */
+    /** DMZ's skill whose active flag shows the ki weapon; {@link #kiWeaponOn} owns it. */
+    public static final String KI_WEAPON_SKILL = "kimanipulation";
+
     public void grantAllSkills(List<String> skillIds, java.util.function.ToIntFunction<String> maxLevel) {
         if (skillIds == null || maxLevel == null) {
             return;
         }
         for (String id : skillIds) {
             int level = Math.max(1, maxLevel.applyAsInt(id));
-            skills.set(id, true, level);
+            // Ki manipulation is learned at max but left inactive: its active flag is what draws
+            // the ki weapon, and that belongs to the editor's own KI Weapon toggle.
+            skills.set(id, !KI_WEAPON_SKILL.equals(NpcSkillSet.canonical(id)), level);
             if (NpcSkillSet.FLY.equals(NpcSkillSet.canonical(id))) {
                 flySkillOn = true;
                 flySkillLevel = clampFlySkillLevel(level);
