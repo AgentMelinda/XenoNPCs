@@ -354,9 +354,7 @@ public final class NpcSagaCombatBrain {
                 return;
             }
         }
-        if (npc.distanceTo(victim) > NpcSagaCombatContext.MID && NpcCombatMoves.chase(npc, victim)) {
-            return;
-        }
+        // RUN keeps walking continuously. Only the explicit DASH intent may teleport.
         // Close but out of reach - a floor below, across a gap - or the chase refused: walk there,
         // or step forward off the edge onto the target (2026-09-30).
         net.bullettrain.xenonpcs.compat.npc.NpcLedgeApproach.apply(npc, victim, 1.2);

@@ -507,6 +507,9 @@ public final class NpcKiAttackDispatcher {
         if (projectile == null || caster == null) {
             return;
         }
+        if (projectile instanceof KiWaveEntity && target != null && target != caster) {
+            projectile.getPersistentData().putUUID("XenoNpcWaveAimTarget", target.getUUID());
+        }
         double moving = projectile.getDeltaMovement().length();
         float speed = moving > 1.0E-4 ? (float) moving : projectile.getKiSpeed();
         if (speed <= 0f) {
@@ -529,6 +532,18 @@ public final class NpcKiAttackDispatcher {
         }
         if (projectile instanceof KiFixedAim aim) {
             aim.xenopixels$setFixedAim(yaw, pitch);
+        }
+    }
+
+    /** DMZ rewrites a charging wave's orientation from its owner every tick, including launch. */
+    public static void refreshWaveAim(KiWaveEntity wave, LivingEntity owner) {
+        if (wave.level().isClientSide() || !(wave.level() instanceof ServerLevel level)
+                || owner instanceof net.minecraft.world.entity.player.Player
+                || !wave.getPersistentData().hasUUID("XenoNpcWaveAimTarget")) return;
+        net.minecraft.world.entity.Entity found = level.getEntity(
+                wave.getPersistentData().getUUID("XenoNpcWaveAimTarget"));
+        if (found instanceof LivingEntity target && target.isAlive()) {
+            aimAlongLook(wave, owner, target);
         }
     }
 

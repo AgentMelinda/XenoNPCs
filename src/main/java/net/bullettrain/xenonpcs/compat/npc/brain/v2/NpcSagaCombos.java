@@ -77,13 +77,12 @@ final class NpcSagaCombos {
             COMBOS.remove(npc.getUUID());
             return;
         }
-        // Same rule as the v1 combo: the pressure string stays alive out to MELEE + 2 so a target
-        // backing off for a moment does not cancel it, but a jab only reaches MELEE. Animating in
-        // the gap between the two is a punch thrown at nothing, every PRESSURE_GAP ticks, for the
-        // whole approach. Reschedule instead, so the string resumes on contact.
+        // Only animate reachable strikes. If the target escapes, end the pressure string
+        // so steer() and the next decision can chase rather than hold the NPC in place.
         if (!net.bullettrain.xenonpcs.compat.npc.NpcCombatRanges.withinMelee(npc, victim)) {
-            COMBOS.put(npc.getUUID(), new Combo(combo.victim(), combo.role(), combo.remaining(),
-                    serverTick + PRESSURE_GAP, combo.step()));
+            // A paused combo still owns movement in steer(). Release it so an escaped
+            // target is approached instead of holding the NPC in place indefinitely.
+            COMBOS.remove(npc.getUUID());
             return;
         }
         play(npc, combo.step() % 2 == 0

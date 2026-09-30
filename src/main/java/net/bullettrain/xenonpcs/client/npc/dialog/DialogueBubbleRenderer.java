@@ -222,7 +222,7 @@ public final class DialogueBubbleRenderer {
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) {
             return;
         }
         DialogueBubbleSession session = DialogueBubbleSession.active();
