@@ -577,6 +577,9 @@ public class XenoNpcEntity extends PathfinderMob
             getNavigation().stop();
         }
         super.aiStep();
+        if (net.bullettrain.xenonpcs.config.XenoServerConfig.npcSwingTimeInAiStep) {
+            updateSwingTime();
+        }
         if (!level().isClientSide()) {
             if (net.bullettrain.xenonpcs.compat.npc.NpcFlightOwnership.brainDirectsFlight(getUUID())) {
                 setNoGravity(true);

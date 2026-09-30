@@ -8,7 +8,7 @@ on:
       tag:
         description: Existing release tag to build
         required: true
-        default: v0.0.3
+        default: v0.0.4
         type: string
 
 permissions:
@@ -35,7 +35,7 @@ jobs:
           - minecraft: '1.20.1'
             java: '17'
             # Pin the Forge export so re-running a release never builds a moving branch.
-            ref: 'da42c3c34f6088b7c727edbc26ac2c3f5a380149'
+            ref: 'eb705f363e090d4d0853e2bc8ef8eade5780bb87'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -119,7 +119,13 @@ jobs:
           DragonMineZ 2.1.3 and GeckoLib are required. Do not install XenoNPCs alongside XenoPixels.
 
           Changes in this release:
-          - 1.20.1: dialogue answer bubbles hide the clouds and nameplate behind them, like the speaker bubble (each bubble now sets its draw state itself; drawing the text had been resetting it).
+          - 1.20.1: NPC punches animate again. The arm swing started but never advanced, because 1.20.1 mobs of this kind do not tick their swing timer; native NPCs now do (setting npcSwingTimeInAiStep, on for 1.20.1).
+          - 1.20.1: the bundled MixinExtras accepts 0.4.1 or newer, so packs with mods requiring MixinExtras 0.5+ no longer fail to load.
+
+          Note: DragonMineZ cancels a hit outright when the target's defense is far above the attacker's damage (combat.json cancelDamageEventIfMitigationTooHigh / cancelDamageMitigationThreshold). An NPC whose STR is low against your DEF will swing without hurting you; this is DragonMineZ's rule, applied to players the same way.
+
+          Changes in 0.0.3, still included:
+          - 1.20.1: dialogue answer bubbles hide the clouds and nameplate behind them, like the speaker bubble.
 
           Changes in 0.0.2, still included:
           - NPC melee damage lands on players (both versions); 1.20.1 NPC DragonMineZ stats are stored on the NPC, so battle power and damage are no longer zero.

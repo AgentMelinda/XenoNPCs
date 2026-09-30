@@ -123,6 +123,14 @@ public final class XenoServerConfig {
     public static boolean npcBubblesInEntityPass = false;
 
     /**
+     * Native Xeno NPCs advance their own arm-swing timer in {@code aiStep}, as vanilla
+     * {@code Monster} does. On 1.20.1 {@code PathfinderMob} never calls {@code updateSwingTime()},
+     * so a swing started (swinging=true) but swingTime stayed -1 and the arm never moved (measured
+     * 2026-10-01 on the client; owner: "he may swing but no animztion"). Off keeps the old tick.
+     */
+    public static boolean npcSwingTimeInAiStep = false;
+
+    /**
      * Lets NPC-run commands work on a server that has command blocks switched off.
      *
      * <p>My NPCs and CustomNPCs both refuse to run any NPC command at all when
@@ -1347,6 +1355,7 @@ public final class XenoServerConfig {
         d.npcSayEnabled = npcSayEnabled;
         d.npcGuiFollowsGuiScale = npcGuiFollowsGuiScale;
         d.npcBubblesInEntityPass = npcBubblesInEntityPass;
+        d.npcSwingTimeInAiStep = npcSwingTimeInAiStep;
         d.npcCommandsIgnoreCommandBlockSetting = npcCommandsIgnoreCommandBlockSetting;
         d.combatControllerMode = normalizedCombatControllerMode();
         d.bt3CombatEnabled = bt3CombatEnabled;
@@ -1713,6 +1722,7 @@ public final class XenoServerConfig {
         npcSayEnabled = d.npcSayEnabled;
         npcGuiFollowsGuiScale = d.npcGuiFollowsGuiScale;
         npcBubblesInEntityPass = d.npcBubblesInEntityPass;
+        npcSwingTimeInAiStep = d.npcSwingTimeInAiStep;
         npcCommandsIgnoreCommandBlockSetting = d.npcCommandsIgnoreCommandBlockSetting;
         combatControllerMode = normalizeCombatControllerMode(d.combatControllerMode);
         bt3CombatEnabled = d.bt3CombatEnabled;
@@ -3113,6 +3123,7 @@ public final class XenoServerConfig {
         public boolean npcSayEnabled = true;
         public boolean npcGuiFollowsGuiScale = true;
         public boolean npcBubblesInEntityPass = false;
+        public boolean npcSwingTimeInAiStep = false;
         public boolean npcCommandsIgnoreCommandBlockSetting = false;
         public String combatControllerMode = "legacy";
         public boolean bt3CombatEnabled = true;
