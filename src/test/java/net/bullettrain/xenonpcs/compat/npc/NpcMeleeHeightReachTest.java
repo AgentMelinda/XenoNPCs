@@ -58,12 +58,22 @@ class NpcMeleeHeightReachTest {
     }
 
     @Test
+    void aTargetStandingWellAboveItsHeadIsNotPunched() {
+        // Same x/z, a block of air between the NPC's head and the target's feet: the swing is level
+        // with the NPC's head, so allowing it punched the air (2026-09-30).
+        assertFalse(NpcCombatRanges.reachable(true, 0.0, 3.0, 1.2, 1.2,
+                new XenoServerConfig.Data().npcMeleeHeightReach));
+        assertTrue(NpcCombatRanges.reachable(true, 0.0, 2.0, 0.3, 1.2,
+                new XenoServerConfig.Data().npcMeleeHeightReach), "a jump still gets hit");
+    }
+
+    @Test
     void theHeightRuleIsOnByDefaultAndTheOldRuleStaysSwitchable() {
         XenoServerConfig.Data defaults = new XenoServerConfig.Data();
         assertTrue(defaults.npcMeleeHeightRule);
-        assertEquals(1.5, defaults.npcMeleeHeightReach, 1.0e-9);
+        assertEquals(0.5, defaults.npcMeleeHeightReach, 1.0e-9);
         assertEquals(0.0, XenoServerConfig.clampNpcMeleeHeightReach(-3.0), 1.0e-9);
         assertEquals(8.0, XenoServerConfig.clampNpcMeleeHeightReach(99.0), 1.0e-9);
-        assertEquals(1.5, XenoServerConfig.clampNpcMeleeHeightReach(Double.NaN), 1.0e-9);
+        assertEquals(0.5, XenoServerConfig.clampNpcMeleeHeightReach(Double.NaN), 1.0e-9);
     }
 }

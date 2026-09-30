@@ -548,8 +548,12 @@ public final class XenoServerConfig {
      * restores the old straight foot-to-foot distance.
      */
     public static boolean npcMeleeHeightRule = true;
-    /** Blocks of air allowed between an NPC's and its target's hitboxes for a melee hit. */
-    public static double npcMeleeHeightReach = 1.5;
+    /**
+     * Blocks of air allowed between an NPC's and its target's hitboxes for a melee hit. 0.5 (was
+     * 1.5, 2026-09-30 "attacks the air if we are same x and z but different y"): a jumping target
+     * or one on its head still counts, one standing well above its head does not.
+     */
+    public static double npcMeleeHeightReach = 0.5;
     public static final double NPC_ATTACK_START_RADIUS_MIN = 0.5;
     public static final double NPC_ATTACK_START_RADIUS_MAX = 16.0;
     /** Whether a player (only) can destroy a standing Zanzoken ring image. */
@@ -2336,7 +2340,7 @@ public final class XenoServerConfig {
 
     public static double clampNpcMeleeHeightReach(double blocks) {
         if (!Double.isFinite(blocks)) {
-            return 1.5;
+            return 0.5;
         }
         return Math.max(0.0, Math.min(8.0, blocks));
     }
@@ -3218,7 +3222,7 @@ public final class XenoServerConfig {
         public double brainDeflectMinDistance = 7.0;
         public double npcAttackStartRadius = 1.0;
         public boolean npcMeleeHeightRule = true;
-        public double npcMeleeHeightReach = 1.5;
+        public double npcMeleeHeightReach = 0.5;
         public float sonicSwayStaminaCost = 6.0f;
         public int sonicSwayIFramesTicks = 8;
         public int sonicSwayCooldownTicks = 18;

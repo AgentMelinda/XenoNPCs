@@ -69,6 +69,7 @@ public final class NpcCombatProfile {
     private static final String TAG_SCHEMA = "Schema";
     private static final int CURRENT_SCHEMA = 20;
     private static final String TAG_NATIVE_MELEE_DEFAULTS_APPLIED = "NativeMeleeDefaultsApplied";
+    private static final String TAG_NATIVE_FALL_DEFAULT_APPLIED = "NativeFallDefaultApplied";
     private static final java.util.List<String> XENO_DEFAULT_MELEE_ANIMATIONS = java.util.List.of(
             "combat.xeno_dmz_punch_right_v4",
             "combat.xeno_dmz_punch_left_v4",
@@ -666,6 +667,8 @@ public final class NpcCombatProfile {
     public String meleeAnimation = "";
     /** Prevents native-XenoNPC defaults from returning after an author intentionally clears them. */
     private boolean nativeMeleeAnimationDefaultsApplied;
+    /** Set once No Fall Damage has been defaulted on, so an author who turns it off keeps that. */
+    private boolean nativeFallDefaultApplied;
     /**
      * Custom sound ids, the MyNPCs Advanced > Sounds set. Blank means "use the default".
      *
@@ -1445,6 +1448,7 @@ public final class NpcCombatProfile {
      */
     static void applyNativeMeleeAnimationDefaults(boolean nativeXenoNpc,
                                                    NpcCombatProfile profile) {
+        applyNativeFallDefault(nativeXenoNpc, profile);
         if (!nativeXenoNpc || profile == null || profile.nativeMeleeAnimationDefaultsApplied) {
             return;
         }
@@ -1454,6 +1458,19 @@ public final class NpcCombatProfile {
             }
         }
         profile.nativeMeleeAnimationDefaultsApplied = true;
+    }
+
+    /**
+     * 2026-09-30 owner: "fall damage off by default" / "npc dying on fall damage". Native Xeno
+     * NPCs saved before that default get No Fall Damage turned on once; the marker keeps an author's
+     * later choice to turn it back off.
+     */
+    static void applyNativeFallDefault(boolean nativeXenoNpc, NpcCombatProfile profile) {
+        if (!nativeXenoNpc || profile == null || profile.nativeFallDefaultApplied) {
+            return;
+        }
+        profile.noFallDamage = true;
+        profile.nativeFallDefaultApplied = true;
     }
 
     private static boolean hasConfiguredMeleeAnimation(NpcCombatProfile profile) {
@@ -1701,6 +1718,7 @@ public final class NpcCombatProfile {
         profile.readMeleeAnimSlots(tag);
         profile.nativeMeleeAnimationDefaultsApplied =
                 tag.getBoolean(TAG_NATIVE_MELEE_DEFAULTS_APPLIED);
+        profile.nativeFallDefaultApplied = tag.getBoolean(TAG_NATIVE_FALL_DEFAULT_APPLIED);
         if (tag.contains(TAG_DIALOGUE, Tag.TAG_COMPOUND)) {
             profile.dialogueTag = tag.getCompound(TAG_DIALOGUE).copy();
         }
@@ -1936,6 +1954,7 @@ public final class NpcCombatProfile {
         tag.putString(TAG_MELEE_ANIMATION, meleeAnimation == null ? "" : meleeAnimation.trim());
         writeMeleeAnimSlots(tag);
         tag.putBoolean(TAG_NATIVE_MELEE_DEFAULTS_APPLIED, nativeMeleeAnimationDefaultsApplied);
+        tag.putBoolean(TAG_NATIVE_FALL_DEFAULT_APPLIED, nativeFallDefaultApplied);
         tag.put(TAG_DIALOGUE, dialogueTag == null ? XenoDialogueNbt.empty() : dialogueTag.copy());
         tag.put(TAG_STATE_CLIPS, writeStateClips());
         writeAdvancedTab(tag);

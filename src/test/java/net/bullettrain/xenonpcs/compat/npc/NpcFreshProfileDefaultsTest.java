@@ -67,6 +67,20 @@ class NpcFreshProfileDefaultsTest {
     }
 
     @Test
+    void savedNativeNpcsGetNoFallDamageOnceAndKeepAnAuthorsChoice() {
+        NpcCombatProfile old = NpcCombatProfile.fromTag(new CompoundTag());
+        NpcCombatProfile.applyNativeFallDefault(true, old);
+        assertTrue(old.noFallDamage, "an NPC saved before the default stops dying from falls");
+        old.noFallDamage = false;
+        NpcCombatProfile reread = NpcCombatProfile.fromTag(old.toTag());
+        NpcCombatProfile.applyNativeFallDefault(true, reread);
+        assertFalse(reread.noFallDamage, "an author who turned it back off keeps that");
+        NpcCombatProfile foreign = NpcCombatProfile.fromTag(new CompoundTag());
+        NpcCombatProfile.applyNativeFallDefault(false, foreign);
+        assertFalse(foreign.noFallDamage, "CustomNPCs / My NPCs NPCs are not touched");
+    }
+
+    @Test
     void aSavedProfileKeepsWhatItSays() {
         // The release's default brain: V1 in XenoPixels, V9 in XenoNPCs (NpcBrainPolicy).
         assertEquals(NpcBrainPolicy.resolve(NpcCombatBrainVersion.V1),
