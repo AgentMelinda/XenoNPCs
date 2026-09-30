@@ -15,6 +15,12 @@ import java.util.function.Consumer;
 
 /** Registry-backed sound selector for the native NPC editor. */
 public final class XenoNpcSoundPickerScreen extends ScaledScreen {
+
+    /** Drawn at the vanilla GUI Scale; see {@link NpcGuiScale}. */
+    @Override
+    protected float computeDynamicScale(float available) {
+        return NpcGuiScale.dynamicScale(super.computeDynamicScale(available));
+    }
     private static final String FRAME = "xeno_editor_panel";
     private static final String SOUND_BUTTON = "pill_button_lg";
     private static final String PRIMARY = "pill_button";

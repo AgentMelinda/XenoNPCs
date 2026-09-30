@@ -1114,6 +1114,8 @@ public class XenoNpcEntity extends PathfinderMob
     public void setTarget(@javax.annotation.Nullable net.minecraft.world.entity.LivingEntity target) {
         if (target != null && !net.bullettrain.xenonpcs.compat.npc.NpcTargetKeeper
                 .isCombatTarget(target)) target = null;
+        // Walking home on the leash: disengaged until it arrives (XenoNpcBehaviour.refusesNewTarget).
+        if (XenoNpcBehaviour.refusesNewTarget(this, target)) target = null;
         net.minecraft.world.entity.LivingEntity previous = getTarget();
         if (!level().isClientSide() && target != null && previous != target
                 && !dispatchingTargetScript) {

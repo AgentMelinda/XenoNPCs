@@ -21,6 +21,17 @@ public final class ColorPickerModel {
         setRgb(rgb);
     }
 
+    /**
+     * The state a picker opens in: the colour's hue and saturation at full brightness, so the value
+     * bar starts at its top. 2026-09-30 owner: "set color picker steartgn of color to be the
+     * brightest". Cancel still restores the original colour.
+     */
+    public static ColorPickerModel opening(int rgb) {
+        ColorPickerModel model = new ColorPickerModel(rgb);
+        model.value = 1.0f;
+        return model;
+    }
+
     public float hue() {
         return hue;
     }

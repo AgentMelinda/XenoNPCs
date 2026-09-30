@@ -8,7 +8,7 @@ on:
       tag:
         description: Existing release tag to build
         required: true
-        default: v0.0.1
+        default: v0.0.2
         type: string
 
 permissions:
@@ -35,7 +35,7 @@ jobs:
           - minecraft: '1.20.1'
             java: '17'
             # Pin the Forge export so re-running a release never builds a moving branch.
-            ref: 'b77ef2b5a2695c53e26d8773a8399e8e7f215e06'
+            ref: '9e10c2abd6f08795eaa6c1d671373439ff55ab31'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -118,7 +118,17 @@ jobs:
 
           DragonMineZ 2.1.3 and GeckoLib are required. Do not install XenoNPCs alongside XenoPixels.
 
-          Includes the NPC approach, height-reach migration, and arm-swing fixes. Both builds run their unit tests before publishing. Forge's 34 runtime-only tests are listed in EXPORT_REPORT.md and remain excluded from plain JUnit. Server startup has been observed; ledge/respawn gameplay, client rendering and optional-mod compatibility still need in-game validation. MyNPCs compatibility is omitted from the 1.20.1 export.
+          Changes in this release:
+          - NPC melee damage now lands on players: the real hit is set before DragonMineZ records the raw damage (both versions).
+          - 1.20.1: NPC DragonMineZ stats are stored on the NPC, so battle power and damage are no longer zero.
+          - New NPCs start with DragonMineZ's base stats for their race and class; NPCs still at all-zero stats are repaired once.
+          - NPCs walking home after a chase disengage until they arrive, instead of turning back and forth.
+          - A "kill target hunts player" quest never turns its own quest giver on the player.
+          - 1.20.1: speech and dialogue bubbles draw above NPCs (as DragonMineZ's ki-sense meter does) and hide clouds behind them.
+          - The NPC arm swings on hits when no combat clip can play; the greeting wave clips load on both versions.
+          - NPC editor screens follow the GUI Scale; the colour picker opens at full brightness; the XenoSkill points quest reward is removed.
+
+          Both builds run their unit tests before publishing. Forge's 34 runtime-only tests are listed in EXPORT_REPORT.md and remain excluded from plain JUnit. Answer bubbles may still show clouds through them on 1.20.1 (under investigation). MyNPCs compatibility is omitted from the 1.20.1 export.
           NOTES
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "${jars[@]}" --clobber

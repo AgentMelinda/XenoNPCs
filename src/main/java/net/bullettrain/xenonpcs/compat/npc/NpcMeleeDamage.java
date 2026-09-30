@@ -257,7 +257,13 @@ public final class NpcMeleeDamage {
         return NpcGeckoAnim.canAnimate(attacker) && NpcGeckoAnim.play(attacker, name);
     }
 
-    @SubscribeEvent
+    /**
+     * HIGHEST, so the real damage is in place before DragonMineZ's {@code CombatEvent.onLivingHurt}
+     * (HIGH) records the hit as the player's {@code dmz_raw_damage}; its LOWEST
+     * {@code overrideVanillaArmorReduction} rebuilds the damage from that raw value less defense, so
+     * an amount set any later is thrown away. 2026-09-30 owner: "he still cant hit me".
+     */
+    @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.HIGHEST)
     public static void onNpcMelee(LivingDamageEvent.Pre event) {
         if (event.getSource().getEntity() instanceof LivingEntity attacker
                 && event.getSource().getDirectEntity() == attacker

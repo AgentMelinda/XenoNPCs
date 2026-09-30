@@ -142,28 +142,11 @@ public final class SpeechBubbleRenderer {
                 if (alpha <= MIN_VISIBLE_ALPHA) {
                     continue;
                 }
-
-                Vec3 entityPos = entity.getPosition(partialTick);
-                Vec3 forward = entity.getLookAngle().multiply(1.0, 0.0, 1.0).normalize();
-                if (forward.lengthSqr() < 1.0e-6) forward = new Vec3(0.0, 0.0, 1.0);
-                Vec3 right = new Vec3(forward.z, 0.0, -forward.x);
-                int side = SpeechBubbleMotion.side(entity.getUUID().hashCode());
-                Vec3 bubblePos = entityPos.add(forward.scale(FORWARD_OFFSET))
-                        .add(right.scale(side * SIDE_OFFSET));
-
-                poseStack.pushPose();
-                poseStack.translate(bubblePos.x - cameraPos.x,
-                        bubblePos.y + bubble.verticalOffset(gameTime + partialTick) - cameraPos.y,
-                        bubblePos.z - cameraPos.z);
-                poseStack.translate(0.0, heightFor(entity), 0.0);
-                poseStack.mulPose(mc.getEntityRenderDispatcher().cameraOrientation());
-                // Negative Y because GUI art is top-down and world space is not.
-                poseStack.scale(BUBBLE_SCALE, -BUBBLE_SCALE, BUBBLE_SCALE);
-
-                drawBubble(poseStack, bubble, alpha, buffers, paletteOf(entity, bubble),
-                        shapeOf(entity, bubble));
-
-                poseStack.popPose();
+                if (inEntityPass(entity)) {
+                    // Drawn by XenoNpcRenderer instead; see renderInEntityPass.
+                    continue;
+                }
+                drawOne(mc, entity, bubble, alpha, poseStack, cameraPos, partialTick, gameTime, buffers);
             }
         } finally {
             // Restored in a finally so one bad entity cannot leave the whole world rendering with
@@ -182,6 +165,76 @@ public final class SpeechBubbleRenderer {
      * theme, which is what every bubble used before this was configurable.
      */
     /** This NPC's own bubble height, or the long-standing default when it has none. */
+    /** Whether {@link #renderInEntityPass} owns this entity's bubble instead of the level pass. */
+    static boolean inEntityPass(Entity entity) {
+        return net.bullettrain.xenonpcs.config.XenoServerConfig.npcBubblesInEntityPass
+                && entity instanceof net.bullettrain.xenonpcs.npc.XenoNpcEntity;
+    }
+
+    /**
+     * Draws a native NPC's speech bubble from its own renderer, the way DragonMineZ's ki-sense BP
+     * meter draws above a player: in the entity render pass, from the entity's render pose, with
+     * the depth test off. {@code entityPose} is the pose the renderer was handed, whose origin is
+     * the entity's interpolated position.
+     */
+    public static void renderInEntityPass(Entity entity, PoseStack entityPose, float partialTick) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || !inEntityPass(entity) || SpeechBubbleQueue.isEmpty()) {
+            return;
+        }
+        SpeechBubbleQueue.Bubble bubble = SpeechBubbleQueue.activeSnapshot().get(entity.getId());
+        if (bubble == null) {
+            return;
+        }
+        long gameTime = mc.level.getGameTime();
+        float alpha = bubble.alpha(gameTime);
+        if (alpha <= MIN_VISIBLE_ALPHA) {
+            return;
+        }
+        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        BillboardDraw.beginOnTop();
+        try {
+            drawOne(mc, entity, bubble, alpha, entityPose, entity.getPosition(partialTick), partialTick,
+                    gameTime, buffers);
+        } finally {
+            buffers.endBatch();
+            BillboardDraw.endOnTop();
+            RenderSystem.disableBlend();
+        }
+    }
+
+    /**
+     * One bubble. {@code origin} is the world point {@code poseStack} currently sits at: the camera
+     * for the level pass, the entity for the entity pass.
+     */
+    private static void drawOne(Minecraft mc, Entity entity, SpeechBubbleQueue.Bubble bubble, float alpha,
+                                PoseStack poseStack, Vec3 origin, float partialTick, long gameTime,
+                                MultiBufferSource.BufferSource buffers) {
+        Vec3 entityPos = entity.getPosition(partialTick);
+        Vec3 forward = entity.getLookAngle().multiply(1.0, 0.0, 1.0).normalize();
+        if (forward.lengthSqr() < 1.0e-6) forward = new Vec3(0.0, 0.0, 1.0);
+        Vec3 right = new Vec3(forward.z, 0.0, -forward.x);
+        int side = SpeechBubbleMotion.side(entity.getUUID().hashCode());
+        Vec3 bubblePos = entityPos.add(forward.scale(FORWARD_OFFSET))
+                .add(right.scale(side * SIDE_OFFSET));
+
+        poseStack.pushPose();
+        poseStack.translate(bubblePos.x - origin.x,
+                bubblePos.y + bubble.verticalOffset(gameTime + partialTick) - origin.y,
+                bubblePos.z - origin.z);
+        poseStack.translate(0.0, heightFor(entity), 0.0);
+        poseStack.mulPose(mc.getEntityRenderDispatcher().cameraOrientation());
+        // Negative Y because GUI art is top-down and world space is not.
+        poseStack.scale(BUBBLE_SCALE, -BUBBLE_SCALE, BUBBLE_SCALE);
+
+        drawBubble(poseStack, bubble, alpha, buffers, paletteOf(entity, bubble),
+                shapeOf(entity, bubble));
+
+        poseStack.popPose();
+    }
+
     private static float heightFor(Entity entity) {
         if (!(entity instanceof net.minecraft.world.entity.LivingEntity living)) {
             return HEIGHT_ABOVE_ENTITY;

@@ -90,6 +90,12 @@ import java.util.function.IntConsumer;
  * because {@code XenoNpcData.revision()} bumps on name/faction/owner only.
  */
 public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpcProfiles.Refreshable {
+
+    /** Drawn at the vanilla GUI Scale; see {@link NpcGuiScale}. */
+    @Override
+    protected float computeDynamicScale(float available) {
+        return NpcGuiScale.dynamicScale(super.computeDynamicScale(available));
+    }
     /** Inline colour picker shared by every colour row on this screen; opens over it. */
     private final net.bullettrain.xenonpcs.client.ui.atlas.InlineColorPicker colorPicker = new net.bullettrain.xenonpcs.client.ui.atlas.InlineColorPicker();
     /**
@@ -231,7 +237,21 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
     private int questObjective;
     private int questRepeat;
     private boolean questSaveAwaiting;
-    private boolean questSkillPointsEnabled = true;
+    private boolean questSkillPointsEnabled = xenoSkillPointsOffered();
+
+    /**
+     * XenoSkill points are XenoPixels progression. XenoNPCs is exported from this source with mod id
+     * "xenonpcs" and has no use for them, so there the quest reward is neither offered nor paid.
+     * 2026-09-30 owner: "remove give xenoskillpoints".
+     */
+    static boolean xenoSkillPointsOffered(String modId) {
+        return !"xenonpcs".equals(modId);
+    }
+
+    private static boolean xenoSkillPointsOffered() {
+        return xenoSkillPointsOffered(net.bullettrain.xenonpcs.XenoNpcsMod.MOD_ID);
+    }
+
     /** Points the quest pays when the toggle is on: the loaded quest's own count, else 2. */
     private int questSkillPoints = 2;
     private boolean questRewardActionsEnabled;
@@ -3829,7 +3849,7 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
             JsonObject reward = root.has("reward") && root.get("reward").isJsonObject()
                     ? root.getAsJsonObject("reward") : new JsonObject();
             int declaredPoints = integer(reward, "skill_points", 2);
-            questSkillPointsEnabled = declaredPoints > 0;
+            questSkillPointsEnabled = declaredPoints > 0 && xenoSkillPointsOffered();
             questSkillPoints = declaredPoints > 0 ? declaredPoints : 2;
             List<String> commands = new ArrayList<>();
             if (reward.has("commands") && reward.get("commands").isJsonArray()) {
@@ -4149,9 +4169,11 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
             questRepeat = Math.floorMod(index, repeatRules.size());
             rebuild();
         }));
-        rows.add(new EditorRow.Toggle("Give XenoSkill points (" + questSkillPoints + ")",
-                questSkillPointsEnabled,
-                value -> questSkillPointsEnabled = value));
+        if (xenoSkillPointsOffered()) {
+            rows.add(new EditorRow.Toggle("Give XenoSkill points (" + questSkillPoints + ")",
+                    questSkillPointsEnabled,
+                    value -> questSkillPointsEnabled = value));
+        }
         rows.add(new EditorRow.Toggle("Enable reward actions", questRewardActionsEnabled,
                 value -> questRewardActionsEnabled = value));
         rows.add(new EditorRow.Toggle("Random reward (pay one item)", questRandomReward,
@@ -4211,7 +4233,7 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
         questComplete = "";
         questObjective = 0;
         questRepeat = 0;
-        questSkillPointsEnabled = true;
+        questSkillPointsEnabled = xenoSkillPointsOffered();
         questSkillPoints = 2;
         questRewardActionsEnabled = false;
         questRandomReward = false;
@@ -4270,7 +4292,8 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
         com.google.gson.JsonArray commands = new com.google.gson.JsonArray();
         if (questRewardActionsEnabled && !questCommand.isBlank()) commands.add(questCommand);
         // An edited quest keeps the count it declared; only the toggle decides zero.
-        reward.addProperty("skill_points", questSkillPointsEnabled ? questSkillPoints : 0);
+        reward.addProperty("skill_points",
+                questSkillPointsEnabled && xenoSkillPointsOffered() ? questSkillPoints : 0);
         reward.add("commands", commands);
         root.add("reward", reward);
         CompoundTag tag = new CompoundTag();

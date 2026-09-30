@@ -32,6 +32,24 @@ public final class BillboardDraw {
     private BillboardDraw() {
     }
 
+    /**
+     * Bubble art always drawn over the world, but with its depth written. With the depth test simply
+     * off nothing is written, so anything drawn later in the frame - clouds, weather - painted over a
+     * bubble drawn in the entity pass (2026-09-30 owner: "clouds can be seend inside the bubels").
+     * Text stays {@code SEE_THROUGH}, so it is unaffected by the bubble's own depth.
+     */
+    public static void beginOnTop() {
+        com.mojang.blaze3d.systems.RenderSystem.enableDepthTest();
+        com.mojang.blaze3d.systems.RenderSystem.depthFunc(org.lwjgl.opengl.GL11.GL_ALWAYS);
+        com.mojang.blaze3d.systems.RenderSystem.depthMask(true);
+    }
+
+    /** Back to vanilla's depth function after {@link #beginOnTop}. */
+    public static void endOnTop() {
+        com.mojang.blaze3d.systems.RenderSystem.depthFunc(org.lwjgl.opengl.GL11.GL_LEQUAL);
+        com.mojang.blaze3d.systems.RenderSystem.enableDepthTest();
+    }
+
     /** One textured quad in the billboard's local space. */
     public static void texturedQuad(Matrix4f matrix, float x0, float y0, float x1, float y1,
                                     float z, float minU, float minV, float maxU, float maxV) {

@@ -70,6 +70,7 @@ public final class NpcCombatProfile {
     private static final int CURRENT_SCHEMA = 20;
     private static final String TAG_NATIVE_MELEE_DEFAULTS_APPLIED = "NativeMeleeDefaultsApplied";
     private static final String TAG_NATIVE_FALL_DEFAULT_APPLIED = "NativeFallDefaultApplied";
+    private static final String TAG_DMZ_BASE_STATS_APPLIED = "DmzBaseStatsApplied";
     private static final java.util.List<String> XENO_DEFAULT_MELEE_ANIMATIONS = java.util.List.of(
             "combat.xeno_dmz_punch_right_v4",
             "combat.xeno_dmz_punch_left_v4",
@@ -669,6 +670,7 @@ public final class NpcCombatProfile {
     private boolean nativeMeleeAnimationDefaultsApplied;
     /** Set once No Fall Damage has been defaulted on, so an author who turns it off keeps that. */
     private boolean nativeFallDefaultApplied;
+    private boolean dmzBaseStatsApplied;
     /**
      * Custom sound ids, the MyNPCs Advanced > Sounds set. Blank means "use the default".
      *
@@ -1449,6 +1451,7 @@ public final class NpcCombatProfile {
     static void applyNativeMeleeAnimationDefaults(boolean nativeXenoNpc,
                                                    NpcCombatProfile profile) {
         applyNativeFallDefault(nativeXenoNpc, profile);
+        applyDmzBaseStats(nativeXenoNpc, profile, dmzBaseStats(profile));
         if (!nativeXenoNpc || profile == null || profile.nativeMeleeAnimationDefaultsApplied) {
             return;
         }
@@ -1465,6 +1468,59 @@ public final class NpcCombatProfile {
      * NPCs saved before that default get No Fall Damage turned on once; the marker keeps an author's
      * later choice to turn it back off.
      */
+    /**
+     * 2026-09-30 owner: "he doens't damage me too on hits", "they dont have battlepower". A fresh
+     * profile never set its six stats, so the NPC's DragonMineZ blob read STR/VIT/RES/SKP/PWR/ENE 0:
+     * zero battle power, and melee from STR 0 with no RES stamina to spend. Once per native NPC, a
+     * profile still at all zeros takes the base stats DMZ gives a new character of its race and class.
+     * Authored stats are never touched, and a later all-zero edit is the author's choice.
+     *
+     * @param base STR, SKP, RES, VIT, PWR, ENE from DMZ's race config; null when it is unavailable,
+     *             which leaves the profile to be tried again on a later load
+     * @return whether the stats were set
+     */
+    static boolean applyDmzBaseStats(boolean nativeXenoNpc, NpcCombatProfile profile, int[] base) {
+        if (!nativeXenoNpc || profile == null || profile.dmzBaseStatsApplied) return false;
+        boolean allZero = profile.strength == 0 && profile.strikePower == 0 && profile.resistance == 0
+                && profile.vitality == 0 && profile.kiPower == 0 && profile.energy == 0;
+        if (!allZero) {
+            profile.dmzBaseStatsApplied = true;
+            return false;
+        }
+        if (base == null || base.length != 6) return false;
+        profile.strength = Math.max(0, base[0]);
+        profile.strikePower = Math.max(0, base[1]);
+        profile.resistance = Math.max(0, base[2]);
+        profile.vitality = Math.max(0, base[3]);
+        profile.kiPower = Math.max(0, base[4]);
+        profile.energy = Math.max(0, base[5]);
+        profile.dmzBaseStatsApplied = true;
+        return true;
+    }
+
+    /** DMZ's base stats for the profile's race and class, or null when its config is not loaded. */
+    static int[] dmzBaseStats(NpcCombatProfile profile) {
+        if (profile == null) return null;
+        try {
+            String race = profile.raceId == null || profile.raceId.isBlank() ? "human" : profile.raceId;
+            var raceConfig = com.dragonminez.common.config.ConfigManager.getRaceStats(race);
+            if (raceConfig == null) return null;
+            var classStats = raceConfig.getClassStats(profile.characterClass());
+            var base = classStats == null ? null : classStats.getBaseStats();
+            if (base == null) return null;
+            Integer[] values = {base.getStrength(), base.getStrikePower(), base.getResistance(),
+                    base.getVitality(), base.getKiPower(), base.getEnergy()};
+            int[] out = new int[6];
+            for (int i = 0; i < 6; i++) {
+                if (values[i] == null) return null;
+                out[i] = values[i];
+            }
+            return out;
+        } catch (Throwable notLoaded) {
+            return null;
+        }
+    }
+
     static void applyNativeFallDefault(boolean nativeXenoNpc, NpcCombatProfile profile) {
         if (!nativeXenoNpc || profile == null || profile.nativeFallDefaultApplied) {
             return;
@@ -1719,6 +1775,7 @@ public final class NpcCombatProfile {
         profile.nativeMeleeAnimationDefaultsApplied =
                 tag.getBoolean(TAG_NATIVE_MELEE_DEFAULTS_APPLIED);
         profile.nativeFallDefaultApplied = tag.getBoolean(TAG_NATIVE_FALL_DEFAULT_APPLIED);
+        profile.dmzBaseStatsApplied = tag.getBoolean(TAG_DMZ_BASE_STATS_APPLIED);
         if (tag.contains(TAG_DIALOGUE, Tag.TAG_COMPOUND)) {
             profile.dialogueTag = tag.getCompound(TAG_DIALOGUE).copy();
         }
@@ -1955,6 +2012,7 @@ public final class NpcCombatProfile {
         writeMeleeAnimSlots(tag);
         tag.putBoolean(TAG_NATIVE_MELEE_DEFAULTS_APPLIED, nativeMeleeAnimationDefaultsApplied);
         tag.putBoolean(TAG_NATIVE_FALL_DEFAULT_APPLIED, nativeFallDefaultApplied);
+        tag.putBoolean(TAG_DMZ_BASE_STATS_APPLIED, dmzBaseStatsApplied);
         tag.put(TAG_DIALOGUE, dialogueTag == null ? XenoDialogueNbt.empty() : dialogueTag.copy());
         tag.put(TAG_STATE_CLIPS, writeStateClips());
         writeAdvancedTab(tag);

@@ -94,6 +94,7 @@ public final class QuestHunts {
             return;
         }
         Set<String> names = new HashSet<>();
+        Set<UUID> givers = new HashSet<>();
         for (String questId : Set.copyOf(quests)) {
             ActiveQuest active = data.quests().active(questId);
             ParallelQuests.QuestDef def = ParallelQuests.definition(questId);
@@ -102,6 +103,7 @@ public final class QuestHunts {
                 continue;
             }
             names.addAll(def.huntedNpcNames());
+            if (active.giverId() != null) givers.add(active.giverId());
         }
         Set<UUID> hunters = HUNTERS.computeIfAbsent(player.getUUID(), id -> ConcurrentHashMap.newKeySet());
         if (names.isEmpty()) {
@@ -113,11 +115,22 @@ public final class QuestHunts {
         ServerLevel level = player.serverLevel();
         List<LivingEntity> found = level.getEntitiesOfClass(LivingEntity.class,
                 new AABB(player.blockPosition()).inflate(RANGE),
-                entity -> entity != player && entity.isAlive() && matchesAny(entity, names));
+                entity -> entity != player && entity.isAlive()
+                        && isHunter(entity.getUUID(), matchesAny(entity, names), givers));
         for (LivingEntity hunter : found) {
             NpcTargetKeeper.provoke(hunter, player);
             hunters.add(hunter.getUUID());
         }
+    }
+
+    /**
+     * Whether an entity is turned on the claimant: it carries a kill-target name and is not the
+     * NPC that gave one of the hunting quests. NPCs commonly share a name ("Humanoid"), and the
+     * giver used to match its own kill target and attack the player it had just given the quest to
+     * (2026-09-30 owner: "Kill Target Hunts Plater makes the quest giver npc attack me").
+     */
+    static boolean isHunter(UUID entity, boolean nameMatches, Set<UUID> givers) {
+        return nameMatches && !givers.contains(entity);
     }
 
     private static boolean matchesAny(LivingEntity entity, Set<String> names) {

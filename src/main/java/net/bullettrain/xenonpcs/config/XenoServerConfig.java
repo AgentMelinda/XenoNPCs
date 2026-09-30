@@ -104,6 +104,25 @@ public final class XenoServerConfig {
     public static boolean npcSayEnabled = true;
 
     /**
+     * NPC wand screens (editor, appearance, dialogue, script, pickers, form maker) drawn at the
+     * vanilla GUI Scale. Off restores DragonMineZ's adaptive menu scale, which doubles the screen at
+     * low GUI Scale, so GUI Scale 1 and 2 looked identical and the editor always filled the window.
+     * Read from this machine's own config file, so each client chooses. 2026-09-30 owner: "gui scale
+     * dosn't effect npc want gui".
+     */
+    public static boolean npcGuiFollowsGuiScale = true;
+
+    /**
+     * Speech and dialogue bubbles of native Xeno NPCs drawn from the NPC's own renderer, in the
+     * entity render pass, the way DragonMineZ's ki-sense BP meter draws above a player (from its
+     * name-tag pose: up, camera orientation, mirrored scale, depth test off). Off keeps the separate
+     * level-stage pass for them. CustomNPCs/MyNPCs NPCs always use the level-stage pass. Read from
+     * this machine's own config file. 2026-09-30 owner: "bubles are not showing on right click an
+     * npc" (1.20.1, where the level-stage pass drew nothing).
+     */
+    public static boolean npcBubblesInEntityPass = false;
+
+    /**
      * Lets NPC-run commands work on a server that has command blocks switched off.
      *
      * <p>My NPCs and CustomNPCs both refuse to run any NPC command at all when
@@ -1326,6 +1345,8 @@ public final class XenoServerConfig {
         d.dmzFormProtectedEditOverride = dmzFormProtectedEditOverride;
         d.dmzSagaSpawnCompat = dmzSagaSpawnCompat;
         d.npcSayEnabled = npcSayEnabled;
+        d.npcGuiFollowsGuiScale = npcGuiFollowsGuiScale;
+        d.npcBubblesInEntityPass = npcBubblesInEntityPass;
         d.npcCommandsIgnoreCommandBlockSetting = npcCommandsIgnoreCommandBlockSetting;
         d.combatControllerMode = normalizedCombatControllerMode();
         d.bt3CombatEnabled = bt3CombatEnabled;
@@ -1690,6 +1711,8 @@ public final class XenoServerConfig {
         dmzFormProtectedEditOverride = d.dmzFormProtectedEditOverride;
         dmzSagaSpawnCompat = d.dmzSagaSpawnCompat;
         npcSayEnabled = d.npcSayEnabled;
+        npcGuiFollowsGuiScale = d.npcGuiFollowsGuiScale;
+        npcBubblesInEntityPass = d.npcBubblesInEntityPass;
         npcCommandsIgnoreCommandBlockSetting = d.npcCommandsIgnoreCommandBlockSetting;
         combatControllerMode = normalizeCombatControllerMode(d.combatControllerMode);
         bt3CombatEnabled = d.bt3CombatEnabled;
@@ -3088,6 +3111,8 @@ public final class XenoServerConfig {
         public boolean dmzFormProtectedEditOverride = false;
         public boolean dmzSagaSpawnCompat = true;
         public boolean npcSayEnabled = true;
+        public boolean npcGuiFollowsGuiScale = true;
+        public boolean npcBubblesInEntityPass = false;
         public boolean npcCommandsIgnoreCommandBlockSetting = false;
         public String combatControllerMode = "legacy";
         public boolean bt3CombatEnabled = true;

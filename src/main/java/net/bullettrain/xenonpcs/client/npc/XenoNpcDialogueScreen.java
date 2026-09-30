@@ -32,6 +32,12 @@ import java.util.List;
  * while role options still need the economy-role system.
  */
 public final class XenoNpcDialogueScreen extends ScaledScreen {
+
+    /** Drawn at the vanilla GUI Scale; see {@link NpcGuiScale}. */
+    @Override
+    protected float computeDynamicScale(float available) {
+        return NpcGuiScale.dynamicScale(super.computeDynamicScale(available));
+    }
     private static final String FRAME = "xeno_editor_panel";
     private static final String OPTION = "mynpcs_side_button";
     private static final String PRIMARY = "pill_button";
