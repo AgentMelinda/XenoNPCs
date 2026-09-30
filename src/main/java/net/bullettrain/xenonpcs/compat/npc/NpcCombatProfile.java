@@ -1314,8 +1314,7 @@ public final class NpcCombatProfile {
      *
      * <p>Only an NPC with no stored profile gets this. A saved profile reads what it saved - an old
      * save with no brain tag still reads V1 - so existing NPCs do not change underneath anyone.
-     * The combat brain itself stays opt-in ({@link #combatBrain}); this picks which brain runs once
-     * it is switched on.
+     * The combat brain ({@link #combatBrain}) starts switched on, running V9.
      */
     static NpcCombatProfile freshDefaults(boolean nativeXenoNpc, List<String> skillIds,
                                           java.util.function.ToIntFunction<String> maxLevel) {
@@ -1325,6 +1324,10 @@ public final class NpcCombatProfile {
         // Explicitly, not only through the switch above: where V9 is already the starting brain
         // (XenoNPCs) setBrainVersion has nothing to switch from.
         if (profile.brainVersion == NpcCombatBrainVersion.V9) profile.applyV9SafeDefaults();
+        // 2026-09-30 owner: "combat brain v9 is not on by default" - a new NPC fights with it.
+        profile.combatBrain = true;
+        // 2026-09-30 owner: "fall damage off by default".
+        profile.noFallDamage = true;
         profile.grantAllSkills(skillIds, maxLevel);
         // 2026-09-30 owner: new NPCs start as DMZ body type 2 with hair on, hair style 1.
         profile.appearance.bodyType = FRESH_BODY_TYPE;

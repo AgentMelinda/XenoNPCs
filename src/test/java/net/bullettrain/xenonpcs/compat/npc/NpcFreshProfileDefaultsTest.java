@@ -29,6 +29,8 @@ class NpcFreshProfileDefaultsTest {
         NpcCombatProfile fresh = NpcCombatProfile.freshDefaults(false, IDS,
                 NpcFreshProfileDefaultsTest::max);
         assertEquals(NpcCombatBrainVersion.V9, fresh.brainVersion);
+        assertTrue(fresh.combatBrain, "a new NPC fights with its brain switched on");
+        assertTrue(fresh.noFallDamage, "a new NPC takes no fall damage");
         assertFalse(fresh.brainDeflectBlast, "V9's own safe deflection defaults still apply");
         assertFalse(fresh.brainDeflectWave);
     }
