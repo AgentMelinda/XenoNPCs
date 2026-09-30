@@ -53,6 +53,11 @@ public final class BillboardDraw {
     /** One textured quad in the billboard's local space. */
     public static void texturedQuad(Matrix4f matrix, float x0, float y0, float x1, float y1,
                                     float z, float minU, float minV, float maxU, float maxV) {
+        // Every quad, not once per bubble: outlinedLine flushes the text batch, and the text render
+        // type's clear state restores vanilla depth, so a quad drawn after any text - the dialogue's
+        // answer bubbles, after the speaker line - let clouds and the nameplate show through it.
+        // (2026-09-30 owner: the blue line bubble was fixed but the answers still showed clouds.)
+        beginOnTop();
         BufferBuilder buffer = Tesselator.getInstance()
                 .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
         buffer.addVertex(matrix, x0, y1, z).setUv(minU, maxV);
