@@ -19,14 +19,20 @@ public final class NpcFlightPolicy {
         StatsData data = StatsProvider.get(StatsCapability.INSTANCE, player).orElse(null);
         if (data == null || data.getSkills() == null) return false;
         boolean flyActive = data.getSkills().isSkillActive("fly") || player.getAbilities().flying;
+        net.minecraft.world.phys.AABB box = target.getBoundingBox();
+        // Probe only below the feet. Moving the whole body box also found side walls.
         boolean supported = target.level().getBlockCollisions(target,
-                target.getBoundingBox().move(0.0, -0.125, 0.0)).iterator().hasNext();
+                new net.minecraft.world.phys.AABB(box.minX + 0.001, box.minY - 0.125,
+                        box.minZ + 0.001, box.maxX - 0.001, box.minY, box.maxZ - 0.001))
+                .iterator().hasNext();
         return walkingOnSupport(false, flyActive, supported, target.getDeltaMovement().y);
     }
 
     static boolean walkingOnSupport(boolean onGround, boolean flyActive, boolean supported,
                                     double verticalSpeed) {
-        return onGround || (!flyActive && supported && verticalSpeed <= 0.08);
+        // A Fly skill left enabled is a capability, not proof that the player is airborne.
+        // Physical support also counts while DMZ's movement packets leave onGround stale.
+        return onGround || (supported && verticalSpeed <= 0.08);
     }
 
     /**

@@ -258,11 +258,8 @@ public final class NpcKiAim {
         if (caster == null) {
             return;
         }
-        caster.swing(InteractionHand.MAIN_HAND, true);
-        // Gecko custom-model entities do not render the vanilla swing event.
-        // Trigger the attack clip configured in Model Editor when available,
-        // while retaining AIM for classic CustomNPC models.
-        NpcGeckoAnim.playAttack(caster);
+        // This is ranged aiming. A vanilla swing makes the Full DMZ proxy play a
+        // melee punch on every ki cast, even when the target is across the arena.
         applyCnpcAimPose(caster);
     }
 

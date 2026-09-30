@@ -4,6 +4,8 @@
   "refmap": "mixins.xenonpcs.refmap.json",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "common.KiLaserAimMixin",
+    "common.KiWaveAimMixin",
     "common.StatsProviderNpcGetMixin"
   ],
   "client": [

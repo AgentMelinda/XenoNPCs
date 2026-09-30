@@ -112,8 +112,10 @@ class NpcFlightPolicyTest {
     void walkingPlayerWithBrieflyFalseGroundFlagEndsAirChase() {
         assertTrue(NpcFlightPolicy.walkingOnSupport(false, false, true, 0.0));
         assertTrue(NpcFlightPolicy.walkingOnSupport(true, true, false, 0.0));
-        assertFalse(NpcFlightPolicy.walkingOnSupport(false, true, true, 0.0),
-                "an actively flying player near a wall is still airborne");
+        assertTrue(NpcFlightPolicy.walkingOnSupport(false, true, true, 0.0),
+                "physical floor support counts even when the Fly skill stays enabled");
+        assertFalse(NpcFlightPolicy.walkingOnSupport(false, true, false, 0.0),
+                "a side wall is not physical floor support");
         assertFalse(NpcFlightPolicy.walkingOnSupport(false, false, false, 0.0),
                 "turning Fly off midair should allow the NPC to keep chasing until landing");
         assertFalse(NpcFlightPolicy.walkingOnSupport(false, false, true, 0.2),

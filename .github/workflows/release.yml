@@ -35,7 +35,7 @@ jobs:
           - minecraft: '1.20.1'
             java: '17'
             # Pin the Forge export so re-running a release never builds a moving branch.
-            ref: 'c428ba397df7911709901d1bc87d2b759f5edf73'
+            ref: 'b77ef2b5a2695c53e26d8773a8399e8e7f215e06'
     steps:
       - uses: actions/checkout@v4
         with:
