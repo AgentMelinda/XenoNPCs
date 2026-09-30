@@ -154,7 +154,7 @@ public final class NpcKiAim {
         Vec3 to = target.position().add(0.0, target.getBbHeight() * 0.5, 0.0);
         Vec3 delta = to.subtract(from);
         if (delta.lengthSqr() < 1.0e-8) return;
-        float yaw = (float) Math.toDegrees(Math.atan2(delta.z, delta.x)) - 90.0f;
+        float yaw = NpcBrainKiRotation.targetYaw(delta.x, delta.z, caster.getYRot());
         float pitch = (float) -Math.toDegrees(Math.atan2(delta.y, Math.hypot(delta.x, delta.z)));
         if (caster.isNoGravity() && !caster.onGround()) {
             // In flight the brain's chase velocity already points at this target. A 15% ease

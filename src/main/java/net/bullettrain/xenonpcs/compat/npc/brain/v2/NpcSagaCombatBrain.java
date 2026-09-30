@@ -224,7 +224,7 @@ public final class NpcSagaCombatBrain {
             holdFlight(npc);
             if (!senseLocked) {
                 NpcKiAim.applyLook(npc, NpcBrainKiRotation.targetYaw(
-                        victim.getX() - npc.getX(), victim.getZ() - npc.getZ()), 0.0f);
+                        victim.getX() - npc.getX(), victim.getZ() - npc.getZ(), npc.getYRot()), 0.0f);
             }
             return;
         }
@@ -258,7 +258,7 @@ public final class NpcSagaCombatBrain {
                 mob.getNavigation().stop();
             }
             if (!senseLocked) {
-                NpcKiAim.applyLook(npc, NpcBrainKiRotation.targetYaw(dx, dz), 0.0f);
+                NpcKiAim.applyLook(npc, NpcBrainKiRotation.targetYaw(dx, dz, npc.getYRot()), 0.0f);
             }
             return;
         }
@@ -268,7 +268,7 @@ public final class NpcSagaCombatBrain {
             land(npc, profile);
         }
         if (!senseLocked) {
-            NpcKiAim.applyLook(npc, NpcBrainKiRotation.targetYaw(dx, dz), 0.0f);
+            NpcKiAim.applyLook(npc, NpcBrainKiRotation.targetYaw(dx, dz, npc.getYRot()), 0.0f);
         }
     }
 
@@ -336,6 +336,7 @@ public final class NpcSagaCombatBrain {
     }
 
     private static void melee(LivingEntity npc, LivingEntity victim) {
+        NpcSagaCombos.swingWithoutClip(npc);
         NpcMeleeDamage.hit(npc, victim, 1.0f);
     }
 

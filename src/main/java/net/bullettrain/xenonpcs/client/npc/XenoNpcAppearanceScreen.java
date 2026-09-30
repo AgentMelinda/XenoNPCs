@@ -326,15 +326,18 @@ public final class XenoNpcAppearanceScreen extends ScaledScreen {
         for (EditorLayout.Placed p : placed) {
             String text = null;
             int available = XenoAtlasSprites.get("mynpcs_button_row").width() - 8;
-            switch (p.row()) {
-                case EditorRow.Toggle ignored -> text = "Yes";
-                case EditorRow.Cycle c -> text = c.values().stream()
+            // instanceof chain rather than a pattern switch: the same source compiles for Java 17 (1.20.1).
+            EditorRow row = p.row();
+            if (row instanceof EditorRow.Toggle) {
+                text = "Yes";
+            } else if (row instanceof EditorRow.Cycle c) {
+                text = c.values().stream()
                         .max(java.util.Comparator.comparingInt(font::width)).orElse("");
-                case EditorRow.Stepper st -> text = java.util.stream.Stream.of(
+            } else if (row instanceof EditorRow.Stepper st) {
+                text = java.util.stream.Stream.of(
                                 Integer.toString(st.min()), Integer.toString(st.max()),
                                 Integer.toString(st.value()))
                         .max(java.util.Comparator.comparingInt(font::width)).orElse("");
-                default -> { }
             }
             if (text != null) measures.computeIfAbsent(p.y(), ignored -> new java.util.ArrayList<>())
                     .add(new AtlasTextFit.Measure(font.width(text), available));
@@ -347,8 +350,9 @@ public final class XenoNpcAppearanceScreen extends ScaledScreen {
     private void materialise(EditorLayout.Placed p, float textScale) {
         int controlX = p.x() + CONTROL_DX;
         int controlW = Math.max(40, p.columnWidth() - CONTROL_DX);
-        switch (p.row()) {
-            case EditorRow.Field f -> {
+        { // was a pattern switch; if/else keeps it Java 17 source
+            Object __switched1 = p.row();
+            if (__switched1 instanceof EditorRow.Field f) {
                 EditBox box = new EditBox(font, controlX, p.y() + 2, controlW, FIELD_H,
                         Component.literal(f.label()));
                 box.setMaxLength(f.maxLength());
@@ -356,16 +360,16 @@ public final class XenoNpcAppearanceScreen extends ScaledScreen {
                 box.setResponder(f.sink());
                 addRenderableWidget(box);
             }
-            case EditorRow.Toggle t -> addRenderableWidget(new AtlasToggle(controlX, p.y(),
+            else if (__switched1 instanceof EditorRow.Toggle t) { addRenderableWidget(new AtlasToggle(controlX, p.y(),
                     controlW, t.value(), Component.empty(), t.sink()).groupTextScale(textScale)
-                    .narrationLabel(Component.literal(t.label())));
-            case EditorRow.Cycle c -> addRenderableWidget(new AtlasCycle(controlX, p.y(),
+                    .narrationLabel(Component.literal(t.label()))); }
+            else if (__switched1 instanceof EditorRow.Cycle c) { addRenderableWidget(new AtlasCycle(controlX, p.y(),
                     Component.empty(), c.values(), c.selected(), c.sink()).groupTextScale(textScale)
-                    .narrationLabel(Component.literal(c.label())));
-            case EditorRow.Stepper st -> addRenderableWidget(new AtlasStepper(controlX, p.y(),
+                    .narrationLabel(Component.literal(c.label()))); }
+            else if (__switched1 instanceof EditorRow.Stepper st) { addRenderableWidget(new AtlasStepper(controlX, p.y(),
                     Component.empty(), st.value(), st.min(), st.max(), st.sink())
-                    .groupTextScale(textScale).narrationLabel(Component.literal(st.label())));
-            case EditorRow.Color c -> {
+                    .groupTextScale(textScale).narrationLabel(Component.literal(st.label()))); }
+            else if (__switched1 instanceof EditorRow.Color c) {
                 int swatchW = 16;
                 int boxW = Math.max(40, controlW - swatchW - 3);
                 EditBox box = new EditBox(font, controlX, p.y() + 2, boxW, FIELD_H,
@@ -377,7 +381,7 @@ public final class XenoNpcAppearanceScreen extends ScaledScreen {
                 addRenderableWidget(new net.bullettrain.xenonpcs.client.ui.atlas.ColorSwatch(controlX + boxW + 3, p.y() + 1, box::getValue,
                         () -> openColorPicker(box), () -> colorPicker.isOpenFor(box)));
             }
-            default -> { }
+            else { }
         }
     }
 
@@ -532,30 +536,23 @@ public final class XenoNpcAppearanceScreen extends ScaledScreen {
 
         for (EditorLayout.Placed p : placed) {
             int textY = p.y() + 6;
-            switch (p.row()) {
-                case EditorRow.Heading h -> {
+            { // was a pattern switch; if/else keeps it Java 17 source
+                Object __switched2 = p.row();
+                if (__switched2 instanceof EditorRow.Heading h) {
                     graphics.drawString(font, h.text(), p.x(), p.y() + 3, CYAN, false);
                     graphics.fill(p.x(), p.y() + 13, p.x() + p.columnWidth(), p.y() + 14,
                             0x30FFFFFF);
                 }
-                case EditorRow.Text t ->
-                        graphics.drawString(font, t.value(), p.x(), textY, t.color(), false);
-                case EditorRow.Field f ->
-                        graphics.drawString(font, f.label(), p.x(), textY, MUTED, false);
-                case EditorRow.Color c ->
-                        graphics.drawString(font, c.label(), p.x(), textY, MUTED, false);
-                case EditorRow.Toggle t ->
-                        graphics.drawString(font, t.label(), p.x(), textY, MUTED, false);
-                case EditorRow.Cycle c ->
-                        graphics.drawString(font, c.label(), p.x(), textY, MUTED, false);
-                case EditorRow.Stepper st ->
-                        graphics.drawString(font, st.label(), p.x(), textY, MUTED, false);
-                case EditorRow.BrainAction ignored -> { }
-                case EditorRow.Spacer ignored -> { }
-                case EditorRow.Action ignored -> { }
-                // The appearance screen has no assignment slots; the case exists so the switch
-                // stays exhaustive and a future row type cannot be silently dropped here.
-                case EditorRow.Slot ignored -> { }
+                else if (__switched2 instanceof EditorRow.Text t) { graphics.drawString(font, t.value(), p.x(), textY, t.color(), false); }
+                else if (__switched2 instanceof EditorRow.Field f) { graphics.drawString(font, f.label(), p.x(), textY, MUTED, false); }
+                else if (__switched2 instanceof EditorRow.Color c) { graphics.drawString(font, c.label(), p.x(), textY, MUTED, false); }
+                else if (__switched2 instanceof EditorRow.Toggle t) { graphics.drawString(font, t.label(), p.x(), textY, MUTED, false); }
+                else if (__switched2 instanceof EditorRow.Cycle c) { graphics.drawString(font, c.label(), p.x(), textY, MUTED, false); }
+                else if (__switched2 instanceof EditorRow.Stepper st) { graphics.drawString(font, st.label(), p.x(), textY, MUTED, false); }
+                else if (__switched2 instanceof EditorRow.BrainAction ignored) { }
+                else if (__switched2 instanceof EditorRow.Spacer ignored) { }
+                else if (__switched2 instanceof EditorRow.Action ignored) { }
+                else if (__switched2 instanceof EditorRow.Slot ignored) { }
             }
         }
 

@@ -45,13 +45,13 @@ public final class XenoNpcBrainV5 {
             // but reach defaults to about one block (npcAttackStartRadius), so a target standing
             // 1.5-3 blocks away was out of reach and never approached: the NPC hit once, the
             // player stepped back, and it stood still.
-            double reach = net.bullettrain.xenonpcs.compat.npc.NpcCombatRanges.meleeReach(npc, target);
-            double stopAt = Math.max(0.5, reach - 0.25);
-            boolean chasing = npc.distanceTo(target) > stopAt;
+            boolean chasing = !net.bullettrain.xenonpcs.compat.npc.NpcCombatRanges.withinMelee(npc, target);
             net.bullettrain.xenonpcs.compat.npc.NpcSprintSkill.apply(npc,
                     net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile.readCached(npc), chasing);
             if (chasing) {
-                npc.getNavigation().moveTo(target, 1.05);
+                // Use the same height-gap/ledge decision as V9. Direct moveTo re-centres a
+                // path in the player's column even when walking cannot reach that floor.
+                net.bullettrain.xenonpcs.compat.npc.NpcLedgeApproach.apply(npc, target, 1.05);
             } else {
                 npc.getNavigation().stop();
             }

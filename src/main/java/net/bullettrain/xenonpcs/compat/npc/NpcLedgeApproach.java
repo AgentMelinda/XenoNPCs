@@ -24,6 +24,8 @@ public final class NpcLedgeApproach {
 
     /** How far below its feet the target must be before stepping off is worth it. */
     static final double MIN_DROP = 0.5;
+    /** A path that only re-centres the NPC cannot close a vertical gap in this column. */
+    static final double SAME_COLUMN_HORIZONTAL = 0.5;
     /** Past this, stepping off is a leap at something far away, not getting onto it. */
     static final double MAX_STEP_HORIZONTAL = 6.0;
     /** Horizontal speed of the step, blocks per tick: a walk, not a launch. */
@@ -40,9 +42,13 @@ public final class NpcLedgeApproach {
      */
     public static Move decide(boolean inReach, boolean hasPath, double dy, double horizontal, boolean dropAhead) {
         if (inReach) return Move.NONE;
-        if (hasPath) return Move.NAVIGATE;
+        if (hasPath && !sameColumnHeightGap(dy, horizontal)) return Move.NAVIGATE;
         if (dy <= -MIN_DROP && dropAhead && horizontal <= MAX_STEP_HORIZONTAL) return Move.STEP_OFF;
         return Move.NONE;
+    }
+
+    private static boolean sameColumnHeightGap(double dy, double horizontal) {
+        return horizontal <= SAME_COLUMN_HORIZONTAL && Math.abs(dy) >= MIN_DROP;
     }
 
     /** Applies {@link #decide} to a live NPC; returns what it did. */
@@ -50,15 +56,17 @@ public final class NpcLedgeApproach {
         if (!(npc instanceof Mob mob) || target == null || npc.level().isClientSide()) return Move.NONE;
         boolean inReach = NpcCombatRanges.withinMelee(npc, target);
         if (inReach) return Move.NONE;
-        Path path = mob.getNavigation().createPath(target, 0);
-        boolean hasPath = path != null && path.canReach();
         double dx = target.getX() - npc.getX();
         double dz = target.getZ() - npc.getZ();
         double horizontal = Math.sqrt(dx * dx + dz * dz);
+        double dy = target.getY() - npc.getY();
+        boolean sameColumn = sameColumnHeightGap(dy, horizontal);
+        Path path = sameColumn ? null : mob.getNavigation().createPath(target, 0);
+        boolean hasPath = path != null && path.canReach();
         Vec3 dir = horizontal > 0.3 ? new Vec3(dx / horizontal, 0.0, dz / horizontal)
                 : horizontalFacing(npc);
         boolean dropAhead = !hasPath && npc.onGround() && dropAhead(npc.level(), npc.position(), dir);
-        Move move = decide(false, hasPath, target.getY() - npc.getY(), horizontal, dropAhead);
+        Move move = decide(false, hasPath, dy, horizontal, dropAhead);
         switch (move) {
             case NAVIGATE -> mob.getNavigation().moveTo(path, speed);
             case STEP_OFF -> {
@@ -67,7 +75,9 @@ public final class NpcLedgeApproach {
                 npc.setDeltaMovement(dir.x * STEP_SPEED, motion.y, dir.z * STEP_SPEED);
                 npc.hurtMarked = true;
             }
-            default -> { }
+            default -> {
+                if (sameColumn) mob.getNavigation().stop();
+            }
         }
         return move;
     }

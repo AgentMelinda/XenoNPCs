@@ -59,7 +59,7 @@ public final class XenoServerConfig {
      *
      * <p>Bumped to 24 (2026-09-26) for the XenoNPC size-linked hitbox switch.
      */
-    private static final int CURRENT_CONFIG_VERSION = 24;
+    private static final int CURRENT_CONFIG_VERSION = 25;
 
     // --- HUD / DMZ ---
     /**
@@ -1270,11 +1270,23 @@ public final class XenoServerConfig {
                     XenoNpcsMod.LOGGER.info(
                             "Config migration: hakaiChannelTicks 80 -> 40 (DBS-length channel).");
                 }
+                double migratedHeightReach = migrateNpcMeleeHeightReach(data.configVersion, npcMeleeHeightReach);
+                if (migratedHeightReach != npcMeleeHeightReach) {
+                    npcMeleeHeightReach = migratedHeightReach;
+                    XenoNpcsMod.LOGGER.info(
+                            "Config migration: npcMeleeHeightReach 1.5 -> 0.5 so NPCs approach"
+                                    + " a target on another floor before punching. Other values are preserved.");
+                }
                 save();
             }
         } catch (IOException | RuntimeException e) {
             XenoNpcsMod.LOGGER.warn("Failed to load server config", e);
         }
+    }
+
+    /** 2026-09-30: narrow the obsolete default once; preserve other tuning and later overrides. */
+    static double migrateNpcMeleeHeightReach(int configVersion, double value) {
+        return configVersion < 25 && value == 1.5 ? 0.5 : value;
     }
 
     /** Multipliers are bounded so a stray config cannot make a player untouchable. */

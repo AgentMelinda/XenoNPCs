@@ -502,27 +502,28 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
         for (EditorLayout.Placed p : placed) {
             String text = null;
             int available = 0;
-            String rowLabel = switch (p.row()) {
-                case EditorRow.Field field -> field.label();
-                case EditorRow.Color color -> color.label();
-                case EditorRow.Toggle toggle -> toggle.label();
-                case EditorRow.Cycle cycle -> cycle.label();
-                case EditorRow.Stepper stepper -> stepper.label();
-                case EditorRow.BrainAction action -> action.label();
-                default -> null;
-            };
+            // instanceof chain rather than a pattern switch: the same source compiles for Java 17 (1.20.1).
+            EditorRow row = p.row();
+            String rowLabel = row instanceof EditorRow.Field field ? field.label()
+                    : row instanceof EditorRow.Color color ? color.label()
+                    : row instanceof EditorRow.Toggle toggle ? toggle.label()
+                    : row instanceof EditorRow.Cycle cycle ? cycle.label()
+                    : row instanceof EditorRow.Stepper stepper ? stepper.label()
+                    : row instanceof EditorRow.BrainAction action ? action.label()
+                    : null;
             if (rowLabel != null) {
                 measures.computeIfAbsent(p.y(), ignored -> new java.util.ArrayList<>()).add(
                         new AtlasTextFit.Measure(font.width(rowLabel), CONTROL_DX - 4));
             }
-            switch (p.row()) {
-                case EditorRow.Action a -> {
+            { // was a pattern switch; if/else keeps it Java 17 source
+                Object __switched1 = p.row();
+                if (__switched1 instanceof EditorRow.Action a) {
                     String sprite = "mynpcs_button_row".equals(a.sprite())
                             ? XenoAtlasSprites.rowWithin(p.columnWidth()) : a.sprite();
                     text = a.label();
                     available = Math.max(4, XenoAtlasSprites.get(sprite).width() - 8);
                 }
-                case EditorRow.Slot slot -> {
+                else if (__switched1 instanceof EditorRow.Slot slot) {
                     measures.computeIfAbsent(p.y(), ignored -> new java.util.ArrayList<>()).add(
                             new AtlasTextFit.Measure(font.width("X"),
                                     Math.max(4, XenoAtlasSprites.get(slotClearSprite()).width() - 8)));
@@ -530,25 +531,25 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
                     available = Math.max(4,
                             XenoAtlasSprites.get(slotPickSprite(p.columnWidth())).width() - 8);
                 }
-                case EditorRow.Toggle ignored -> {
+                else if (__switched1 instanceof EditorRow.Toggle ignored) {
                     text = "Yes";
                     available = XenoAtlasSprites.get("mynpcs_button_row").width() - 8;
                 }
-                case EditorRow.Cycle c -> {
+                else if (__switched1 instanceof EditorRow.Cycle c) {
                     text = c.values().stream().max(java.util.Comparator.comparingInt(font::width)).orElse("");
                     available = XenoAtlasSprites.get("mynpcs_button_row").width() - 8;
                 }
-                case EditorRow.Stepper st -> {
+                else if (__switched1 instanceof EditorRow.Stepper st) {
                     text = java.util.stream.Stream.of(Integer.toString(st.min()),
                                     Integer.toString(st.max()), Integer.toString(st.value()))
                             .max(java.util.Comparator.comparingInt(font::width)).orElse("");
                     available = XenoAtlasSprites.get("mynpcs_button_row").width() - 8;
                 }
-                case EditorRow.BrainAction ignored -> {
+                else if (__switched1 instanceof EditorRow.BrainAction ignored) {
                     text = "Yes";
                     available = XenoAtlasSprites.get("mynpcs_button_row").width() - 8;
                 }
-                default -> { }
+                else { }
             }
             if (text != null) measures.computeIfAbsent(p.y(), ignored -> new java.util.ArrayList<>())
                     .add(new AtlasTextFit.Measure(font.width(text), available));
@@ -564,8 +565,9 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
         int controlX = p.x() + CONTROL_DX;
         int controlW = Math.max(40, p.columnWidth() - CONTROL_DX);
 
-        switch (p.row()) {
-            case EditorRow.Field f -> {
+        { // was a pattern switch; if/else keeps it Java 17 source
+            Object __switched2 = p.row();
+            if (__switched2 instanceof EditorRow.Field f) {
                 EditBox box = new EditBox(font, controlX, p.y() + 2, controlW, FIELD_H,
                         Component.literal(f.label()));
                 box.setMaxLength(f.maxLength());
@@ -585,7 +587,7 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
                 }
                 addRenderableWidget(box);
             }
-            case EditorRow.Color c -> {
+            else if (__switched2 instanceof EditorRow.Color c) {
                 int swatchW = 16;
                 int boxW = Math.max(40, controlW - swatchW - 3);
                 EditBox box = new EditBox(font, controlX, p.y() + 2, boxW, FIELD_H,
@@ -604,24 +606,24 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
                 if (c.sink() == null) disable(swatch);
                 addRenderableWidget(swatch);
             }
-            case EditorRow.Toggle t -> {
+            else if (__switched2 instanceof EditorRow.Toggle t) {
                 AtlasToggle widget = new AtlasToggle(controlX, p.y(), controlW, t.value(),
                         Component.empty(), t.sink()).groupTextScale(textScale)
                         .narrationLabel(Component.literal(t.label()));
                 if (t.sink() == null) disable(widget);
                 addRenderableWidget(widget);
             }
-            case EditorRow.Cycle c -> {
+            else if (__switched2 instanceof EditorRow.Cycle c) {
                 AtlasCycle widget = new AtlasCycle(controlX, p.y(), Component.empty(), c.values(),
                         c.selected(), c.sink()).groupTextScale(textScale)
                         .narrationLabel(Component.literal(c.label()));
                 if (c.sink() == null) disable(widget);
                 addRenderableWidget(widget);
             }
-            case EditorRow.Stepper st -> addRenderableWidget(new AtlasStepper(controlX, p.y(),
+            else if (__switched2 instanceof EditorRow.Stepper st) { addRenderableWidget(new AtlasStepper(controlX, p.y(),
                     Component.empty(), st.value(), st.min(), st.max(), st.sink())
-                    .groupTextScale(textScale).narrationLabel(Component.literal(st.label())));
-            case EditorRow.Action a -> {
+                    .groupTextScale(textScale).narrationLabel(Component.literal(st.label()))); }
+            else if (__switched2 instanceof EditorRow.Action a) {
                 String sprite = "mynpcs_button_row".equals(a.sprite())
                         ? XenoAtlasSprites.rowWithin(p.columnWidth()) : a.sprite();
                 int buttonWidth = XenoAtlasSprites.get(sprite).width();
@@ -633,7 +635,7 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
                 if (a.onPress() == null) disable(widget, disabledActionReason(a.label()));
                 addRenderableWidget(widget);
             }
-            case EditorRow.Slot slot -> {
+            else if (__switched2 instanceof EditorRow.Slot slot) {
                 // number, then a narrow clear, then the wide pick - the anatomy of their row.
                 // The clear button is measured from the sprite it actually got rather than from
                 // the width it asked for, so the pick button beside it starts past its real edge.
@@ -659,10 +661,10 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
                 if (slot.onPick() == null) disable(pick);
                 addRenderableWidget(pick);
             }
-            case EditorRow.BrainAction action -> materialiseBrainAction(p, action);
-            case EditorRow.Spacer ignored -> { }
-            case EditorRow.Text ignored -> { }
-            case EditorRow.Heading ignored -> { }
+            else if (__switched2 instanceof EditorRow.BrainAction action) { materialiseBrainAction(p, action); }
+            else if (__switched2 instanceof EditorRow.Spacer ignored) { }
+            else if (__switched2 instanceof EditorRow.Text ignored) { }
+            else if (__switched2 instanceof EditorRow.Heading ignored) { }
         }
     }
 
@@ -5354,8 +5356,9 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
         for (EditorLayout.Placed p : placed) {
             int textY = p.y() + 6;
             float pageScale = dmzListTextScale();
-            switch (p.row()) {
-                case EditorRow.Text t -> {
+            { // was a pattern switch; if/else keeps it Java 17 source
+                Object __switched3 = p.row();
+                if (__switched3 instanceof EditorRow.Text t) {
                     if (t.fullWidth()) {
                         drawScaledText(graphics, t.value(), p.x(), textY,
                                 p.columnWidth(), pageScale, t.color());
@@ -5366,37 +5369,37 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
                                 p.columnWidth() - CONTROL_DX, pageScale, t.color());
                     }
                 }
-                case EditorRow.Heading h -> {
+                else if (__switched3 instanceof EditorRow.Heading h) {
                     drawScaledText(graphics, h.text(), p.x(), p.y() + 3,
                             p.columnWidth(), pageScale, CYAN);
                     graphics.fill(p.x(), p.y() + 13, p.x() + p.columnWidth(), p.y() + 14,
                             0x30FFFFFF);
                 }
-                case EditorRow.Field f -> drawScaledText(graphics, f.label(), p.x(), textY,
-                        CONTROL_DX - 4, lineTextScales.getOrDefault(p.y(), 1.0f), MUTED);
-                case EditorRow.Color c -> drawScaledText(graphics, c.label(), p.x(), textY,
-                        CONTROL_DX - 4, lineTextScales.getOrDefault(p.y(), 1.0f), MUTED);
-                case EditorRow.Toggle t -> drawScaledText(graphics, t.label(), p.x(), textY,
-                        CONTROL_DX - 4, lineTextScales.getOrDefault(p.y(), 1.0f), MUTED);
-                case EditorRow.Cycle c -> drawScaledText(graphics, c.label(), p.x(), textY,
-                        CONTROL_DX - 4, lineTextScales.getOrDefault(p.y(), 1.0f), MUTED);
-                case EditorRow.Stepper st -> drawScaledText(graphics, st.label(), p.x(), textY,
-                        CONTROL_DX - 4, lineTextScales.getOrDefault(p.y(), 1.0f), MUTED);
-                case EditorRow.BrainAction action -> {
+                else if (__switched3 instanceof EditorRow.Field f) { drawScaledText(graphics, f.label(), p.x(), textY,
+                        CONTROL_DX - 4, lineTextScales.getOrDefault(p.y(), 1.0f), MUTED); }
+                else if (__switched3 instanceof EditorRow.Color c) { drawScaledText(graphics, c.label(), p.x(), textY,
+                        CONTROL_DX - 4, lineTextScales.getOrDefault(p.y(), 1.0f), MUTED); }
+                else if (__switched3 instanceof EditorRow.Toggle t) { drawScaledText(graphics, t.label(), p.x(), textY,
+                        CONTROL_DX - 4, lineTextScales.getOrDefault(p.y(), 1.0f), MUTED); }
+                else if (__switched3 instanceof EditorRow.Cycle c) { drawScaledText(graphics, c.label(), p.x(), textY,
+                        CONTROL_DX - 4, lineTextScales.getOrDefault(p.y(), 1.0f), MUTED); }
+                else if (__switched3 instanceof EditorRow.Stepper st) { drawScaledText(graphics, st.label(), p.x(), textY,
+                        CONTROL_DX - 4, lineTextScales.getOrDefault(p.y(), 1.0f), MUTED); }
+                else if (__switched3 instanceof EditorRow.BrainAction action) {
                     float scale = lineTextScales.getOrDefault(p.y(), 1.0f);
                     drawScaledText(graphics, action.label(), p.x(), textY,
                             CONTROL_DX - 4, scale, MUTED);
                     drawScaledText(graphics, "%", p.x() + 136, textY, 12, scale, MUTED);
                     drawScaledText(graphics, "x", p.x() + 244, textY, 12, scale, MUTED);
                 }
-                case EditorRow.Spacer ignored -> { }
-                case EditorRow.Slot slot -> {
+                else if (__switched3 instanceof EditorRow.Spacer ignored) { }
+                else if (__switched3 instanceof EditorRow.Slot slot) {
                     // The slot number, drawn to the left of the row's two buttons. It is what an
                     // author arranges by, so it is part of the row rather than part of the label.
                     drawScaledText(graphics, String.valueOf(slot.number()),
                             p.x() - 14, textY, 12, pageScale, MUTED);
                 }
-                case EditorRow.Action ignored -> { }
+                else if (__switched3 instanceof EditorRow.Action ignored) { }
             }
         }
     }

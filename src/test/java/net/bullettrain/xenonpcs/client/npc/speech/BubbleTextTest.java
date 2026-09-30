@@ -11,6 +11,6 @@ class BubbleTextTest {
         var text = BubbleText.styled("§aHello§r world");
         assertEquals("Hello world", text.getString());
         assertEquals(ChatFormatting.GREEN.getColor(),
-                text.getSiblings().getFirst().getStyle().getColor().getValue());
+                text.getSiblings().get(0).getStyle().getColor().getValue());
     }
 }

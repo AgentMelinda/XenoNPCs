@@ -3,6 +3,7 @@ package net.bullettrain.xenonpcs.compat.npc.brain.v2;
 import net.bullettrain.xenonpcs.compat.npc.NpcCombatMoves;
 import net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile;
 import net.bullettrain.xenonpcs.compat.npc.NpcDmzAnim;
+import net.bullettrain.xenonpcs.compat.npc.NpcGeckoAnim;
 import net.bullettrain.xenonpcs.compat.npc.NpcMeleeDamage;
 import net.bullettrain.xenonpcs.combat.anim.Bt3AnimationIntent;
 import net.minecraft.world.entity.LivingEntity;
@@ -98,6 +99,17 @@ final class NpcSagaCombos {
     }
 
     private static void play(LivingEntity npc, Bt3AnimationIntent intent) {
-        NpcDmzAnim.play(npc, intent);
+        if (!NpcDmzAnim.play(npc, intent)) swingWithoutClip(npc);
+    }
+
+    /**
+     * The vanilla arm swing for an NPC that cannot show Xeno clips (a new NPC starts with its DMZ
+     * appearance off), as the older brain's {@code swingBeforeHit} does. GeckoLib NPCs are left
+     * out: {@code NpcMeleeDamage.hit} plays their own attack clip.
+     */
+    static void swingWithoutClip(LivingEntity npc) {
+        if (!NpcDmzAnim.canAnimate(npc) && !NpcGeckoAnim.canAnimate(npc)) {
+            npc.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+        }
     }
 }

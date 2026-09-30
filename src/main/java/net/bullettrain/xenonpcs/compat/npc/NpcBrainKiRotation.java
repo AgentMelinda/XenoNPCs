@@ -349,6 +349,11 @@ public final class NpcBrainKiRotation {
         return net.minecraft.util.Mth.wrapDegrees((float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0));
     }
 
+    /** Keep the current facing when the target is directly above/below or almost overlapping. */
+    public static float targetYaw(double dx, double dz, float currentYaw) {
+        return dx * dx + dz * dz <= 0.01 ? currentYaw : targetYaw(dx, dz);
+    }
+
     public static double[] scaledToward(double dx, double dy, double dz, double speed) {
         double cap = Math.max(0.05, speed);
         double len = Math.sqrt(dx * dx + dy * dy + dz * dz);

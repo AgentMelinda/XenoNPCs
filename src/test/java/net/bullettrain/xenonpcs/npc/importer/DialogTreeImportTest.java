@@ -26,13 +26,13 @@ class DialogTreeImportTest {
                 Map.of(1, start, 2, more), new NpcImportReport(), "mynpcs_village");
 
         assertEquals(2, conversion.dialogues().size());
-        DialogTreeImport.Imported first = conversion.dialogues().getFirst();
+        DialogTreeImport.Imported first = conversion.dialogues().get(0);
         assertEquals("n1", first.dialogue().start());
         assertEquals("Welcome\ntraveler", first.dialogue().startNode().text());
-        assertEquals("n2", first.dialogue().startNode().options().getFirst().target());
+        assertEquals("n2", first.dialogue().startNode().options().get(0).target());
         assertEquals("dialog_2", conversion.sourceSlots().get(2).id());
         assertEquals(XenoDialogue.OptionType.QUIT,
-                conversion.dialogues().get(1).dialogue().startNode().options().getFirst().type());
+                conversion.dialogues().get(1).dialogue().startNode().options().get(0).type());
     }
 
     @Test

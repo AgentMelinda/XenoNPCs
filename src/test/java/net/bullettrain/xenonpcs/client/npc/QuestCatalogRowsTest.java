@@ -34,7 +34,7 @@ class QuestCatalogRowsTest {
         }
 
         List<EditorLayout.Placed> placed = new EditorLayout(18, 54, 382, 228, 24, 6)
-                .place(rows).getFirst().rows();
+                .place(rows).get(0).rows();
         for (int i = 1; i < placed.size(); i++) {
             assertTrue(placed.get(i).y() > placed.get(i - 1).y());
             assertEquals(382, placed.get(i).columnWidth());

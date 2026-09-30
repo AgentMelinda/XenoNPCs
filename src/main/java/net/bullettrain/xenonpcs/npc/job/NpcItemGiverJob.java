@@ -80,7 +80,7 @@ public final class NpcItemGiverJob {
             if (!player.getInventory().add(slot.stack().copy())) return;
         }
         int nextSlot = profile.itemGiverMethod == 4
-                ? (selected.getFirst().index() + 1) % NpcCombatProfile.ITEM_GIVER_SLOTS : 0;
+                ? (selected.get(0).index() + 1) % NpcCombatProfile.ITEM_GIVER_SLOTS : 0;
         data.recordItemGiverUse(npc.getUUID(), now, day, nextSlot);
         if (!profile.itemGiverLines.isEmpty()) {
             XenoNpcSpeech.say(npc, profile.itemGiverLines.get(
@@ -111,7 +111,7 @@ public final class NpcItemGiverJob {
             case 3 -> available.stream().anyMatch(has::contains)
                     ? List.of() : List.copyOf(available);
             case 4 -> {
-                int chosen = available.getFirst();
+                int chosen = available.get(0);
                 for (int slot : available) {
                     if (slot >= nextSlot) { chosen = slot; break; }
                 }

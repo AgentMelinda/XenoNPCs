@@ -57,7 +57,7 @@ class EditorLayoutTest {
                 () -> { }, true);
 
         List<EditorLayout.Placed> rows = layout().place(List.of(wide, toggle("next"), action))
-                .getFirst().rows();
+                .get(0).rows();
 
         assertEquals(18, rows.get(0).x());
         assertEquals(382, rows.get(0).columnWidth());

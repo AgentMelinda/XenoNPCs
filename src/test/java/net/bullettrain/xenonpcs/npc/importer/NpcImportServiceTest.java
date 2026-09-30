@@ -61,7 +61,7 @@ class NpcImportServiceTest {
         assertEquals(2, store.list(XenoNpcStoreCategory.DIALOGS).size());
         assertEquals(1, store.list(XenoNpcStoreCategory.QUESTS).size());
 
-        CompoundTag storedQuest = store.list(XenoNpcStoreCategory.QUESTS).getFirst().tag();
+        CompoundTag storedQuest = store.list(XenoNpcStoreCategory.QUESTS).get(0).tag();
         assertTrue(storedQuest.getString("DefinitionJson").contains("kill_npc"));
         assertTrue(Files.isRegularFile(store.root().resolve("dialogs/mynpcs_town/dialog_1.json")));
         assertNotNull(store.get(XenoNpcStoreCategory.DIALOGS, "mynpcs_town", "dialog_2"));

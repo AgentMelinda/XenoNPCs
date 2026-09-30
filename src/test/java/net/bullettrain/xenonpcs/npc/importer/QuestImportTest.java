@@ -69,10 +69,10 @@ class QuestImportTest {
         QuestImport.Imported imported = QuestImport.convert(9, "quest_helmet", "mynpcs_main",
                 source, new NpcImportReport());
 
-        assertEquals(QuestObjective.ITEM, imported.quest().steps().getFirst().goal().type());
-        assertEquals("minecraft:diamond_helmet", imported.quest().steps().getFirst().goal().parameter());
-        assertEquals(2, imported.quest().steps().getFirst().target());
-        assertTrue(imported.quest().steps().getFirst().takeItems());
+        assertEquals(QuestObjective.ITEM, imported.quest().steps().get(0).goal().type());
+        assertEquals("minecraft:diamond_helmet", imported.quest().steps().get(0).goal().parameter());
+        assertEquals(2, imported.quest().steps().get(0).target());
+        assertTrue(imported.quest().steps().get(0).takeItems());
     }
 
     @Test
