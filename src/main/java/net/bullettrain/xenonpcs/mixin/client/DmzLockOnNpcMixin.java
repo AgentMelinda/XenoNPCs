@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  *         accepts non-players. CNPC {@code isInvisible()} is a visibility flag, not potion
  *         invisibility; {@code hitboxState==1} makes the AABB paper-thin so the look-ray
  *         misses; kisense acquire/hold is {@code 15+5*level} (20 at level 1).
- * Version: NeoForge 1.21.1 / DMZ 2.1.3
+ * Version: Forge 1.20.1 / DMZ 2.1.3 (CurseMaven 8469416)
  * Side: client.
  */
 @Mixin(value = LockOnEvent.class, remap = false)
@@ -39,7 +39,7 @@ public abstract class DmzLockOnNpcMixin {
     }
 
     @Redirect(
-            method = "lambda$findTargetInFront$4",
+            method = "lambda$findTargetInFront$3",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/world/entity/LivingEntity;isPickable()Z",
@@ -72,14 +72,14 @@ public abstract class DmzLockOnNpcMixin {
     }
 
     @ModifyConstant(
-            method = {"lambda$toggleLock$2", "lambda$onClientTick$3"},
+            method = {"lambda$toggleLock$1", "lambda$onClientTick$2"},
             constant = @Constant(doubleValue = 15.0)
     )
     private static double xenopixels$lockRangeBase(double original) {
         return NpcKiAim.LOCK_RANGE;
     }
 
-    @ModifyConstant(method = "lambda$static$0", constant = @Constant(doubleValue = 24.0))
+    @ModifyConstant(method = "onRenderWorldLast", constant = @Constant(doubleValue = 24.0))
     private static double xenopixels$lockIconSpinRange(double original) {
         return NpcKiAim.LOCK_RANGE;
     }

@@ -38,7 +38,7 @@ public abstract class DmzGeoModelBt3AnimationMixin {
     private static final AtomicBoolean xeno$loggedHit = new AtomicBoolean();
 
     @Inject(
-            method = "getAnimation(Lsoftware/bernie/geckolib/animatable/GeoAnimatable;Ljava/lang/String;)Lsoftware/bernie/geckolib/animation/Animation;",
+            method = "getAnimation(Lsoftware/bernie/geckolib/core/animatable/GeoAnimatable;Ljava/lang/String;)Lsoftware/bernie/geckolib/core/animation/Animation;",
             at = @At("HEAD"),
             cancellable = true)
     private void xeno$lookupBt3Head(GeoAnimatable animatable, String name,
@@ -53,7 +53,7 @@ public abstract class DmzGeoModelBt3AnimationMixin {
     }
 
     @Inject(
-            method = "getAnimation(Lsoftware/bernie/geckolib/animatable/GeoAnimatable;Ljava/lang/String;)Lsoftware/bernie/geckolib/animation/Animation;",
+            method = "getAnimation(Lsoftware/bernie/geckolib/core/animatable/GeoAnimatable;Ljava/lang/String;)Lsoftware/bernie/geckolib/core/animation/Animation;",
             at = @At("RETURN"),
             cancellable = true)
     private void xeno$lookupBt3(GeoAnimatable animatable, String name,

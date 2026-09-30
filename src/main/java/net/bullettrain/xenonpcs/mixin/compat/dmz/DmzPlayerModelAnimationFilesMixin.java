@@ -30,7 +30,7 @@ public abstract class DmzPlayerModelAnimationFilesMixin {
 
     @Inject(
             method = {
-                    "getAnimationResourceFallbacks(Lsoftware/bernie/geckolib/animatable/GeoAnimatable;)[Lnet/minecraft/resources/ResourceLocation;",
+                    "getAnimationResourceFallbacks(Lsoftware/bernie/geckolib/core/animatable/GeoAnimatable;)[Lnet/minecraft/resources/ResourceLocation;",
                     "getAnimationResourceFallbacks(Lnet/minecraft/client/player/AbstractClientPlayer;)[Lnet/minecraft/resources/ResourceLocation;"
             },
             at = @At("RETURN"),

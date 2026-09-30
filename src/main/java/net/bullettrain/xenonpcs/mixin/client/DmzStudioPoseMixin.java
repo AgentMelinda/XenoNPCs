@@ -47,7 +47,7 @@ import java.util.Map;
 @Mixin(value = DMZPlayerModel.class, remap = false)
 public abstract class DmzStudioPoseMixin {
     @Inject(
-            method = "setCustomAnimations(Lnet/minecraft/client/player/AbstractClientPlayer;JLsoftware/bernie/geckolib/animation/AnimationState;)V",
+            method = "setCustomAnimations(Lnet/minecraft/client/player/AbstractClientPlayer;JLsoftware/bernie/geckolib/core/animation/AnimationState;)V",
             at = @At("RETURN"),
             require = 0
     )

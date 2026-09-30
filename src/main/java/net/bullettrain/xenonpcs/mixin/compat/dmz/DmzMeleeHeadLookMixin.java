@@ -19,7 +19,7 @@ import software.bernie.geckolib.cache.object.GeoBone;
 public abstract class DmzMeleeHeadLookMixin {
 
     @Inject(
-            method = "setCustomAnimations(Lnet/minecraft/client/player/AbstractClientPlayer;JLsoftware/bernie/geckolib/animation/AnimationState;)V",
+            method = "setCustomAnimations(Lnet/minecraft/client/player/AbstractClientPlayer;JLsoftware/bernie/geckolib/core/animation/AnimationState;)V",
             at = @At("RETURN"),
             require = 0
     )

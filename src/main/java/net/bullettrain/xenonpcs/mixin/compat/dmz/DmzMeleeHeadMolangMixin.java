@@ -8,7 +8,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import software.bernie.geckolib.core.animation.AnimationState;
 
 /**
  * Feeds body yaw and a level pitch into DragonMineZ's Molang look queries for the combo window, so
@@ -56,15 +55,13 @@ public abstract class DmzMeleeHeadMolangMixin {
     private AbstractClientPlayer xenopixels$swapped;
 
     @Inject(
-            method = "applyMolangQueries(Lsoftware/bernie/geckolib/animation/AnimationState;D)V",
+            method = "applyMolangQueries(Lnet/minecraft/client/player/AbstractClientPlayer;D)V",
             at = @At("HEAD"),
             require = 0
     )
-    private void xenopixels$headFollowsBodyPre(AnimationState<?> state, double animTime, CallbackInfo ci) {
+    private void xenopixels$headFollowsBodyPre(AbstractClientPlayer player, double animTime, CallbackInfo ci) {
         xenopixels$swapped = null;
-        Object animatable = state != null ? state.getAnimatable() : null;
-        if (!DmzMeleeHeadGate.active(animatable)) return;
-        if (!(animatable instanceof AbstractClientPlayer player)) return;
+        if (player == null || !DmzMeleeHeadGate.active(player)) return;
         xenopixels$savedHeadYaw = player.yHeadRot;
         xenopixels$savedHeadYawO = player.yHeadRotO;
         xenopixels$savedPitch = player.getXRot();
@@ -77,11 +74,11 @@ public abstract class DmzMeleeHeadMolangMixin {
     }
 
     @Inject(
-            method = "applyMolangQueries(Lsoftware/bernie/geckolib/animation/AnimationState;D)V",
+            method = "applyMolangQueries(Lnet/minecraft/client/player/AbstractClientPlayer;D)V",
             at = @At("RETURN"),
             require = 0
     )
-    private void xenopixels$headFollowsBodyPost(AnimationState<?> state, double animTime, CallbackInfo ci) {
+    private void xenopixels$headFollowsBodyPost(AbstractClientPlayer animatable, double animTime, CallbackInfo ci) {
         // Restore the player this pass swapped, not whoever the state names now: the model instance
         // is shared across every player it draws, and a shader pack renders the scene more than
         // once per frame.

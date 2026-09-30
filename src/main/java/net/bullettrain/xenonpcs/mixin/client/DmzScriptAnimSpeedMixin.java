@@ -28,7 +28,7 @@ public abstract class DmzScriptAnimSpeedMixin {
             method = "predicate",
             at = @At(
                     value = "INVOKE",
-                    target = "Lsoftware/bernie/geckolib/animation/AnimationController;setAnimationSpeed(D)V",
+                    target = "Lsoftware/bernie/geckolib/core/animation/AnimationController;setAnimationSpeed(D)Lsoftware/bernie/geckolib/core/animation/AnimationController;",
                     ordinal = 0,
                     shift = At.Shift.AFTER),
             remap = false,
