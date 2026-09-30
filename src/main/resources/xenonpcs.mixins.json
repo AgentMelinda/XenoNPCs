@@ -8,7 +8,11 @@
   ],
   "client": [
     "client.DmzLockOnAccessor",
-    "client.DmzLockOnNpcMixin"
+    "client.DmzLockOnNpcMixin",
+    "client.DmzStudioPoseMixin",
+    "client.DmzStudioClipFinishMixin",
+    "client.DmzResourceSyncPartialLoadMixin",
+    "client.DmzScriptAnimSpeedMixin"
   ],
   "injectors": {
     "defaultRequire": 1

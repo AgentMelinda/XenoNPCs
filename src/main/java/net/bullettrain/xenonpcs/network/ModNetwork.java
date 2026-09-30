@@ -2,6 +2,7 @@ package net.bullettrain.xenonpcs.network;
 
 import net.bullettrain.xenonpcs.XenoNpcsMod;
 import net.bullettrain.xenonpcs.network.packet.SyncFactionsPacket;
+import net.bullettrain.xenonpcs.network.packet.GuidanceHoldPacket;
 import net.bullettrain.xenonpcs.network.packet.CombatFxPacket;
 import net.bullettrain.xenonpcs.network.packet.PartySyncPacket;
 import net.bullettrain.xenonpcs.network.packet.PartyPingPacket;
@@ -165,6 +166,12 @@ public class ModNetwork {
                 .consumerMainThread(Bt3CombatPacket::handle)
                 .add();
 
+        CHANNEL.messageBuilder(ChargeAnimPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .decoder(ChargeAnimPacket::decode)
+                .encoder(ChargeAnimPacket::encode)
+                .consumerMainThread(ChargeAnimPacket::handle)
+                .add();
+
         // --- Combat impact FX (appended) ---
         // Server → client, but registered here at the end rather than up in the S2C block:
         // ids come from registration order, and inserting into that block would renumber every
@@ -186,6 +193,12 @@ public class ModNetwork {
                 .decoder(PartyPingPacket::new)
                 .encoder(PartyPingPacket::encode)
                 .consumerMainThread(PartyPingPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(GuidanceHoldPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .decoder(GuidanceHoldPacket::new)
+                .encoder(GuidanceHoldPacket::encode)
+                .consumerMainThread(GuidanceHoldPacket::handle)
                 .add();
 
         CHANNEL.messageBuilder(net.bullettrain.xenonpcs.network.packet.NpcAuraPacket.class, id++,
@@ -228,6 +241,13 @@ public class ModNetwork {
                 .decoder(net.bullettrain.xenonpcs.network.packet.DmzLockOnPacket::new)
                 .encoder(net.bullettrain.xenonpcs.network.packet.DmzLockOnPacket::encode)
                 .consumerMainThread(net.bullettrain.xenonpcs.network.packet.DmzLockOnPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(net.bullettrain.xenonpcs.network.packet.Bt3RushStatePacket.class, id++,
+                        NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(net.bullettrain.xenonpcs.network.packet.Bt3RushStatePacket::new)
+                .encoder(net.bullettrain.xenonpcs.network.packet.Bt3RushStatePacket::encode)
+                .consumerMainThread(net.bullettrain.xenonpcs.network.packet.Bt3RushStatePacket::handle)
                 .add();
 
         CHANNEL.messageBuilder(
