@@ -209,31 +209,98 @@ public final class XenoNpcAdapter extends XenoLivingAdapter<XenoNpcEntity> imple
         return XenoApiAdapters.runCommand(server, entity.createCommandSourceStack().withPermission(2), command);
     }
 
-    // ------------------------------------------------------------------ unsupported
+    // ------------------------------------------------------------------ sub-objects
 
-    @Override public INPCDisplay getDisplay() { throw XenoApiAdapters.unsupported("ICustomNpc.getDisplay"); }
-    @Override public INPCInventory getInventory() { throw XenoApiAdapters.unsupported("ICustomNpc.getInventory"); }
-    @Override public INPCStats getStats() { throw XenoApiAdapters.unsupported("ICustomNpc.getStats (use XenoPixels.getProfile/setStat)"); }
-    @Override public INPCAi getAi() { throw XenoApiAdapters.unsupported("ICustomNpc.getAi"); }
-    @Override public INPCAdvanced getAdvanced() { throw XenoApiAdapters.unsupported("ICustomNpc.getAdvanced"); }
-    @Override public IFaction getFaction() { throw XenoApiAdapters.unsupported("ICustomNpc.getFaction"); }
-    @Override public void setFaction(int id) { throw XenoApiAdapters.unsupported("ICustomNpc.setFaction"); }
-    @Override public INPCRole getRole() { throw XenoApiAdapters.unsupported("ICustomNpc.getRole"); }
-    @Override public INPCJob getJob() { throw XenoApiAdapters.unsupported("ICustomNpc.getJob"); }
-    @Override public void reset() { throw XenoApiAdapters.unsupported("ICustomNpc.reset"); }
-    @Override public void updateClient() { throw XenoApiAdapters.unsupported("ICustomNpc.updateClient (native NPC data syncs itself)"); }
-    @Override public void setDialog(int slot, IDialog dialog) { throw XenoApiAdapters.unsupported("ICustomNpc.setDialog"); }
-    @Override public IDialog getDialog(int slot) { throw XenoApiAdapters.unsupported("ICustomNpc.getDialog"); }
-    @Override public void trigger(int id, Object... arguments) { throw XenoApiAdapters.unsupported("ICustomNpc.trigger"); }
+    @Override public INPCDisplay getDisplay() { return new XenoNpcViews.Display(entity); }
+    @Override public INPCInventory getInventory() { return new XenoNpcViews.Inventory(entity); }
+    @Override public INPCStats getStats() { return new XenoNpcViews.Stats(entity); }
+    @Override public INPCAi getAi() { return new XenoNpcViews.Ai(entity); }
+    @Override public INPCAdvanced getAdvanced() { return new XenoNpcViews.Advanced(entity); }
+    @Override public INPCRole getRole() { return XenoNpcViews.role(entity); }
+    @Override public INPCJob getJob() { return XenoNpcViews.job(entity); }
+
+    // ------------------------------------------------------------------ faction / dialogs
+
+    /** The NPC's faction, or null when it has none or names one that no longer exists. */
+    @Override
+    public IFaction getFaction() {
+        String id = entity.npcData().faction();
+        return id.isBlank() || net.bullettrain.xenonpcs.npc.store.XenoNpcDataSource.faction(id) == null
+                ? null : new XenoFactionAdapter(id);
+    }
+
+    /** The faction with that CustomNPCs number; -1 clears it. */
+    @Override
+    public void setFaction(int id) {
+        String faction = id < 0 ? "" : XenoScriptIds.factionId(id);
+        if (faction == null) throw new xenoapi.npcs.api.CustomNPCsException("ICustomNpc.setFaction: no faction has number %s", id);
+        serverThread();
+        entity.npcData().setFaction(faction);
+        entity.refreshNameplate();
+    }
+
+    private static int dialogSlot(String method, int slot) {
+        if (slot < 0 || slot >= net.bullettrain.xenonpcs.npc.dialog.NpcDialogSlots.MAX_SLOTS) {
+            throw new IllegalArgumentException(method + ": slot must be 0-" + (net.bullettrain.xenonpcs.npc.dialog.NpcDialogSlots.MAX_SLOTS - 1));
+        }
+        return slot;
+    }
+
+    /** Links a stored conversation into one of the NPC's dialog slots; null empties the slot. */
+    @Override
+    public void setDialog(int slot, IDialog dialog) {
+        int index = dialogSlot("ICustomNpc.setDialog", slot);
+        XenoDialogAdapter target = dialog == null ? null : XenoDialogAdapter.nativeDialog(dialog);
+        XenoNpcViews.edit(entity, p -> {
+            if (target == null) p.dialogSlots.clear(index);
+            else p.dialogSlots.set(index, target.group, target.id);
+        });
+    }
+
+    @Override
+    public IDialog getDialog(int slot) {
+        var assigned = net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile.readCached(entity)
+                .dialogSlots.get(dialogSlot("ICustomNpc.getDialog", slot));
+        return assigned.assigned() ? new XenoDialogAdapter(assigned.group(), assigned.id()) : null;
+    }
+
+    /**
+     * Back to its starting state: home, full health, no target, as after a respawn. Stored
+     * settings are untouched.
+     */
+    @Override
+    public void reset() {
+        serverThread();
+        entity.setTarget(null);
+        entity.getNavigation().stop();
+        entity.clearFire();
+        entity.removeAllEffects();
+        entity.setHealth(entity.getMaxHealth());
+        var data = entity.npcData();
+        if (data.hasHome()) entity.teleportTo(data.homeX(), data.homeY(), data.homeZ());
+    }
+
+    /** Native NPC data syncs itself on every change; kept so CustomNPCs scripts run unchanged. */
+    @Override public void updateClient() { }
+
+    @Override
+    public void trigger(int id, Object... arguments) {
+        if (!(entity.level() instanceof net.minecraft.server.level.ServerLevel level)) {
+            throw new IllegalStateException("ICustomNpc.trigger needs a server level");
+        }
+        XenoScriptTriggers.fire(level, entity.blockPosition(), entity, id, arguments);
+    }
+
+    // ------------------------------------------------------------------ unsupported
 
     @Override
     public IProjectile shootItem(IEntityLiving target, IItemStack item, int accuracy) {
-        throw XenoApiAdapters.unsupported("ICustomNpc.shootItem");
+        throw XenoApiAdapters.unsupported("ICustomNpc.shootItem (native NPCs fire ki attacks, not item projectiles)");
     }
 
     @Override
     public IProjectile shootItem(double x, double y, double z, IItemStack item, int accuracy) {
-        throw XenoApiAdapters.unsupported("ICustomNpc.shootItem");
+        throw XenoApiAdapters.unsupported("ICustomNpc.shootItem (native NPCs fire ki attacks, not item projectiles)");
     }
 
     @Override

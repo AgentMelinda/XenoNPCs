@@ -321,7 +321,22 @@ public final class XenoItemAdapter implements IItemStack {
     }
 
     @Override public INbt getNbt() { throw XenoApiAdapters.unsupported("IItemStack.getNbt (1.21 items have components, not NBT; use getItemNbt)"); }
-    @Override public void damageItem(int damage, IMob living) { throw XenoApiAdapters.unsupported("IItemStack.damageItem"); }
+    /**
+     * Wears the stack by {@code damage}, as use would: unbreaking applies, and a stack that breaks
+     * is used up. {@code living} is who wears it; null wears it with no one to credit.
+     */
+    @Override
+    public void damageItem(int damage, IMob living) {
+        if (damage < 1 || damage > 1_000_000) throw new IllegalArgumentException("IItemStack.damageItem: damage must be 1-1000000");
+        var holder = XenoApiAdapters.unwrapLiving(living);
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        net.minecraft.server.level.ServerLevel level = holder != null && holder.level() instanceof net.minecraft.server.level.ServerLevel own
+                ? own : server == null ? null : server.overworld();
+        if (level == null) throw new IllegalStateException("IItemStack.damageItem needs a running server");
+        XenoApiAdapters.requireServerThread(level);
+        if (!stack.isDamageableItem()) return;
+        stack.hurtAndBreak(damage, level, holder, item -> { });
+    }
     private static final java.util.Map<ItemStack, java.util.Map<String, Object>> TEMP =
             java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
     private static final String STORED_DATA = "XenoScriptData";
@@ -342,5 +357,20 @@ public final class XenoItemAdapter implements IItemStack {
                 tag -> net.minecraft.world.item.component.CustomData.update(DataComponents.CUSTOM_DATA, stack,
                         root -> root.put(STORED_DATA, tag))));
     }
-    @Override public void use(IEntityLiving entity, boolean isMainHand) { throw XenoApiAdapters.unsupported("IItemStack.use"); }
+    /**
+     * Uses this stack as a right-click in the air by a player, from the chosen hand. The stack must
+     * be the one in that hand; only players use items this way.
+     */
+    @Override
+    public void use(IEntityLiving entity, boolean isMainHand) {
+        if (!(XenoApiAdapters.unwrap(entity) instanceof net.minecraft.server.level.ServerPlayer player)) {
+            throw new IllegalArgumentException("IItemStack.use: only a player can use an item");
+        }
+        var hand = isMainHand ? net.minecraft.world.InteractionHand.MAIN_HAND : net.minecraft.world.InteractionHand.OFF_HAND;
+        if (player.getItemInHand(hand) != stack) {
+            throw new IllegalArgumentException("IItemStack.use: the item must be the one in that hand");
+        }
+        XenoApiAdapters.requireServerThread(player.level());
+        player.gameMode.useItem(player, player.level(), stack, hand);
+    }
 }

@@ -15,7 +15,13 @@ import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ThrowableProjectile;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.BlockPos;
 import xenoapi.npcs.api.INbt;
 import xenoapi.npcs.api.IPos;
 import xenoapi.npcs.api.IRayTrace;
@@ -26,7 +32,10 @@ import xenoapi.npcs.api.entity.IEntityItem;
 import xenoapi.npcs.api.entity.data.IData;
 import xenoapi.npcs.api.item.IItemStack;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Any server-side entity as XenoAPI's {@link IEntity}. Every call reads or writes the live entity;
@@ -333,15 +342,32 @@ public class XenoEntityAdapter<T extends Entity> implements IEntity<T> {
         return XenoApiAdapters.wrap(tag);
     }
 
-    /** Live persistent data would bypass the bounded stored-data owner; see the capability table. */
+    /**
+     * The entity's extra persistent data, live, as CustomNPCs returns it: what a script writes here
+     * is saved with the entity. {@link #getStoreddata()} remains the bounded, typed alternative.
+     */
     @Override
     public INbt getNbt() {
-        throw XenoApiAdapters.unsupported("IEntity.getNbt (use getStoreddata/getTempdata)");
+        serverThread();
+        return XenoApiAdapters.wrap(entity.getPersistentData());
     }
 
+    /**
+     * Loads a whole saved entity over this one, as {@code getEntityNbt} returns it. Refused for
+     * players, whose save data also carries their inventory, position and game mode.
+     */
     @Override
     public void setEntityNbt(INbt nbt) {
-        throw XenoApiAdapters.unsupported("IEntity.setEntityNbt");
+        if (entity instanceof ServerPlayer) throw new IllegalArgumentException("IEntity.setEntityNbt: not for players");
+        CompoundTag tag = XenoApiAdapters.unwrap(nbt).copy();
+        serverThread();
+        entity.load(tag);
+        if (entity instanceof XenoNpcEntity npc) {
+            // The profile rides in persistent data; re-apply it so gear, stats and looks follow the load.
+            var profile = net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile.read(npc);
+            net.bullettrain.xenonpcs.compat.npc.NpcCounterpartSync.apply(npc, profile, true);
+            net.bullettrain.xenonpcs.compat.npc.NpcAppearanceFx.sync(npc);
+        }
     }
 
     /** Raw handles would let a sandboxed script reach every Minecraft method. */
@@ -350,31 +376,88 @@ public class XenoEntityAdapter<T extends Entity> implements IEntity<T> {
         throw XenoApiAdapters.unsupported("IEntity.getMCEntity (raw handles are not exposed)");
     }
 
-    // ------------------------------------------------------------------ unsupported
+    // ------------------------------------------------------------------ items / identity / clones
 
+    /** Drops a copy of the stack at this entity, as its own drop would. */
     @Override
-    public IEntityItem dropItem(IItemStack item) {
-        throw XenoApiAdapters.unsupported("IEntity.dropItem");
+    public IEntityItem<?> dropItem(IItemStack item) {
+        ItemStack stack = XenoApiAdapters.unwrap(item).copy();
+        if (stack.isEmpty()) throw new IllegalArgumentException("IEntity.dropItem: item cannot be empty");
+        serverThread();
+        ItemEntity dropped = entity.spawnAtLocation(stack);
+        return dropped == null ? null : new XenoEntityItemAdapter(dropped);
     }
 
+    /** Gives the entity a fresh random UUID and returns it. Refused for players, whose UUID is their account. */
     @Override
     public String generateNewUUID() {
-        throw XenoApiAdapters.unsupported("IEntity.generateNewUUID");
+        if (entity instanceof ServerPlayer) throw new IllegalArgumentException("IEntity.generateNewUUID: not for players");
+        serverThread();
+        UUID next = UUID.randomUUID();
+        entity.setUUID(next);
+        return next.toString();
     }
 
+    /** Saves this NPC to the clone library; see {@code NpcAPI.getClones()}. */
     @Override
     public void storeAsClone(int tab, String name) {
-        throw XenoApiAdapters.unsupported("IEntity.storeAsClone");
+        new XenoCloneHandler().set(tab, name, this);
     }
 
+    // ------------------------------------------------------------------ ray traces
+
+    static final double MAX_RAY = 256.0;
+
+    private Vec3 rayEnd(String method, double distance) {
+        if (!Double.isFinite(distance) || distance <= 0 || distance > MAX_RAY) {
+            throw new IllegalArgumentException(method + ": distance must be in (0, " + (int) MAX_RAY + "]");
+        }
+        return entity.getEyePosition().add(entity.getLookAngle().scale(distance));
+    }
+
+    private BlockHitResult clip(Vec3 end, boolean stopOnLiquid, boolean ignoreBlockWithoutBoundingBox) {
+        return entity.level().clip(new ClipContext(entity.getEyePosition(), end,
+                ignoreBlockWithoutBoundingBox ? ClipContext.Block.COLLIDER : ClipContext.Block.OUTLINE,
+                stopOnLiquid ? ClipContext.Fluid.ANY : ClipContext.Fluid.NONE, entity));
+    }
+
+    /** The first block along the look direction, or null when nothing is hit within {@code distance}. */
     @Override
     public IRayTrace rayTraceBlock(double distance, boolean stopOnLiquid, boolean ignoreBlockWithoutBoundingBox) {
-        throw XenoApiAdapters.unsupported("IEntity.rayTraceBlock");
+        Vec3 end = rayEnd("IEntity.rayTraceBlock", distance);
+        serverThread();
+        BlockHitResult hit = clip(end, stopOnLiquid, ignoreBlockWithoutBoundingBox);
+        if (hit.getType() == HitResult.Type.MISS || !(entity.level() instanceof ServerLevel level)) return null;
+        BlockPos pos = hit.getBlockPos();
+        int side = hit.getDirection().get3DDataValue();
+        XenoBlockAdapter block = new XenoBlockAdapter(level, pos);
+        return new IRayTrace() {
+            @Override public IPos getPos() { return new XenoPosAdapter(pos); }
+            @Override public xenoapi.npcs.api.block.IBlock getBlock() { return block; }
+            @Override public int getSideHit() { return side; }
+        };
     }
 
+    /** Entities the look ray passes through before the first block, nearest first. */
     @Override
     public IEntity[] rayTraceEntities(double distance, boolean stopOnLiquid, boolean ignoreBlockWithoutBoundingBox) {
-        throw XenoApiAdapters.unsupported("IEntity.rayTraceEntities");
+        Vec3 end = rayEnd("IEntity.rayTraceEntities", distance);
+        serverThread();
+        Vec3 start = entity.getEyePosition();
+        BlockHitResult block = clip(end, stopOnLiquid, ignoreBlockWithoutBoundingBox);
+        if (block.getType() != HitResult.Type.MISS) end = block.getLocation();
+        final Vec3 stop = end;
+        List<Entity> hits = new ArrayList<>();
+        java.util.Map<Entity, Double> along = new java.util.HashMap<>();
+        for (Entity other : entity.level().getEntities(entity, new AABB(start, stop).inflate(1.0))) {
+            if (!other.isPickable() && !(other instanceof LivingEntity)) continue;
+            var point = other.getBoundingBox().inflate(other.getPickRadius()).clip(start, stop);
+            if (point.isEmpty()) continue;
+            hits.add(other);
+            along.put(other, start.distanceToSqr(point.get()));
+        }
+        hits.sort(java.util.Comparator.comparingDouble(along::get));
+        return hits.stream().map(XenoApiAdapters::wrap).toArray(IEntity[]::new);
     }
 
     /** Vanilla client animations (reference): 0 swing main hand, 2 wake up (players only), 3 swing off hand. */

@@ -35,7 +35,7 @@ public final class PlayerScriptHost {
     /** Hooks a player tab may define: the four existing ones plus the typed XenoAPI player events. */
     public static final List<String> PLAYER_HOOKS = List.of("init", "tick", "interact", "attack", "broken",
             "toss", "pickedUp", "containerOpen", "containerClosed", "damagedEntity", "rangedLaunched", "died",
-            "kill", "damaged", "timer", "login", "logout", "levelUp", "chat");
+            "kill", "damaged", "timer", "login", "logout", "levelUp", "chat", "trigger");
 
     private record Tab(String id, NpcScriptEngine.Instance instance, boolean chatOnly) {}
     private record Host(int generation, List<Tab> tabs, boolean hasChat) {}
@@ -154,6 +154,7 @@ public final class PlayerScriptHost {
             HOSTS.remove(player.getUUID());
             PlayerScriptTimers.forget(player.getUUID());
             ScriptPlayer.forget(player.getUUID());
+            net.bullettrain.xenonpcs.npc.dialog.ScriptShownDialogues.forget(player.getUUID());
         }
     }
 

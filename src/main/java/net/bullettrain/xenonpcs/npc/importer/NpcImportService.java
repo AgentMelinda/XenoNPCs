@@ -77,8 +77,10 @@ public final class NpcImportService {
         long size = Files.size(blob);
         if (size > MAX_BLOB_BYTES) throw new IOException("file exceeds 8 MiB limit: " + size);
         CompoundTag tag = NbtIo.readCompressed(blob, NbtAccounter.create(MAX_BLOB_BYTES));
+        Map<String, Integer> slotById = new java.util.HashMap<>();
         for (Map.Entry<Integer, String> mapping : FactionsBlobImport.slotIds(tag).entrySet()) {
             report.mapFaction(root.mod(), mapping.getKey(), mapping.getValue());
+            slotById.put(mapping.getValue(), mapping.getKey());
         }
         for (XenoFaction faction : FactionsBlobImport.fanOut(tag, report)) {
             if (store.get(XenoNpcStoreCategory.FACTIONS, "", faction.id()) != null) {
@@ -88,8 +90,15 @@ public final class NpcImportService {
             if (dryRun) {
                 report.imported(root.mod() + " factions (dry run)", faction.id());
             } else {
+                CompoundTag written = XenoFactionNbt.write(faction);
+                // The CustomNPCs number, so scripts that address this faction by it still find it.
+                Integer slot = slotById.get(faction.id());
+                if (slot != null) {
+                    written.putString("SourceMod", root.mod());
+                    written.putInt("SourceSlot", slot);
+                }
                 storeOne(store, XenoNpcStoreCategory.FACTIONS, "", faction.id(),
-                        XenoFactionNbt.write(faction), "factions", report);
+                        written, "factions", report);
             }
         }
     }
@@ -147,9 +156,18 @@ public final class NpcImportService {
                 for (Map.Entry<Integer, DialogTreeImport.Ref> mapping : conversion.sourceSlots().entrySet()) {
                     report.mapDialog(root.mod(), mapping.getKey(), mapping.getValue());
                 }
+                Map<String, Integer> slotById = new java.util.HashMap<>();
+                for (Map.Entry<Integer, DialogTreeImport.Ref> mapping : conversion.sourceSlots().entrySet()) {
+                    slotById.put(mapping.getValue().id(), mapping.getKey());
+                }
                 for (DialogTreeImport.Imported dialog : conversion.dialogues()) {
                     CompoundTag tag = XenoDialogueNbt.write(dialog.dialogue());
                     tag.putString("Name", dialog.id());
+                    Integer slot = slotById.get(dialog.id());
+                    if (slot != null) {
+                        tag.putString("SourceMod", root.mod());
+                        tag.putInt("SourceSlot", slot);
+                    }
                     storeGrouped(store, XenoNpcStoreCategory.DIALOGS, group.getKey(), dialog.id(),
                             tag, category, dryRun, report);
                 }

@@ -785,6 +785,7 @@ public class XenoNpcEntity extends PathfinderMob
                 .onDialogViewed(serverPlayer, dialogue.start());
         net.bullettrain.xenonpcs.capability.XenoCapabilities.get(serverPlayer)
                 .ifPresent(data -> data.recordViewedDialogue(id));
+        net.bullettrain.xenonpcs.npc.dialog.ScriptShownDialogues.clear(serverPlayer);
         ModNetwork.sendToPlayer(serverPlayer,
                 new net.bullettrain.xenonpcs.network.packet.OpenXenoNpcDialoguePacket(
                         getId(), id, npcData.displayName(), dialogue));

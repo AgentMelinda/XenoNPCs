@@ -49,7 +49,7 @@ public final class ForgeScriptHost {
     public static final List<String> HOOKS = List.of("init", "serverTick", "playerLogin", "playerLogout",
             "playerRespawn", "playerChangedDimension", "livingDeath", "livingHurt", "entityJoin", "blockBreak",
             "blockPlace", "serverChat", "rightClickBlock", "rightClickItem", "leftClickBlock", "entityInteract",
-            "explosion");
+            "explosion", "trigger");
 
     static final int MAX_DEPTH = 3;
 
@@ -163,6 +163,15 @@ public final class ForgeScriptHost {
             e.world = new ScriptWorld(server);
             e.block = BuiltInRegistries.BLOCK.getKey(server.getBlockState(pos).getBlock()).toString();
         }
+    }
+
+    /** Fires {@code trigger} on the forge tabs (XenoAPI {@code IWorld.trigger} and friends). */
+    public static void fireTrigger(MinecraftServer server, int id, Object[] arguments, Entity at) {
+        if (!wants(server, "trigger")) return;
+        ForgeScriptEvent event = event("trigger", false, at);
+        event.id = id;
+        event.arguments = arguments;
+        fire(server, event);
     }
 
     // ---- events -------------------------------------------------------------------------------

@@ -358,11 +358,24 @@ public final class XenoWorldAdapter implements IWorld {
         return System.identityHashCode(level);
     }
 
-    // ------------------------------------------------------------------ unsupported
+    // ------------------------------------------------------------------ blocks / dimension / scoreboard
 
-    @Override public IBlock setBlock(IPos pos, String name) { throw XenoApiAdapters.unsupported("IWorld.setBlock(IPos, String) (use setBlock(x, y, z, name, 0))"); }
-    @Override public IDimension getDimension() { throw XenoApiAdapters.unsupported("IWorld.getDimension (use getName)"); }
-    @Override public IScoreboard getScoreboard() { throw XenoApiAdapters.unsupported("IWorld.getScoreboard"); }
+    @Override
+    public IBlock setBlock(IPos pos, String name) {
+        Objects.requireNonNull(pos, "IWorld.setBlock: pos");
+        return getBlock(pos).setBlock(name);
+    }
+
+    /** The dimension's id, such as {@code minecraft:overworld}. */
+    @Override
+    public IDimension getDimension() {
+        String id = level.dimension().location().toString();
+        return () -> id;
+    }
+
+    /** The server scoreboard, which vanilla shares across every dimension. */
+    @Override public IScoreboard getScoreboard() { return new XenoScoreboardAdapter(level.getScoreboard()); }
+
     /** Server-wide temp data, the same in every dimension (reference). */
     @Override
     public IData getTempdata() {
@@ -376,15 +389,49 @@ public final class XenoWorldAdapter implements IWorld {
         XenoWorldData data = XenoWorldData.get(level.getServer());
         return XenoDataAdapter.ofView(() -> XenoBoundedData.stored(data::stored, data::storedChanged));
     }
-    @Override public IEntity spawnClone(double x, double y, double z, int tab, String name) { throw XenoApiAdapters.unsupported("IWorld.spawnClone"); }
-    @Override public IEntity getClone(int tab, String name) { throw XenoApiAdapters.unsupported("IWorld.getClone"); }
-    @Override public IBlock getSpawnPoint() { throw XenoApiAdapters.unsupported("IWorld.getSpawnPoint"); }
-    @Override public void setSpawnPoint(IBlock block) { throw XenoApiAdapters.unsupported("IWorld.setSpawnPoint"); }
-    @Override public void trigger(int id, Object... arguments) { throw XenoApiAdapters.unsupported("IWorld.trigger"); }
 
+    // ------------------------------------------------------------------ clones / spawn / trigger
+
+    @Override
+    public IEntity spawnClone(double x, double y, double z, int tab, String name) {
+        return new XenoCloneHandler().spawn(x, y, z, tab, name, this);
+    }
+
+    @Override
+    public IEntity getClone(int tab, String name) {
+        return new XenoCloneHandler().get(tab, name, this);
+    }
+
+    /** The world spawn of this level. */
+    @Override public IBlock getSpawnPoint() { return new XenoBlockAdapter(level, level.getSharedSpawnPos()); }
+
+    @Override
+    public void setSpawnPoint(IBlock block) {
+        if (!(block instanceof XenoBlockAdapter target) || target.level() != level) {
+            throw new IllegalArgumentException("IWorld.setSpawnPoint: block must be a native block of this world");
+        }
+        serverThread();
+        level.setDefaultSpawnPos(target.blockPos(), level.getSharedSpawnAngle());
+    }
+
+    /** Fires {@code trigger} on the forge scripts (and Java listeners), with no entity or position. */
+    @Override
+    public void trigger(int id, Object... arguments) {
+        XenoScriptTriggers.fire(level, null, null, id, arguments);
+    }
+
+    /** Block-break particles of the named block, as {@code spawnParticle} otherwise. */
     @Override
     public void spawnParticleBlock(String name, double x, double y, double z, double dx, double dy, double dz,
                                    double speed, int count) {
-        throw XenoApiAdapters.unsupported("IWorld.spawnParticleBlock");
+        ResourceLocation id = name == null ? null : ResourceLocation.tryParse(name);
+        Block block = id == null ? null : BuiltInRegistries.BLOCK.getOptional(id).orElse(null);
+        if (block == null || block == Blocks.AIR) throw new CustomNPCsException("Unknown block id: %s", name);
+        XenoApiAdapters.requireFinite("IWorld.spawnParticleBlock", x, y, z, dx, dy, dz, speed);
+        if (count < 0 || count > MAX_PARTICLES) throw new IllegalArgumentException("IWorld.spawnParticleBlock: count must be 0-" + MAX_PARTICLES);
+        serverThread();
+        level.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                net.minecraft.core.particles.ParticleTypes.BLOCK, block.defaultBlockState()),
+                x, y, z, count, dx, dy, dz, speed);
     }
 }

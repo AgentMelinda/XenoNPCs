@@ -54,6 +54,7 @@ public final class XenoApiAdapters {
         if (entity instanceof XenoNpcEntity npc) return new XenoNpcAdapter(npc);
         if (entity instanceof ServerPlayer player) return new XenoPlayerAdapter(player);
         if (entity instanceof LivingEntity living) return new XenoLivingAdapter<>(living);
+        if (entity instanceof ItemEntity item) return new XenoEntityItemAdapter(item);
         return new XenoEntityAdapter<>(entity);
     }
 

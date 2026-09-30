@@ -80,6 +80,25 @@ public class XenoPlayerData {
         }
         viewedDialogues.add(key);
     }
+    /** Forgets that the player opened a dialogue, so before/after gates read it as unseen. */
+    public void forgetViewedDialogue(String id) {
+        if (id == null) return;
+        viewedDialogues.remove(id.trim().toLowerCase(java.util.Locale.ROOT));
+    }
+
+    /**
+     * Resets NPC progress: quests, viewed dialogues, faction standing, discovered transport and
+     * item-giver history (XenoAPI {@code IPlayer.clearData}). Bank vaults are kept: they hold the
+     * player's items, and nothing about a reset should destroy those.
+     */
+    public void clearNpcProgress() {
+        quests.clear();
+        viewedDialogues.clear();
+        factionStanding.clear();
+        unlockedTransports.clear();
+        itemGiverUses.clear();
+    }
+
     /** Per-NPC Item Giver use, persisted with the player and copied on death. */
     private final Map<UUID, ItemGiverUse> itemGiverUses = new java.util.LinkedHashMap<>();
     private static final int MAX_ITEM_GIVER_USES = 4096;

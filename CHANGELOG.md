@@ -13,5 +13,8 @@ First public release of XenoNPCs, the NPC system from XenoPixels Network on its 
   with ki deflection off.
 - NPC, player and server scripting (JavaScript, Nashorn bundled); script files reload within two
   seconds of saving.
+- The CustomNPCs-style XenoAPI: factions, quests, dialogs, clones, mail, scoreboard, triggers and
+  the NPC settings objects (display, stats, AI, inventory, lines, role, job). Imported CustomNPCs /
+  My NPCs content keeps its numbers.
 - Optional CustomNPCs / My NPCs integration.
 - Declared incompatible with XenoPixels Network, which already contains all of this.

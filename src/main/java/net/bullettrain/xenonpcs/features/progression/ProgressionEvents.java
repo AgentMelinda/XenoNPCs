@@ -374,6 +374,19 @@ public final class ProgressionEvents {
         }
     }
 
+    /**
+     * Finishes {@code quest} when every objective is met, exactly as a kill or a visit would: an
+     * INSTANT quest pays out, an NPC-mode one is marked ready. For script-set progress.
+     */
+    public static void finishIfDone(ServerPlayer player, XenoPlayerData data, ActiveQuest quest) {
+        if (player == null || data == null || quest == null || quest.ready()) return;
+        if (quest.allStepsDone(ParallelQuests.stepsFor(quest.id()).size(), targetsOf(quest.id()))) {
+            finish(player, data, quest);
+        } else {
+            QuestSync.push(player);
+        }
+    }
+
     private static int[] targetsOf(String questId) {
         java.util.List<QuestStep> steps = ParallelQuests.stepsFor(questId);
         int[] required = new int[Math.max(1, steps.size())];

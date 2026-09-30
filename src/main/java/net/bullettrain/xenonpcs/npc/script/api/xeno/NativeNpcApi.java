@@ -219,24 +219,83 @@ public final class NativeNpcApi extends NpcAPI {
     /** The counting bus behind events(), for the build-only-when-listened gate. */
     public net.bullettrain.xenonpcs.npc.script.api.xeno.event.XenoEventBus eventBus() { return events; }
 
-    // ------------------------------------------------------------------ unsupported
+    // ------------------------------------------------------------------ containers
 
     @Override public IContainer getIContainer(Container container) { return XenoContainerAdapter.of(container); }
     @Override public IContainer getIContainer(AbstractContainerMenu container) { return XenoContainerAdapter.of(container); }
-    @Override public IFactionHandler getFactions() { throw XenoApiAdapters.unsupported("NpcAPI.getFactions"); }
-    @Override public IRecipeHandler getRecipes() { throw XenoApiAdapters.unsupported("NpcAPI.getRecipes"); }
-    @Override public IQuestHandler getQuests() { throw XenoApiAdapters.unsupported("NpcAPI.getQuests (use the player's native quest slots)"); }
-    @Override public IDialogHandler getDialogs() { throw XenoApiAdapters.unsupported("NpcAPI.getDialogs"); }
-    @Override public ICloneHandler getClones() { throw XenoApiAdapters.unsupported("NpcAPI.getClones"); }
-    @Override public IPlayerMail createMail(String sender, String subject) { throw XenoApiAdapters.unsupported("NpcAPI.createMail"); }
-    @Override public INbt getRawPlayerData(String uuid) { throw XenoApiAdapters.unsupported("NpcAPI.getRawPlayerData"); }
-    @Override public void registerScriptEvent(Class c) { throw XenoApiAdapters.unsupported("NpcAPI.registerScriptEvent"); }
-    @Override public File getGlobalDir() { throw XenoApiAdapters.unsupported("NpcAPI.getGlobalDir"); }
-    @Override public boolean hasPermissionNode(String permission) { throw XenoApiAdapters.unsupported("NpcAPI.hasPermissionNode"); }
-    @Override public String getRandomName(int dictionary, int gender) { throw XenoApiAdapters.unsupported("NpcAPI.getRandomName"); }
+
+    // ------------------------------------------------------------------ content handlers
+
+    /** Store and datapack factions; numbers are the ones imported content carries. */
+    @Override public IFactionHandler getFactions() { return new XenoFactionHandler(); }
+
+    /** Store, datapack and built-in quests. */
+    @Override public IQuestHandler getQuests() { return new XenoQuestHandler(); }
+
+    /** Stored conversations; an imported dialog N is its tree {@code dialog_N}. */
+    @Override public IDialogHandler getDialogs() { return new XenoDialogHandler(); }
+
+    /** The world store's clone library, tabs 1-9. */
+    @Override public ICloneHandler getClones() { return new XenoCloneHandler(); }
+
+    @Override
+    public IPlayerMail createMail(String sender, String subject) {
+        return new XenoPlayerMail(sender, subject);
+    }
+
+    /**
+     * A detached copy of a player's saved data: the live player's when online, otherwise their file
+     * in the world's player data folder. Null for a player this world has never seen.
+     */
+    @Override
+    public INbt getRawPlayerData(String uuid) {
+        java.util.UUID id;
+        try {
+            id = java.util.UUID.fromString(uuid == null ? "" : uuid.trim());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("XenoAPI getRawPlayerData: not a UUID: " + uuid);
+        }
+        MinecraftServer server = server("getRawPlayerData");
+        var online = server.getPlayerList().getPlayer(id);
+        if (online != null) {
+            XenoApiAdapters.requireServerThread(online.level());
+            CompoundTag tag = new CompoundTag();
+            online.saveWithoutId(tag);
+            return XenoApiAdapters.wrap(tag);
+        }
+        java.nio.file.Path file = server.getWorldPath(LevelResource.PLAYER_DATA_DIR).resolve(id + ".dat");
+        if (!java.nio.file.Files.isRegularFile(file)) return null;
+        try {
+            return XenoApiAdapters.wrap(net.minecraft.nbt.NbtIo.readCompressed(file,
+                    net.minecraft.nbt.NbtAccounter.create(16L * 1024L * 1024L)));
+        } catch (java.io.IOException e) {
+            throw new CustomNPCsException(e, "Could not read player data for %s", id);
+        }
+    }
+
+    /** The world's Xeno NPC store folder ({@code <world>/XenoNpcs}), where scripts and content live. */
+    @Override
+    public File getGlobalDir() {
+        var store = net.bullettrain.xenonpcs.npc.store.XenoNpcStores.get();
+        if (store != null) return store.root().toFile();
+        return server("getGlobalDir").getWorldPath(LevelResource.ROOT)
+                .resolve(net.bullettrain.xenonpcs.npc.store.XenoNpcWorldStore.ROOT_FOLDER).toFile();
+    }
+
+    /** Whether a boolean NeoForge permission node of that name is registered. */
+    @Override
+    public boolean hasPermissionNode(String permission) {
+        return XenoPermissions.node(permission) != null;
+    }
+
+    // ------------------------------------------------------------------ unsupported
+
+    @Override public IRecipeHandler getRecipes() { throw XenoApiAdapters.unsupported("NpcAPI.getRecipes (there is no carpentry bench natively)"); }
+    @Override public void registerScriptEvent(Class c) { throw XenoApiAdapters.unsupported("NpcAPI.registerScriptEvent (forge scripts use a fixed hook list)"); }
+    @Override public String getRandomName(int dictionary, int gender) { throw XenoApiAdapters.unsupported("NpcAPI.getRandomName (CustomNPCs' name dictionaries are not bundled)"); }
 
     @Override
     public ICustomGui createCustomGui(String name, int width, int height, boolean pauseGame, IPlayer player) {
-        throw XenoApiAdapters.unsupported("NpcAPI.createCustomGui");
+        throw XenoApiAdapters.unsupported("NpcAPI.createCustomGui (custom GUIs are not implemented natively)");
     }
 }

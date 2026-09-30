@@ -1,11 +1,17 @@
 package net.bullettrain.xenonpcs.npc.script.api.xeno;
 
+import net.bullettrain.xenonpcs.capability.XenoCapabilities;
+import net.bullettrain.xenonpcs.capability.XenoPlayerData;
+import net.bullettrain.xenonpcs.features.progression.ParallelQuests;
+import net.bullettrain.xenonpcs.features.progression.QuestDialogueFilter;
+import net.bullettrain.xenonpcs.features.progression.QuestSync;
 import net.bullettrain.xenonpcs.npc.script.api.ScriptEntity;
 import net.bullettrain.xenonpcs.npc.script.api.ScriptPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -65,8 +71,6 @@ public final class XenoPlayerAdapter extends XenoLivingAdapter<ServerPlayer> imp
         serverThread();
         entity.connection.disconnect(Component.literal(reason.isEmpty() ? "Kicked" : reason));
     }
-
-    @Override public void setName(String name) { throw XenoApiAdapters.unsupported("IPlayer.setName"); }
 
     // ------------------------------------------------------------------ quests (native slots)
 
@@ -259,42 +263,264 @@ public final class XenoPlayerAdapter extends XenoLivingAdapter<ServerPlayer> imp
                 Math.max(0.5f, Math.min(2.0f, pitch)));
     }
 
-    // ------------------------------------------------------------------ unsupported
+    // ------------------------------------------------------------------ factions (imported numbers)
 
-    @Override public int factionStatus(int factionId) { throw XenoApiAdapters.unsupported("IPlayer.factionStatus"); }
-    @Override public void removeQuest(int id) { throw XenoApiAdapters.unsupported("IPlayer.removeQuest"); }
-    @Override public boolean hasReadDialog(int id) { throw XenoApiAdapters.unsupported("IPlayer.hasReadDialog"); }
-    @Override public void showDialog(int id, String name) { throw XenoApiAdapters.unsupported("IPlayer.showDialog"); }
-    @Override public void removeDialog(int id) { throw XenoApiAdapters.unsupported("IPlayer.removeDialog"); }
-    @Override public void addDialog(int id) { throw XenoApiAdapters.unsupported("IPlayer.addDialog"); }
-    @Override public void addFactionPoints(int faction, int points) { throw XenoApiAdapters.unsupported("IPlayer.addFactionPoints"); }
-    @Override public int getFactionPoints(int faction) { throw XenoApiAdapters.unsupported("IPlayer.getFactionPoints"); }
+    private static String faction(String method, int number) {
+        String id = XenoScriptIds.factionId(number);
+        if (id == null) throw new xenoapi.npcs.api.CustomNPCsException("%s: no faction has number %s", method, number);
+        return id;
+    }
+
+    /** -1 hostile, 0 neutral, 1 friendly; an unknown faction number reads as neutral. */
+    @Override
+    public int factionStatus(int factionId) {
+        String id = XenoScriptIds.factionId(factionId);
+        return id == null ? 0 : XenoFactionAdapter.status(entity, id);
+    }
+
+    @Override
+    public void addFactionPoints(int faction, int points) {
+        String id = faction("IPlayer.addFactionPoints", faction);
+        serverThread();
+        data().addFactionStanding(id, points);
+    }
+
+    @Override
+    public int getFactionPoints(int faction) {
+        String id = XenoScriptIds.factionId(faction);
+        return id == null ? 0 : XenoCapabilities.get(entity).map(d -> d.getFactionStanding(id)).orElse(0);
+    }
+
+    private XenoPlayerData data() {
+        return XenoCapabilities.get(entity).orElseThrow(() -> new IllegalStateException("The player has no Xeno data"));
+    }
+
+    // ------------------------------------------------------------------ quests
+
+    /** Drops the quest whether active or finished, so it can be taken again from the start. */
+    @Override
+    public void removeQuest(int id) {
+        String quest = XenoScriptIds.questId(id);
+        if (quest == null) return;
+        serverThread();
+        XenoPlayerData data = data();
+        data.quests().abandon(quest);
+        data.quests().forgetCompleted(quest);
+        QuestSync.push(entity);
+    }
+
+    @Override
+    public IQuest[] getActiveQuests() {
+        java.util.List<IQuest> out = new java.util.ArrayList<>();
+        for (var active : data().quests().actives()) {
+            if (ParallelQuests.definition(active.id()) != null) out.add(new XenoQuestAdapter(active.id()));
+        }
+        return out.toArray(IQuest[]::new);
+    }
+
+    @Override
+    public IQuest[] getFinishedQuests() {
+        java.util.List<IQuest> out = new java.util.ArrayList<>();
+        for (String id : data().quests().completed()) {
+            if (ParallelQuests.definition(id) != null) out.add(new XenoQuestAdapter(id));
+        }
+        return out.toArray(IQuest[]::new);
+    }
+
+    /** Whether starting it now would succeed: it exists, its availability passes, and it is not held or on cooldown. */
+    @Override
+    public boolean canQuestBeAccepted(int id) {
+        String quest = XenoScriptIds.questId(id);
+        ParallelQuests.QuestDef def = quest == null ? null : ParallelQuests.definition(quest);
+        if (def == null) return false;
+        XenoPlayerData data = data();
+        if (data.quests().isActive(def.id())) return false;
+        if (data.quests().hasCompleted(def.id()) && !def.repeat().canRestart(
+                data.quests().completedAt(def.id()), data.quests().completedAtReal(def.id()),
+                entity.level().getGameTime(), System.currentTimeMillis())) {
+            return false;
+        }
+        return QuestDialogueFilter.canOffer(entity, data, def.id());
+    }
+
+    // ------------------------------------------------------------------ dialogs (imported numbers)
+
+    private static XenoScriptIds.Ref dialog(String method, int number) {
+        XenoScriptIds.Ref ref = XenoScriptIds.dialog(number);
+        if (ref == null) throw new xenoapi.npcs.api.CustomNPCsException("%s: no dialog has number %s", method, number);
+        return ref;
+    }
+
+    @Override
+    public boolean hasReadDialog(int id) {
+        XenoScriptIds.Ref ref = XenoScriptIds.dialog(id);
+        return ref != null && data().hasViewedDialogue(ref.group() + "/" + ref.id());
+    }
+
+    /** Opens the dialog as {@code name}, as though an NPC of that name had started it. */
+    @Override
+    public void showDialog(int id, String name) {
+        XenoScriptIds.Ref ref = dialog("IPlayer.showDialog", id);
+        String speaker = XenoApiAdapters.boundedText("IPlayer.showDialog", name, 64);
+        serverThread();
+        show(entity, new XenoDialogAdapter(ref.group(), ref.id()), entity.getId(), speaker);
+    }
+
+    /** Filters the tree for this player, records it as read, and opens it anchored on {@code hostEntityId}. */
+    static void show(ServerPlayer player, XenoDialogAdapter dialog, int hostEntityId, String speaker) {
+        var tree = QuestDialogueFilter.forPlayer(player, dialog.asShown());
+        if (tree == null) return;
+        net.bullettrain.xenonpcs.features.progression.ProgressionEvents.onDialogViewed(player, tree.start());
+        XenoCapabilities.get(player).ifPresent(data -> data.recordViewedDialogue(dialog.ref()));
+        net.bullettrain.xenonpcs.npc.dialog.ScriptShownDialogues.show(player, hostEntityId, speaker, tree, dialog.ref());
+    }
+
+    @Override
+    public void removeDialog(int id) {
+        XenoScriptIds.Ref ref = XenoScriptIds.dialog(id);
+        if (ref == null) return;
+        serverThread();
+        data().forgetViewedDialogue(ref.group() + "/" + ref.id());
+    }
+
+    @Override
+    public void addDialog(int id) {
+        XenoScriptIds.Ref ref = dialog("IPlayer.addDialog", id);
+        serverThread();
+        data().recordViewedDialogue(ref.group() + "/" + ref.id());
+    }
+
+    // ------------------------------------------------------------------ inventory / permissions / timers
+
     @Override public IContainer getInventory() { return XenoContainerAdapter.of(entity.getInventory()); }
-    @Override public boolean hasPermission(String permission) { throw XenoApiAdapters.unsupported("IPlayer.hasPermission"); }
-    @Override public Object getPixelmonData() { throw XenoApiAdapters.unsupported("IPlayer.getPixelmonData"); }
+
+    /** A registered boolean NeoForge permission node, decided by the server's permission handler. */
+    @Override public boolean hasPermission(String permission) { return XenoPermissions.has(entity, permission); }
+
     @Override
     public ITimers getTimers() {
         serverThread();
         return XenoTimersAdapter.forTimers(net.bullettrain.xenonpcs.npc.script.PlayerScriptTimers.of(entity),
                 () -> entity.level().getGameTime());
     }
-    @Override public IBlock getSpawnPoint() { throw XenoApiAdapters.unsupported("IPlayer.getSpawnPoint"); }
-    @Override public void setSpawnPoint(IBlock block) { throw XenoApiAdapters.unsupported("IPlayer.setSpawnPoint (use setSpawnpoint(x, y, z))"); }
-    @Override public void sendNotification(String title, String msg, int type) { throw XenoApiAdapters.unsupported("IPlayer.sendNotification"); }
-    @Override public void sendMail(IPlayerMail mail) { throw XenoApiAdapters.unsupported("IPlayer.sendMail"); }
-    @Override public void clearData() { throw XenoApiAdapters.unsupported("IPlayer.clearData"); }
-    @Override public IQuest[] getActiveQuests() { throw XenoApiAdapters.unsupported("IPlayer.getActiveQuests (use hasActiveQuest(slot))"); }
-    @Override public IQuest[] getFinishedQuests() { throw XenoApiAdapters.unsupported("IPlayer.getFinishedQuests (use hasFinishedQuest(slot))"); }
-    @Override public void playMusic(String sound, boolean background, boolean loops) { throw XenoApiAdapters.unsupported("IPlayer.playMusic"); }
-    @Override public void stopMusic() { throw XenoApiAdapters.unsupported("IPlayer.stopMusic"); }
+
+    // ------------------------------------------------------------------ spawn point
+
+    /** The player's respawn block, or the world spawn when they have none. */
+    @Override
+    public IBlock getSpawnPoint() {
+        var server = entity.getServer();
+        BlockPos pos = entity.getRespawnPosition();
+        ServerLevel level = server == null || pos == null ? null : server.getLevel(entity.getRespawnDimension());
+        if (level == null) {
+            level = server == null ? entity.serverLevel() : server.overworld();
+            pos = level.getSharedSpawnPos();
+        }
+        return new XenoBlockAdapter(level, pos);
+    }
+
+    @Override
+    public void setSpawnPoint(IBlock block) {
+        if (!(block instanceof XenoBlockAdapter target)) {
+            throw new IllegalArgumentException("IPlayer.setSpawnPoint: block must be a native block");
+        }
+        serverThread();
+        entity.setRespawnPosition(target.level().dimension(), target.blockPos(), 0.0f, true, false);
+    }
+
+    // ------------------------------------------------------------------ messages
+
+    /** A title and subtitle on screen; CustomNPCs' notification kinds all read the same. */
+    @Override
+    public void sendNotification(String title, String msg, int type) {
+        String head = XenoApiAdapters.boundedText("IPlayer.sendNotification", title, 256);
+        String body = XenoApiAdapters.boundedText("IPlayer.sendNotification", msg, 256);
+        serverThread();
+        entity.connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket(Component.literal(head)));
+        entity.connection.send(new net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket(Component.literal(body)));
+    }
+
+    /** Delivered at once: chat, items to the inventory, and the attached quest started. */
+    @Override
+    public void sendMail(IPlayerMail mail) {
+        if (!(mail instanceof XenoPlayerMail letter)) {
+            throw new IllegalArgumentException("IPlayer.sendMail: mail must come from NpcAPI.createMail");
+        }
+        serverThread();
+        letter.deliver(entity);
+    }
+
+    /** Resets quests, read dialogs, faction points, transport and item-giver history; bank vaults stay. */
+    @Override
+    public void clearData() {
+        serverThread();
+        data().clearNpcProgress();
+        QuestSync.push(entity);
+    }
+
+    // ------------------------------------------------------------------ music / website / trigger
+
+    private static final java.util.Map<java.util.UUID, ResourceLocation> MUSIC =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Plays a sound to this player on the music channel. Native sounds are one-shot: {@code loops}
+     * and {@code background} have no client-side player to honour them and are ignored.
+     */
+    @Override
+    public void playMusic(String sound, boolean background, boolean loops) {
+        SoundEvent event = XenoApiAdapters.sound(sound);
+        serverThread();
+        stopMusic();
+        MUSIC.put(entity.getUUID(), event.getLocation());
+        entity.playNotifySound(event, SoundSource.MUSIC, 1.0f, 1.0f);
+    }
+
+    @Override
+    public void stopMusic() {
+        serverThread();
+        ResourceLocation playing = MUSIC.remove(entity.getUUID());
+        if (playing != null) {
+            entity.connection.send(new net.minecraft.network.protocol.game.ClientboundStopSoundPacket(playing, SoundSource.MUSIC));
+        }
+    }
+
+    /** A clickable link in chat: the client asks the player before opening it, as vanilla links do. */
+    @Override
+    public void openWebsite(String url) {
+        String link = XenoApiAdapters.boundedText("IPlayer.openWebsite", url, 512);
+        java.net.URI uri;
+        try {
+            uri = new java.net.URI(link);
+        } catch (java.net.URISyntaxException e) {
+            throw new IllegalArgumentException("IPlayer.openWebsite: not a valid URL");
+        }
+        if (!"http".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(uri.getScheme())) {
+            throw new IllegalArgumentException("IPlayer.openWebsite: only http and https links");
+        }
+        serverThread();
+        entity.sendSystemMessage(Component.literal(link).withStyle(style -> style
+                .withColor(net.minecraft.ChatFormatting.AQUA).withUnderlined(true)
+                .withClickEvent(new net.minecraft.network.chat.ClickEvent(
+                        net.minecraft.network.chat.ClickEvent.Action.OPEN_URL, link))));
+    }
+
+    @Override
+    public void trigger(int id, Object... arguments) {
+        XenoScriptTriggers.fire(entity.serverLevel(), entity.blockPosition(), entity, id, arguments);
+    }
+
     @Override public IContainer getOpenContainer() { return XenoContainerAdapter.of(entity.containerMenu); }
-    @Override public boolean canQuestBeAccepted(int id) { throw XenoApiAdapters.unsupported("IPlayer.canQuestBeAccepted"); }
-    @Override public void showCustomGui(ICustomGui gui) { throw XenoApiAdapters.unsupported("IPlayer.showCustomGui"); }
-    @Override public ICustomGui getCustomGui() { throw XenoApiAdapters.unsupported("IPlayer.getCustomGui"); }
-    @Override public void trigger(int id, Object... arguments) { throw XenoApiAdapters.unsupported("IPlayer.trigger"); }
-    @Override public int getScreenWidth() { throw XenoApiAdapters.unsupported("IPlayer.getScreenWidth"); }
-    @Override public int getScreenHeight() { throw XenoApiAdapters.unsupported("IPlayer.getScreenHeight"); }
-    @Override public void openWebsite(String url) { throw XenoApiAdapters.unsupported("IPlayer.openWebsite"); }
+
+    // ------------------------------------------------------------------ unsupported
+
+    /** A player's name is their account's; no server can rename it. */
+    @Override public void setName(String name) { throw XenoApiAdapters.unsupported("IPlayer.setName (player names come from the account)"); }
+    @Override public Object getPixelmonData() { throw XenoApiAdapters.unsupported("IPlayer.getPixelmonData (Pixelmon is not supported)"); }
+    @Override public void showCustomGui(ICustomGui gui) { throw XenoApiAdapters.unsupported("IPlayer.showCustomGui (custom GUIs are not implemented natively)"); }
+    @Override public ICustomGui getCustomGui() { throw XenoApiAdapters.unsupported("IPlayer.getCustomGui (custom GUIs are not implemented natively)"); }
+    @Override public int getScreenWidth() { throw XenoApiAdapters.unsupported("IPlayer.getScreenWidth (the server never learns the client's screen size)"); }
+    @Override public int getScreenHeight() { throw XenoApiAdapters.unsupported("IPlayer.getScreenHeight (the server never learns the client's screen size)"); }
 
     @Override
     public ServerPlayer getMCEntity() {

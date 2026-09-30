@@ -89,9 +89,9 @@ class XenoApiScriptCompatibilityTest {
         NpcScriptResult noServer = run("return XenoAPI.getIWorlds();");
         assertFalse(noServer.ok(), "a world lookup without a server must not look like success");
         assertTrue(noServer.describe().contains("running server"), noServer.describe());
-        NpcScriptResult unsupported = run("return XenoAPI.getFactions();");
+        NpcScriptResult unsupported = run("return XenoAPI.getRecipes();");
         assertFalse(unsupported.ok());
-        assertTrue(unsupported.describe().contains("NpcAPI.getFactions"), unsupported.describe());
+        assertTrue(unsupported.describe().contains("NpcAPI.getRecipes"), unsupported.describe());
     }
 
     @Test

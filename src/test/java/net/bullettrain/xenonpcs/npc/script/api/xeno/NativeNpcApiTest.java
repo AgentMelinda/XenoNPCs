@@ -44,9 +44,9 @@ class NativeNpcApiTest {
 
     @Test
     void unsupportedFacilitiesNameTheirMethod() {
-        var error = assertThrows(UnsupportedOperationException.class, offline::getFactions);
-        assertTrue(error.getMessage().contains("NpcAPI.getFactions"));
-        assertThrows(UnsupportedOperationException.class, () -> offline.createMail("a", "b"));
+        var error = assertThrows(UnsupportedOperationException.class, offline::getRecipes);
+        assertTrue(error.getMessage().contains("NpcAPI.getRecipes"));
+        assertThrows(UnsupportedOperationException.class, () -> offline.getRandomName(0, 0));
         assertThrows(UnsupportedOperationException.class, () -> offline.registerScriptEvent(Object.class));
     }
 

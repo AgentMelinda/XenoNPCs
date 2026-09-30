@@ -26,6 +26,9 @@ public final class ForgeScriptEvent {
     public String message;
     /** Damage amount for {@code livingHurt}; writable. */
     public float damage;
+    /** For {@code trigger}: the id and arguments the script passed. */
+    public int id;
+    public Object[] arguments;
     private final boolean cancelable;
     private boolean canceled;
 
@@ -35,6 +38,8 @@ public final class ForgeScriptEvent {
     }
 
     public String getHook() { return hook; }
+    public int getId() { return id; }
+    public Object[] getArguments() { return arguments; }
     public ScriptEntity getPlayer() { return player; }
     public ScriptEntity getEntity() { return entity; }
     public ScriptEntity getSource() { return source; }

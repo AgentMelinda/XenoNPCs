@@ -19,6 +19,38 @@ An NPC script gets these names:
 
 Player scripts and server-wide (forge) scripts get `XenoPixels` and `XenoAPI` too.
 
+## What XenoAPI covers
+
+The CustomNPCs calls scripts use most work on Xeno NPCs:
+
+- **Players:** messages, items, experience, game mode, spawn point, quests (start, finish, stop,
+  remove, active and finished lists, "can this be accepted"), faction points and status, dialogs
+  (show, read, add, remove), titles (`sendNotification`), mail, music, clickable website links,
+  permissions, timers, `clearData` and `trigger`.
+- **NPCs:** speech, targets, navigation, home, owner, commands, timers, faction, dialog slots,
+  mark, `reset`, `trigger`, and the settings objects `getDisplay()`, `getStats()` (with
+  `getMelee()` and `getRanged()`), `getAi()`, `getInventory()`, `getAdvanced()` (lines and
+  sounds), `getRole()` (a trader's shop) and `getJob()`. A change made through them applies at
+  once, exactly as saving the editor would.
+- **World:** blocks, entities, particles, sounds, explosions, the scoreboard (objectives, scores,
+  teams), clones, world spawn and `trigger`.
+- **`XenoAPI`:** `getFactions()`, `getQuests()`, `getDialogs()`, `getClones()`, `createMail(...)`,
+  `getRawPlayerData(...)` and `getGlobalDir()`.
+
+**Numbers.** CustomNPCs scripts name factions, dialogs and quests by number, for example
+`player.showDialog(3, "Elder")`. Content imported from CustomNPCs or My NPCs keeps its number.
+Content you make in XenoNPCs has no number (its `getId()` is -1): find it in the lists, such as
+`XenoAPI.getFactions().list()`, or by its id, such as `XenoAPI.getQuests().get("my_quest")`.
+
+**A few things work differently.** A dialog command runs when the player picks that option, not
+when the dialog opens, and only if the server allows dialogue commands. An `IDialog` is one step
+of a Xeno conversation, and its options lead to other steps of the same conversation.
+
+**Not available:** custom GUIs, the player's screen size, Pixelmon, carpentry recipes, random
+names, renaming a player, NPCs shooting item projectiles (they fire ki attacks), and the raw
+Minecraft objects (`getMCEntity()` and similar). A call to one of these stops the script with an
+error that names the call.
+
 ## Examples
 
 The `examples/customnpcs` folder in the XenoNPCs download has working scripts. Those whose names

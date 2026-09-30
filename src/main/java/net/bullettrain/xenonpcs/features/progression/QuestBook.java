@@ -84,6 +84,20 @@ public final class QuestBook {
         return null;
     }
 
+    /** Forgets that a quest was ever completed; an active copy is untouched. */
+    public void forgetCompleted(String id) {
+        String wanted = key(id);
+        completed.remove(wanted);
+        completedReal.remove(wanted);
+    }
+
+    /** Every active and completed quest gone, as a fresh player. */
+    public void clear() {
+        active.clear();
+        completed.clear();
+        completedReal.clear();
+    }
+
     /** Drops a quest without completing it. Its history, if any, is untouched. */
     public void abandon(String id) {
         active.remove(key(id));

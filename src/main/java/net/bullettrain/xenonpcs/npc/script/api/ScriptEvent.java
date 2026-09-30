@@ -16,6 +16,8 @@ public final class ScriptEvent {
     public final String hook;
     /** MyNPCs timer id; zero on other hooks. */
     public int id;
+    /** For {@code trigger}: the arguments the caller passed; null for every other hook. */
+    public Object[] arguments;
     /** Native quest lookup counterpart. */
     public final ScriptApi API = new ScriptApi();
     /** Mutable chat text on player chat hooks. */
@@ -40,6 +42,10 @@ public final class ScriptEvent {
         this.entity = entity;
         this.target = entity;
         this.damage = damage;
+    }
+
+    public Object[] getArguments() {
+        return arguments;
     }
 
     public ScriptNpc getNpc() {

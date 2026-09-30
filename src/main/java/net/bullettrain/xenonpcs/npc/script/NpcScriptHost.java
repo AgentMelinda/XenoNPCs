@@ -40,7 +40,8 @@ public final class NpcScriptHost {
     /** The hooks this runtime fires, each from a real call site on {@link XenoNpcEntity}. */
     public static final List<String> HOOKS = List.of(
             "init", "tick", "interact", "damaged", "died", "kill", "target", "targetLost",
-            "collide", "meleeAttack", "rangedLaunched", "timer", "dialog", "dialogOption", "rangedAttack");
+            "collide", "meleeAttack", "rangedLaunched", "timer", "dialog", "dialogOption", "rangedAttack",
+            "trigger");
 
     /** Bindings every tab gets, for the screen's Functions panel. */
     public static final List<String> BINDINGS = List.of(
@@ -231,6 +232,24 @@ public final class NpcScriptHost {
     /** Convenience for hooks with no other party. */
     public static boolean fire(XenoNpcEntity npc, String hook) {
         return fire(npc, hook, null, null, null, 0.0f);
+    }
+
+    /**
+     * Fires {@code trigger} on this NPC's tabs (XenoAPI {@code trigger(id, args)}). The typed
+     * {@code ScriptTriggerEvent} rides along as {@code event.xeno}; {@code event.id} and
+     * {@code event.arguments} carry the caller's values.
+     */
+    public static void fireTrigger(XenoNpcEntity npc, int id, Object[] arguments,
+                                   xenoapi.npcs.api.event.WorldEvent.ScriptTriggerEvent xeno) {
+        if (npc == null || npc.level().isClientSide()) return;
+        NpcScriptContainer container = NpcCombatProfile.readCached(npc).scripts;
+        if (container == null || container.isEmpty() || !container.enabled()) return;
+        Host host = hostFor(npc, container);
+        ScriptEvent event = new ScriptEvent("trigger", new ScriptNpc(npc, host.temp, host.timers),
+                null, null, null, 0, xeno);
+        event.id = id;
+        event.arguments = arguments;
+        dispatch(npc, host, "trigger", event);
     }
 
     /** Advances native timers every server tick; callbacks may schedule another timer safely. */

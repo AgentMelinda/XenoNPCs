@@ -130,6 +130,20 @@ public final class ActiveQuest {
         return true;
     }
 
+    /**
+     * Sets one objective's progress outright, for scripts (XenoAPI {@code IQuestObjective.setProgress}).
+     * Clamped to 0..{@code cap}; the quest's own completion check still decides when it finishes.
+     */
+    public void setStepProgress(int index, int value, int cap) {
+        if (index < 0 || index >= MAX_STEPS) {
+            return;
+        }
+        stepProgress[index] = Math.max(0, Math.min(Math.max(1, cap), value));
+        if (index == 0) {
+            progress = Math.min(target, stepProgress[0]);
+        }
+    }
+
     public int stepProgress(int index) {
         return index < 0 || index >= MAX_STEPS ? 0 : stepProgress[index];
     }

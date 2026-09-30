@@ -2,6 +2,8 @@ package net.bullettrain.xenonpcs.npc.script.api.xeno;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.level.block.Block;
@@ -18,7 +20,7 @@ import xenoapi.npcs.api.entity.data.IData;
 
 import java.util.Objects;
 
-/** A block position as XenoAPI's IBlock, read-mostly in sub-project 1. The state is read live. */
+/** A block position as XenoAPI's IBlock. The state is read live; edits apply to the live level. */
 public final class XenoBlockAdapter implements IBlock {
     private final ServerLevel level;
     private final BlockPos pos;
@@ -86,19 +88,128 @@ public final class XenoBlockAdapter implements IBlock {
 
     @Override public int hashCode() { return pos.hashCode(); }
 
-    // ------------------------------------------------------------------ unsupported until sub-project 4
+    /** The level this block is in. */
+    ServerLevel level() { return level; }
 
-    @Override public void setProperty(String name, Object val) { throw XenoApiAdapters.unsupported("IBlock.setProperty"); }
-    @Override public void remove() { throw XenoApiAdapters.unsupported("IBlock.remove (use IWorld.removeBlock)"); }
-    @Override public IBlock setBlock(String name) { throw XenoApiAdapters.unsupported("IBlock.setBlock"); }
-    @Override public IBlock setBlock(IBlock block) { throw XenoApiAdapters.unsupported("IBlock.setBlock"); }
-    @Override public IData getTempdata() { throw XenoApiAdapters.unsupported("IBlock.getTempdata"); }
-    @Override public IData getStoreddata() { throw XenoApiAdapters.unsupported("IBlock.getStoreddata"); }
-    @Override public void setTileEntityNBT(INbt nbt) { throw XenoApiAdapters.unsupported("IBlock.setTileEntityNBT"); }
+    /** Its position. */
+    BlockPos blockPos() { return pos; }
+
+    private String dataKey() {
+        return level.dimension().location() + "|" + pos.getX() + "," + pos.getY() + "," + pos.getZ();
+    }
+
+    // ------------------------------------------------------------------ editing
+
+    /** Sets one block-state property from its text form (as {@link #getProperty} returns it). */
+    @Override
+    public void setProperty(String name, Object val) {
+        BlockState state = state();
+        for (Property<?> property : state.getProperties()) {
+            if (property.getName().equals(name)) {
+                level.setBlock(pos, with(state, property, String.valueOf(val)), Block.UPDATE_ALL);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("IBlock.setProperty: " + getName() + " has no property " + name);
+    }
+
+    private static <T extends Comparable<T>> BlockState with(BlockState state, Property<T> property, String value) {
+        T parsed = property.getValue(value).orElseThrow(() -> new IllegalArgumentException(
+                "IBlock.setProperty: " + value + " is not a value of " + property.getName()));
+        return state.setValue(property, parsed);
+    }
+
+    @Override
+    public void remove() {
+        state();
+        level.removeBlock(pos, false);
+    }
+
+    /** Places the named block's default state here and returns this position. */
+    @Override
+    public IBlock setBlock(String name) {
+        ResourceLocation id = name == null ? null : ResourceLocation.tryParse(name);
+        Block block = id == null ? null : BuiltInRegistries.BLOCK.getOptional(id).orElse(null);
+        if (block == null) throw new xenoapi.npcs.api.CustomNPCsException("Unknown block id: %s", name);
+        state();
+        level.setBlock(pos, block.defaultBlockState(), Block.UPDATE_ALL);
+        return this;
+    }
+
+    /** Copies another block's full state (not its block entity) to this position. */
+    @Override
+    public IBlock setBlock(IBlock block) {
+        if (!(block instanceof XenoBlockAdapter source)) {
+            throw new IllegalArgumentException("IBlock.setBlock: block must be a native block");
+        }
+        BlockState copied = source.state();
+        state();
+        level.setBlock(pos, copied, Block.UPDATE_ALL);
+        return this;
+    }
+
+    // ------------------------------------------------------------------ script data
+
+    /** Per-position temp data, cleared when the server stops. */
+    @Override
+    public IData getTempdata() {
+        state();
+        return XenoDataAdapter.ofView(() -> XenoBoundedData.temp(XenoWorldData.blockTemp(dataKey())));
+    }
+
+    /** Per-position stored data, strings and numbers, kept in the world's XenoAPI save data. */
+    @Override
+    public IData getStoreddata() {
+        XenoWorldData data = XenoWorldData.get(level.getServer());
+        String key = dataKey();
+        return XenoDataAdapter.ofView(() -> XenoBoundedData.stored(() -> data.block(key),
+                tag -> data.blockChanged(key, tag)));
+    }
+
+    // ------------------------------------------------------------------ block entity
+
+    /** Loads {@code nbt} into this block's block entity and sends the change to clients. */
+    @Override
+    public void setTileEntityNBT(INbt nbt) {
+        CompoundTag tag = XenoApiAdapters.unwrap(nbt).copy();
+        BlockEntity be = blockEntity();
+        if (be == null) throw new IllegalStateException("IBlock.setTileEntityNBT: " + getName() + " has no block entity");
+        be.loadWithComponents(tag, level.registryAccess());
+        setChanged();
+    }
+
+    /** Marks the block entity changed and re-sends the block to clients. */
+    @Override
+    public void setChanged() {
+        BlockState state = state();
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be != null) be.setChanged();
+        level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
+    }
+
+    /** A vanilla block event (a note block's note, a chest lid, a piston), as {@code Level.blockEvent}. */
+    @Override
+    public void blockEvent(int type, int data) {
+        BlockState state = state();
+        level.blockEvent(pos, state.getBlock(), type, data);
+    }
+
+    /** Right-clicks this block with an empty hand as {@code entity}, who must be a player. */
+    @Override
+    public void interact(int side, IEntityLiving entity) {
+        if (!(XenoApiAdapters.unwrap(entity) instanceof net.minecraft.server.level.ServerPlayer player)) {
+            throw new IllegalArgumentException("IBlock.interact: only a player can use a block");
+        }
+        if (side < 0 || side > 5) throw new IllegalArgumentException("IBlock.interact: side must be 0-5");
+        BlockState state = state();
+        var hit = new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(pos),
+                net.minecraft.core.Direction.from3DDataValue(side), pos, false);
+        state.useWithoutItem(level, player, hit);
+    }
+
+    // ------------------------------------------------------------------ unsupported
+
     @Override public BlockEntity getMCTileEntity() { throw XenoApiAdapters.unsupported("IBlock.getMCTileEntity (raw handles are not exposed)"); }
     @Override public Block getMCBlock() { throw XenoApiAdapters.unsupported("IBlock.getMCBlock (raw handles are not exposed)"); }
     @Override public BlockState getMCBlockState() { throw XenoApiAdapters.unsupported("IBlock.getMCBlockState (raw handles are not exposed)"); }
-    @Override public void blockEvent(int type, int data) { throw XenoApiAdapters.unsupported("IBlock.blockEvent"); }
-    @Override public void interact(int side, IEntityLiving entity) { throw XenoApiAdapters.unsupported("IBlock.interact"); }
-    @Override public void setChanged() { throw XenoApiAdapters.unsupported("IBlock.setChanged"); }
 }

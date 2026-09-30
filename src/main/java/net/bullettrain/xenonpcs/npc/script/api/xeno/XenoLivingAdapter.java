@@ -207,11 +207,38 @@ public class XenoLivingAdapter<T extends LivingEntity> extends XenoEntityAdapter
         entity.yya = Math.max(-1.0f, Math.min(1.0f, move));
     }
 
+    // ------------------------------------------------------------------ marks (native NPCs)
+
+    private net.bullettrain.xenonpcs.npc.XenoNpcEntity markable(String method) {
+        if (entity instanceof net.bullettrain.xenonpcs.npc.XenoNpcEntity npc) return npc;
+        throw XenoApiAdapters.unsupported(method + " (only native Xeno NPCs carry a mark)");
+    }
+
+    /** Native NPCs carry one mark, so adding one replaces the one shown. */
+    @Override
+    public IMark addMark(int type) {
+        var npc = markable("IEntityLiving.addMark");
+        XenoMark mark = new XenoMark(npc);
+        mark.setType(type);
+        return mark;
+    }
+
+    @Override
+    public void removeMark(IMark mark) {
+        var npc = markable("IEntityLiving.removeMark");
+        if (mark == null) return;
+        new XenoMark(npc).setType(xenoapi.npcs.api.constants.MarkType.NONE);
+    }
+
+    @Override
+    public IMark[] getMarks() {
+        if (!(entity instanceof net.bullettrain.xenonpcs.npc.XenoNpcEntity npc)) return new IMark[0];
+        XenoMark mark = new XenoMark(npc);
+        return mark.getType() == xenoapi.npcs.api.constants.MarkType.NONE ? new IMark[0] : new IMark[] {mark};
+    }
+
     // ------------------------------------------------------------------ unsupported
 
-    @Override public IMark addMark(int type) { throw XenoApiAdapters.unsupported("IEntityLiving.addMark"); }
-    @Override public void removeMark(IMark mark) { throw XenoApiAdapters.unsupported("IEntityLiving.removeMark"); }
-    @Override public IMark[] getMarks() { throw XenoApiAdapters.unsupported("IEntityLiving.getMarks"); }
 
     @Override
     public T getMCEntity() {

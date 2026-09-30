@@ -156,6 +156,15 @@ public record XenoNpcStoreWritePacket(int category, String group, String id, boo
                 }
             }
 
+            if (!delete && (resolved == XenoNpcStoreCategory.FACTIONS
+                    || resolved == XenoNpcStoreCategory.DIALOGS
+                    || resolved == XenoNpcStoreCategory.QUESTS)) {
+                // The editor rebuilds these tags from its own fields, which do not include the
+                // CustomNPCs number an import recorded. Without this, saving an imported faction
+                // once would silently break every script that addressed it by number.
+                net.bullettrain.xenonpcs.npc.script.api.xeno.XenoScriptIds.carrySourceSlot(
+                        store.get(resolved, group, id), payload);
+            }
             String refusal = delete
                     ? store.remove(resolved, group, id)
                     : store.put(resolved, group, id, payload, Math.max(0, expectedRevision));

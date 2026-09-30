@@ -51,13 +51,20 @@ public record XenoNpcDialoguePacket(int entityId, String nodeId, int optionIndex
             if (player == null) {
                 return;
             }
-            if (!(player.level().getEntity(entityId) instanceof XenoNpcEntity npc)
-                    || player.distanceToSqr(npc) > MAX_DISTANCE_SQ) {
+            // A conversation a script opened is answered from the tree the script sent, which the
+            // server remembered; the client still only supplies the index.
+            var shown = net.bullettrain.xenonpcs.npc.dialog.ScriptShownDialogues.active(player, entityId);
+            var host = player.level().getEntity(entityId);
+            if (host == null || player.distanceToSqr(host) > MAX_DISTANCE_SQ) {
+                return;
+            }
+            XenoNpcEntity npc = host instanceof XenoNpcEntity xeno ? xeno : null;
+            if (shown == null && npc == null) {
                 return;
             }
 
             // Re-read from the server's own data rather than trusting anything but the index.
-            XenoDialogue dialogue = dialogueFor(npc);
+            XenoDialogue dialogue = shown != null ? shown.dialogue() : dialogueFor(npc);
             if (dialogue == null) {
                 return;
             }
@@ -66,10 +73,12 @@ public record XenoNpcDialoguePacket(int entityId, String nodeId, int optionIndex
                 return;
             }
             XenoDialogue.Option option = node.options().get(optionIndex);
-            net.bullettrain.xenonpcs.npc.script.NpcScriptHost.fire(npc, "dialogOption", player, null, null, optionIndex);
+            if (npc != null) {
+                net.bullettrain.xenonpcs.npc.script.NpcScriptHost.fire(npc, "dialogOption", player, null, null, optionIndex);
+            }
 
             switch (option.type()) {
-                case COMMAND -> runCommand(player, npc, option.command());
+                case COMMAND -> runCommand(player, host, option.command());
                 case QUEST -> offerQuest(player, npc, option.quest());
                 case TEXT -> net.bullettrain.xenonpcs.features.progression.ProgressionEvents
                         .onDialogOption(player, option.target());
@@ -122,7 +131,7 @@ public record XenoNpcDialoguePacket(int entityId, String nodeId, int optionIndex
         }
     }
 
-    private static void runCommand(ServerPlayer player, XenoNpcEntity npc, String command) {
+    private static void runCommand(ServerPlayer player, net.minecraft.world.entity.Entity npc, String command) {
         if (!XenoServerConfig.xenoNpcDialogueCommands) {
             player.sendSystemMessage(Component.literal(
                     "Dialogue commands are disabled on this server."));
