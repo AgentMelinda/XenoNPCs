@@ -1,0 +1,32 @@
+{
+  "vanish": {
+    "category": "player",
+    "subtitle": "subtitles.xenonpcs.vanish",
+    "sounds": [
+      {
+        "name": "xenonpcs:vanish_out",
+        "stream": false
+      }
+    ]
+  },
+  "hakai_voice": {
+    "category": "player",
+    "subtitle": "subtitles.xenonpcs.hakai_voice",
+    "sounds": [
+      {
+        "name": "xenonpcs:hakai_voice",
+        "stream": false
+      }
+    ]
+  },
+  "hakai_charge": {
+    "category": "player",
+    "subtitle": "subtitles.xenonpcs.hakai_charge",
+    "sounds": [
+      {
+        "name": "xenonpcs:hakai_charge",
+        "stream": false
+      }
+    ]
+  }
+}

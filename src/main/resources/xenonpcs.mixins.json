@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "package": "net.bullettrain.xenonpcs.mixin",
+  "refmap": "mixins.xenonpcs.refmap.json",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "common.StatsProviderNpcGetMixin"
+  ],
+  "client": [
+    "client.DmzLockOnAccessor",
+    "client.DmzLockOnNpcMixin",
+    "client.DmzStudioPoseMixin",
+    "client.DmzStudioClipFinishMixin",
+    "client.DmzResourceSyncPartialLoadMixin",
+    "client.DmzScriptAnimSpeedMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "minVersion": "0.8"
+}

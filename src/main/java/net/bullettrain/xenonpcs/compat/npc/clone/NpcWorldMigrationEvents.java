@@ -1,0 +1,51 @@
+package net.bullettrain.xenonpcs.compat.npc.clone;
+
+import net.bullettrain.xenonpcs.XenoNpcsMod;
+import net.bullettrain.xenonpcs.config.XenoServerConfig;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.server.ServerStartedEvent;
+
+/**
+ * Runs the CustomNPCs to My NPCs world-data migration once the server has a world open.
+ *
+ * <p>{@code ServerStartedEvent} rather than anything earlier: My NPCs' clone controller is what
+ * knows where the world's data folder is, and it has to have started before that can be asked.
+ *
+ * <p>Always logs its outcome, including when there was nothing to do. A migration that runs against
+ * somebody's server should leave an answer in the log to "did that happen, and what did it touch?".
+ */
+@EventBusSubscriber(modid = XenoNpcsMod.MOD_ID)
+public final class NpcWorldMigrationEvents {
+
+    private NpcWorldMigrationEvents() {
+    }
+
+    @SubscribeEvent
+    public static void onServerStarted(ServerStartedEvent event) {
+        if (!XenoServerConfig.migrateCustomNpcsWorldData) {
+            return;
+        }
+        if (!ModList.get().isLoaded("mynpcs")) {
+            return;
+        }
+        if (ModList.get().isLoaded("customnpcs")) {
+            // Both installed: CustomNPCs still owns its own data, and copying it now would only
+            // produce two diverging copies of the same world.
+            XenoNpcsMod.LOGGER.info("CustomNPCs is still installed; leaving its world data alone");
+            return;
+        }
+
+        NpcWorldMigrator.Result result = NpcWorldMigrator.run();
+        if (result.failed()) {
+            XenoNpcsMod.LOGGER.warn("CustomNPCs world data migration: {}", result.summary());
+        } else if (result.changedAnything()) {
+            XenoNpcsMod.LOGGER.info("CustomNPCs world data migrated to My NPCs: {}",
+                    result.summary());
+        } else {
+            XenoNpcsMod.LOGGER.info("CustomNPCs world data migration: nothing to do ({})",
+                    result.summary());
+        }
+    }
+}

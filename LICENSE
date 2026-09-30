@@ -1,0 +1,9 @@
+Copyright (c) 2026 bullettrain. All Rights Reserved.
+
+XenoNPCs, including its source code, assets and documentation, is the property of its author. No
+right to copy, modify, redistribute or create derivative works is granted without the author's
+written permission.
+
+The interfaces under src/main/java/xenoapi/ are adapted from Noppes' CustomNPCsAPI
+(https://github.com/Noppes/CustomNPCsAPI), which publishes no licence of its own; they are not
+covered by the notice above, and their terms are not established here.

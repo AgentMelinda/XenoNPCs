@@ -1,0 +1,48 @@
+package net.bullettrain.xenonpcs.npc.bank;
+
+import net.bullettrain.xenonpcs.XenoNpcsMod;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.common.extensions.IForgeMenuType;
+import net.minecraftforge.registries.RegistryObject;
+import net.minecraftforge.registries.DeferredRegister;
+
+/**
+ * The mod's container menus.
+ *
+ * <p>There are two, and the bank was the first the mod ever registered — everything else it opens is
+ * either a plain {@code Screen} or vanilla's {@code Merchant}. Registered through
+ * {@link IMenuTypeExtension#create} rather than {@code MenuType::new} because the bank needs to
+ * hand the client which tab, how many slots are unlocked, and whether an economy is present at the
+ * moment the screen opens; the plain supplier has nowhere to put that.
+ */
+public final class ModMenus {
+
+    private static final DeferredRegister<MenuType<?>> MENUS =
+            DeferredRegister.create(Registries.MENU, XenoNpcsMod.MOD_ID);
+
+    public static final RegistryObject<MenuType<XenoNpcBankMenu>> NPC_BANK =
+            MENUS.register("npc_bank",
+                    () -> IForgeMenuType.create(XenoNpcBankMenu::new));
+
+    /**
+     * The NPC's gear, drops and Curios as real slots.
+     *
+     * <p>Also {@link IMenuTypeExtension#create} rather than a plain supplier, because the screen has
+     * to know which NPC it is looking at and which Curios slots that NPC actually has - both decided
+     * server-side at the moment it opens, and neither expressible through {@code MenuType::new}.
+     */
+    public static final RegistryObject<MenuType<net.bullettrain.xenonpcs.npc.inventory.XenoNpcInventoryMenu>>
+            NPC_INVENTORY = MENUS.register("npc_inventory",
+                    () -> IForgeMenuType.create(
+                            net.bullettrain.xenonpcs.npc.inventory
+                                    .XenoNpcInventoryMenu::new));
+
+    private ModMenus() {
+    }
+
+    public static void register(IEventBus bus) {
+        MENUS.register(bus);
+    }
+}

@@ -1,0 +1,168 @@
+package net.bullettrain.xenonpcs.compat.npc;
+
+import java.util.Optional;
+import java.util.function.Consumer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.IItemHandlerModifiable;
+import net.minecraftforge.items.SlotItemHandler;
+import top.theillusivec4.curios.api.CuriosApi;
+import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
+import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
+
+/**
+ * Adds player-like Curios (equip + cosmetic) slots to an NPC inventory menu.
+ *
+ * <p>Slot count is fixed so the server and client always agree, even when the capability is
+ * missing on one side. Identifiers match {@code data/xenonpcs/curios/entities/npcs.json}.
+ */
+public final class NpcCuriosInventory {
+    /** Native CNPC/MyNPCs {@code ContainerNPCInv} slot count before this overlay. */
+    public static final int ORIGINAL_SLOT_COUNT = 52;
+
+    /**
+     * Must match {@code data/xenonpcs/curios/entities/npcs.json}.
+     * Layout is 4 columns × 5 rows (equip|cosmetic pairs) so 10 types fit above y=113.
+     */
+    public static final String[] SLOT_IDS = {
+            "head", "necklace", "back", "body", "bracelet",
+            "curio", "hands", "ring", "belt", "charm"
+    };
+
+    public static final int START_X = 108;
+    public static final int START_Y = 8;
+    public static final int SLOT_SIZE = 18;
+    public static final int COL_GAP = 2;
+
+    private static final IItemHandlerModifiable EMPTY = new EmptyHandler();
+
+    /**
+     * Whether the Curios slots are currently shown.
+     *
+     * <p>Off by default, and that is the fix for them covering the editor. The block sits at
+     * x 108-186, y 8-98, which is exactly where My NPCs draws its Min Exp and Max Exp fields
+     * (108,29 and 108,63, both 60x20) and its Normal/Auto button (88,88, 80x20). The panel has no
+     * free region that size, so the slots cannot simply be moved somewhere else -- they have to be
+     * out of the way until asked for.
+     *
+     * <p>Visibility, deliberately, and not slot count: the count is fixed so the server and client
+     * always agree on menu indices even when the Curios capability is missing on one side. Adding or
+     * removing slots to hide them would desync the menu. {@link Slot#isActive()} changes neither the
+     * count nor the sync, only whether a slot is drawn and can be hovered or clicked.
+     */
+    private static volatile boolean slotsVisible;
+
+    /** Whether the Curios block is showing. */
+    public static boolean slotsVisible() {
+        return slotsVisible;
+    }
+
+    /** Show or hide the Curios block; the editor's toggle calls this. */
+    public static void setSlotsVisible(boolean visible) {
+        slotsVisible = visible;
+    }
+
+    private NpcCuriosInventory() {
+    }
+
+    public static int extraSlotCount() {
+        return SLOT_IDS.length * 2;
+    }
+
+    public static int slotX(int index) {
+        int type = index / 2;
+        int cosmetic = index % 2;
+        int bank = type / 5;
+        int col = bank * 2 + cosmetic;
+        return START_X + col * (SLOT_SIZE + COL_GAP);
+    }
+
+    public static int slotY(int index) {
+        int type = index / 2;
+        int row = type % 5;
+        return START_Y + row * SLOT_SIZE;
+    }
+
+    public static void addSlots(LivingEntity npc, Consumer<Slot> sink) {
+        if (sink == null) return;
+        ICuriosItemHandler curios = handler(npc);
+        for (int i = 0; i < SLOT_IDS.length; i++) {
+            String id = SLOT_IDS[i];
+            ICurioStacksHandler stacks = curios == null ? null : curios.getStacksHandler(id).orElse(null);
+            IItemHandler equip = stacks == null ? EMPTY : stacks.getStacks();
+            IItemHandler cosmetic = stacks != null && stacks.hasCosmetic()
+                    ? stacks.getCosmeticStacks() : EMPTY;
+            int base = i * 2;
+            sink.accept(new CuriosSlot(equip, slotX(base), slotY(base)));
+            sink.accept(new CuriosSlot(cosmetic, slotX(base + 1), slotY(base + 1)));
+        }
+    }
+
+    private static ICuriosItemHandler handler(LivingEntity npc) {
+        if (npc == null || !ModList.get().isLoaded("curios")) return null;
+        Optional<ICuriosItemHandler> opt = CuriosApi.getCuriosInventory(npc).resolve();
+        return opt == null ? null : opt.orElse(null);
+    }
+
+    /**
+     * One locked slot so a missing capability still occupies a menu index.
+     * Must be {@link IItemHandlerModifiable}: {@code SlotItemHandler.set} casts to that
+     * during {@code ClientboundContainerSetContentPacket} sync.
+     */
+    /**
+     * A Curios slot that disappears with the block rather than being removed from the menu.
+     *
+     * <p>{@code isActive} is what the screen checks before drawing a slot and before treating the
+     * mouse as being over one, so an inactive slot is neither visible nor clickable while still
+     * holding its index in the menu.
+     */
+    private static final class CuriosSlot extends SlotItemHandler {
+        private CuriosSlot(IItemHandler handler, int x, int y) {
+            super(handler, 0, x, y);
+        }
+
+        @Override
+        public boolean isActive() {
+            return slotsVisible;
+        }
+    }
+
+    private static final class EmptyHandler implements IItemHandlerModifiable {
+        @Override
+        public int getSlots() {
+            return 1;
+        }
+
+        @Override
+        public ItemStack getStackInSlot(int slot) {
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public void setStackInSlot(int slot, ItemStack stack) {
+        }
+
+        @Override
+        public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            return stack;
+        }
+
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 0;
+        }
+
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return false;
+        }
+    }
+}

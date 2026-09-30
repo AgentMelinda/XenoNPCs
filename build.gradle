@@ -1,0 +1,173 @@
+// XenoNPCs for Minecraft 1.20.1 (Forge 47) - generated from XenoPixels by
+// tools/xenonpcs/export_xenonpcs.py --target 1.20.1 (the build is the hand-written part).
+// DragonMineZ 2.1.3 for 1.20.1 comes from CurseMaven; the optional CustomNPCs and CNPC Gecko Addon
+// 1.20.1 jars are read from libs/ at compile time only.
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'net.minecraftforge.gradle' version '6.0.54'
+    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id 'org.spongepowered.mixin' version '0.7.38'
+}
+
+version = "${mod_version}-${minecraft_version}"
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    withSourcesJar()
+}
+
+minecraft {
+    mappings channel: mapping_channel, version: mapping_version
+    copyIdeResources = true
+
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            property 'forge.logging.console.level', 'info'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+        client {}
+        server {
+            args '--nogui'
+        }
+    }
+}
+
+mixin {
+    add sourceSets.main, "mixins.${mod_id}.refmap.json"
+    config "${mod_id}.mixins.json"
+    config "${mod_id}.compat.mixins.json"
+}
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs 'libs'
+    }
+    maven {
+        url 'https://cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
+    maven {
+        name = 'GeckoLib'
+        url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+    }
+    maven {
+        name = 'Illusive Soulworks'
+        url = 'https://maven.theillusivec4.top/'
+    }
+    maven {
+        name = 'ParchmentMC'
+        url = 'https://maven.parchmentmc.org'
+    }
+}
+
+configurations {
+    library
+    implementation.extendsFrom library
+}
+
+minecraft.runs.configureEach {
+    lazyToken('minecraft_classpath') {
+        configurations.library.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
+    }
+}
+
+jarJar.enable()
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    annotationProcessor 'org.spongepowered:mixin:0.8.7:processor'
+    compileOnly(annotationProcessor('io.github.llamalad7:mixinextras-common:0.4.1'))
+
+    implementation fg.deobf("curse.maven:dragonminez-1136088:${dragonminez_curse_file}")
+    implementation fg.deobf("software.bernie.geckolib:geckolib-forge-1.20.1:${geckolib_version}")
+    implementation fg.deobf("com.github.glitchfiend:TerraBlender-forge:${terrablender_version}")
+    implementation fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
+
+    // Optional integrations, compile-time only (libs/). There is no My NPCs for 1.20.1.
+    compileOnly fg.deobf("blank:CustomNPCs-1.20.1-GBPort-Unofficial:${customnpcs_version}")
+    compileOnly fg.deobf("blank:CNPC-Gecko-Addon:${cnpcgecko_version}")
+
+    // NPC scripting runs on Nashorn. Forge 1.20.1 already ships nashorn-core 15.4 on the game
+    // classpath (coremods depends on it), so it is compile-only here: bundling a second copy puts
+    // the same module on the classpath twice ("Duplicate key ... nashorn-core-15.4.jar").
+    compileOnly "org.openjdk.nashorn:nashorn-core:${nashorn_version}"
+    testImplementation "org.openjdk.nashorn:nashorn-core:${nashorn_version}"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+    options.compilerArgs.addAll '-Xlint:-deprecation', '-Xlint:-removal', '-Xmaxerrs', '10000'
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+    systemProperty 'xenopixels.projectDir', projectDir.absolutePath
+    // Tests that need a running Forge game (bootstrap, transformed event bus, constructed mod);
+    // listed with reasons in EXPORT_REPORT.md and covered by the in-game checks instead.
+    def runtimeOnly = file('runtime-only-tests.txt')
+    if (runtimeOnly.exists()) {
+        filter {
+            runtimeOnly.readLines().collect { it.trim() }.findAll { it && !it.startsWith('#') }.each {
+                excludeTestsMatching it
+            }
+        }
+    }
+}
+
+def replaceProperties = [
+        minecraft_version      : minecraft_version,
+        minecraft_version_range: minecraft_version_range,
+        forge_version          : forge_version,
+        forge_version_range    : forge_version_range,
+        loader_version_range   : loader_version_range,
+        mod_id                 : mod_id,
+        mod_name               : mod_name,
+        mod_license            : mod_license,
+        mod_version            : mod_version,
+        mod_authors            : mod_authors,
+        mod_description        : mod_description
+]
+
+processResources {
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+                'Specification-Title'     : mod_id,
+                'Specification-Vendor'    : mod_authors,
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : project.name,
+                'Implementation-Version'  : project.version,
+                'Implementation-Vendor'   : mod_authors,
+                'MixinConfigs'            : "${mod_id}.mixins.json,${mod_id}.compat.mixins.json"
+        ])
+    }
+    finalizedBy 'reobfJar'
+}
+
+tasks.named('build').configure {
+    dependsOn 'jarJar'
+}
