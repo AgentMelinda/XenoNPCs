@@ -28,3 +28,9 @@ The release workflow names the assets xenonpcs-0.0.5-1.20.1-all.jar and xenonpcs
 This document records the state before tag push; GitHub Actions and the release asset list are authoritative for publication success. No production modpack startup, rendering, multiplayer, or unavailable Revamp/Noeaj integration is verified here. No fresh NeoForge game process was run for these packaging changes. The Forge runtime probe logs remain local.
 
 Unrelated untracked NeoForge tail test/handoff and build/server logs remain uncommitted. Forge raw logs, ctx/errors files, and wiki material remain uncommitted. Parent XenoPixels source and export tools were not edited. No game installation was changed by this release step. Safe next step after successful CI: use the jar matching the Minecraft version and loader, then verify the production modpack in a fresh process.
+
+## CI follow-up without tag rewriting
+
+First release run 37127285348 failed the new Forge audit because its generated SRG mapping file was not a dependency of test; publishing was skipped. Forge follow-up commit 70e6b05ea807168ac3568fca24bbfd0d0c40c2d3 explicitly generates that file. A full local build/test passed, and the focused audit passed with that output initially absent. The release workflow now pins this corrected Forge commit.
+
+Tag v0.0.5 remains on NeoForge commit 36c81d05b7aed6d731e7636bc3a89efc4e4013a3, with no history rewriting. The corrected release is dispatched from branch 1.21.1 using tag=v0.0.5; the NeoForge build still checks out the immutable tag and Forge checks out the new immutable pin. The workflow run records the exact workflow commit. CI's NeoForge all jar is 15487576 bytes, SHA-256 3f0a669f745738918033aec1b7aea94dba49aebbc36a96a552139e1e2f59a8b3; its embedded version and Nashorn jar were inspected locally.
