@@ -8,7 +8,7 @@ on:
       tag:
         description: Existing release tag to build
         required: true
-        default: v0.0.4
+        default: v0.0.5
         type: string
 
 permissions:
@@ -35,7 +35,7 @@ jobs:
           - minecraft: '1.20.1'
             java: '17'
             # Pin the Forge export so re-running a release never builds a moving branch.
-            ref: 'eb705f363e090d4d0853e2bc8ef8eade5780bb87'
+            ref: 'fe3703a8b3821f401ef6d2dfcfc126cbe594a5cc'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -72,14 +72,15 @@ jobs:
           set -euo pipefail
           VERSION="${RELEASE_TAG#v}"
           if [ "$MC_VERSION" = '1.21.1' ]; then
-            jar="build/libs/xenonpcs-${VERSION}.jar"
+            jar="build/libs/xenonpcs-${VERSION}-all.jar"
+            jar tf "$jar" | grep -Fx 'META-INF/jarjar/nashorn-core-15.4.jar' >/dev/null
           else
             jar="build/libs/xenonpcs-${VERSION}-${MC_VERSION}-all.jar"
             jar tf "$jar" | grep -Fx 'META-INF/jarjar/mixinextras-forge-0.4.1.jar' >/dev/null
           fi
           test -s "$jar"
           mkdir -p release-assets
-          cp "$jar" "release-assets/xenonpcs-${VERSION}-${MC_VERSION}.jar"
+          cp "$jar" "release-assets/xenonpcs-${VERSION}-${MC_VERSION}-all.jar"
           sha256sum release-assets/*.jar
 
       - uses: actions/upload-artifact@v4
@@ -108,8 +109,13 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${RELEASE_TAG#v}"
-          jars=("release-assets/xenonpcs-${VERSION}-1.20.1.jar" "release-assets/xenonpcs-${VERSION}-1.21.1.jar")
-          for jar in "${jars[@]}"; do test -s "$jar"; done
+          jars=("release-assets/xenonpcs-${VERSION}-1.20.1-all.jar" "release-assets/xenonpcs-${VERSION}-1.21.1-all.jar")
+          test "$(find release-assets -maxdepth 1 -type f -name '*.jar' | wc -l)" -eq 2
+          for jar in "${jars[@]}"; do
+            test -s "$jar"
+            jar tf "$jar" > "$jar.entries"
+            grep -Fx 'META-INF/jarjar/metadata.json' "$jar.entries" >/dev/null
+          done
           sha256sum "${jars[@]}"
           cat > release-notes.md <<'NOTES'
           Choose the jar matching your Minecraft version and loader:
@@ -118,22 +124,13 @@ jobs:
 
           DragonMineZ 2.1.3 and GeckoLib are required. Do not install XenoNPCs alongside XenoPixels.
 
-          Changes in this release:
-          - 1.20.1: NPC punches animate again. The arm swing started but never advanced, because 1.20.1 mobs of this kind do not tick their swing timer; native NPCs now do (setting npcSwingTimeInAiStep, on for 1.20.1).
-          - 1.20.1: the bundled MixinExtras accepts 0.4.1 or newer, so packs with mods requiring MixinExtras 0.5+ no longer fail to load.
+          Changes in 0.0.5:
+          - 1.20.1: correct the DragonMineZ 2.1.3 and CustomNPCs mixin targets, Forge event signatures, GUI ownership, and production mappings.
+          - 1.20.1: remove generated Args class references from tail coloring and correct NPC armor stat redirection.
+          - Audit every registered Forge mixin against the exact dependencies; inactive optional integrations remain gated.
+          - Both release assets retain the -all suffix and include their bundled runtime dependencies.
 
-          Note: DragonMineZ cancels a hit outright when the target's defense is far above the attacker's damage (combat.json cancelDamageEventIfMitigationTooHigh / cancelDamageMitigationThreshold). An NPC whose STR is low against your DEF will swing without hurting you; this is DragonMineZ's rule, applied to players the same way.
-
-          Changes in 0.0.3, still included:
-          - 1.20.1: dialogue answer bubbles hide the clouds and nameplate behind them, like the speaker bubble.
-
-          Changes in 0.0.2, still included:
-          - NPC melee damage lands on players (both versions); 1.20.1 NPC DragonMineZ stats are stored on the NPC, so battle power and damage are no longer zero.
-          - New NPCs start with DragonMineZ's base stats; NPCs still at all-zero stats are repaired once.
-          - NPCs walking home after a chase disengage until they arrive; a "kill target hunts player" quest never turns its own quest giver on the player.
-          - 1.20.1 speech and dialogue bubbles draw above NPCs; NPC arm swing and greeting wave clips; GUI Scale, colour picker and XenoSkill reward changes.
-
-          Both builds run their unit tests before publishing. Forge's 34 runtime-only tests are listed in EXPORT_REPORT.md and remain excluded from plain JUnit. MyNPCs compatibility is omitted from the 1.20.1 export.
+          Validation: Forge passed 894 unit tests and twelve fresh development client/server startup probes across GeckoLib 4.8.3/4.8.4 and three optional-mod profiles. Production modpack gameplay, visual rendering, multiplayer, and unavailable Revamp/Noeaj integrations remain unverified. Both CI builds run unit tests before publication. Forge's 34 runtime-only tests remain excluded from plain JUnit. MyNPCs compatibility is omitted from the 1.20.1 export.
           NOTES
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "${jars[@]}" --clobber

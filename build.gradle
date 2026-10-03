@@ -167,7 +167,9 @@ tasks.named('processResources', ProcessResources).configure {
     }
 }
 
+// ModDev embeds jarJar dependencies into this runtime jar. Label it explicitly.
 tasks.named('jar', Jar).configure {
+    archiveClassifier = 'all'
     manifest {
         attributes([
                 'Specification-Title'   : mod_id,
