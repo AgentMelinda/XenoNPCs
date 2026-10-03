@@ -36,6 +36,7 @@
     "compat.customnpcs.GuiNpcInterface2PreviewMixin",
     "compat.customnpcs.GuiBasicPreviewInputMixin",
     "compat.customnpcs.GuiNpcInvPreviewMixin",
+    "compat.customnpcs.GuiNpcInvPreviewInputMixin",
     "compat.customnpcs.GuiNpcInvCuriosMixin",
     "compat.customnpcs.RenderCustomNpcHairMixin",
     "compat.customnpcs.RenderCustomNpcKiPoseMixin",
@@ -65,7 +66,7 @@
     "compat.dmz.DmzRenderHandIrisMixin"
   ],
   "injectors": {
-    "defaultRequire": 0
+    "defaultRequire": 1
   },
   "minVersion": "0.8"
 }

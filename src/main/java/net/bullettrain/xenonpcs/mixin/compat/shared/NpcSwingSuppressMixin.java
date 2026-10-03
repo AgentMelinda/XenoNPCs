@@ -27,7 +27,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class NpcSwingSuppressMixin {
 
     @Inject(method = "swing(Lnet/minecraft/world/InteractionHand;)V",
-            at = @At("HEAD"), cancellable = true, require = 0)
+            at = @At("HEAD"), cancellable = true, require = 1)
     private void xenopixels$suppressSwingUnderOwnClip(InteractionHand hand, CallbackInfo ci) {
         if (NpcMeleeDamage.playsOwnAttackAnimation((LivingEntity) (Object) this)) {
             ci.cancel();

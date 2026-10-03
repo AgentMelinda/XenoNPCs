@@ -19,7 +19,7 @@ import software.bernie.geckolib.core.object.PlayState;
  * cannot retune locomotion.
  *
  * <p>{@code predicate} is merged by DragonMineZ {@code PlayerGeoAnimatableMixin} at priority 1000.
- * An {@code INVOKE} shift into that method is only legal when this mixin is strictly later.
+ * Mixin requires this INVOKE injector to have a higher priority than the mixin owning that method.
  */
 @Mixin(value = AbstractClientPlayer.class, remap = false, priority = 1100)
 public abstract class DmzScriptAnimSpeedMixin {
@@ -32,7 +32,7 @@ public abstract class DmzScriptAnimSpeedMixin {
                     ordinal = 0,
                     shift = At.Shift.AFTER),
             remap = false,
-            require = 0)
+            require = 1)
     private <T extends GeoAnimatable> void xenopixels$scriptClipSpeed(
             AnimationState<T> state, CallbackInfoReturnable<PlayState> cir) {
         AbstractClientPlayer self = (AbstractClientPlayer) (Object) this;

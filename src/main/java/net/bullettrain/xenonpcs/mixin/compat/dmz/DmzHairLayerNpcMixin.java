@@ -34,7 +34,7 @@ public abstract class DmzHairLayerNpcMixin {
             at = @At(value = "INVOKE",
                     target = "Lcom/dragonminez/common/hair/HairManager;canUseHair("
                             + "Lcom/dragonminez/common/stats/character/Character;)Z"),
-            require = 0)
+            require = 1)
     private boolean xenopixels$allowNpcHair(Character character) {
         if (NpcFullDmzRenderer.isRenderingCharacter(character)) return true;
         return HairManager.canUseHair(character);

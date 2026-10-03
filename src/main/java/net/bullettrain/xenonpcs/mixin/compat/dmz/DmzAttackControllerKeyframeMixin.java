@@ -12,7 +12,7 @@ import software.bernie.geckolib.core.animation.AnimatableManager;
 @Mixin(value = AbstractClientPlayer.class, priority = 900)
 public abstract class DmzAttackControllerKeyframeMixin {
 
-    @Inject(method = "registerControllers", at = @At("RETURN"), remap = false, require = 0)
+    @Inject(method = "registerControllers", at = @At("RETURN"), remap = false, require = 1)
     private void xeno$attachBt3KeyframeHandlers(AnimatableManager.ControllerRegistrar controllers,
                                                 CallbackInfo ci) {
         try {

@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.Pseudo;
 @Pseudo
 @Mixin(targets = "noppes.npcs.NoppesUtilServer", remap = false)
 public abstract class NpcPartyRewardCommandMixin {
-    @WrapMethod(method = "runCommand", require = 0)
+    @WrapMethod(method = "runCommand(Lnet/minecraft/world/entity/Entity;Ljava/lang/String;Ljava/lang/String;Lnet/minecraft/world/entity/player/Player;)Ljava/lang/String;", require = 1)
     private static String xenopixels$partyReward(Entity executor, String name, String command,
                                                  Player player, Operation<String> original) {
         return NpcPartyReward.runForParty(player, command, member ->

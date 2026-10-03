@@ -49,7 +49,7 @@ public abstract class DmzStudioPoseMixin {
     @Inject(
             method = "setCustomAnimations(Lnet/minecraft/client/player/AbstractClientPlayer;JLsoftware/bernie/geckolib/core/animation/AnimationState;)V",
             at = @At("RETURN"),
-            require = 0
+            require = 1
     )
     private void xenopixels$studioPose(AbstractClientPlayer player, long instanceId,
                                        AnimationState<?> state, CallbackInfo ci) {

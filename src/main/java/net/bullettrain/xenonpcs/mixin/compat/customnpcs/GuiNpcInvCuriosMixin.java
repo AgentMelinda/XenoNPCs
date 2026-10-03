@@ -28,7 +28,7 @@ public abstract class GuiNpcInvCuriosMixin {
     /** Its own id space; CustomNPCs owns the low ids on this screen. */
     private static final int XENO_CURIOS_TOGGLE = 7301;
 
-    @Inject(method = "init", at = @At("RETURN"), require = 1)
+    @Inject(method = "init()V", at = @At("RETURN"), remap = true, require = 1)
     private void xenopixels$addCuriosToggle(CallbackInfo ci) {
         GuiNPCInv screen = (GuiNPCInv) (Object) this;
         // The narrow strip between the Exp fields (which end at x 168) and the NPC Inventory label

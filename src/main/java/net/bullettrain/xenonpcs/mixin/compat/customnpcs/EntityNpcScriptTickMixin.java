@@ -15,16 +15,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets = "noppes.npcs.entity.EntityNPCInterface", remap = false)
 public abstract class EntityNpcScriptTickMixin {
     @Redirect(
-            method = "tick()V",
+            method = {"tick()V", "m_8119_()V"},
             at = @At(value = "INVOKE",
-                    target = "Lnoppes/npcs/EventHooks;onNPCTick(Lnoppes/npcs/entity/EntityNPCInterface;)V"))
+                    target = "Lnoppes/npcs/EventHooks;onNPCTick(Lnoppes/npcs/entity/EntityNPCInterface;)V", remap = false))
     private void xenopixels$replaceTenTickHook(@Coerce Object npc) {
         if (((Entity) npc).tickCount % interval() == 0) {
             run(npc);
         }
     }
 
-    @Inject(method = "tick()V", at = @At("TAIL"))
+    @Inject(method = {"tick()V", "m_8119_()V"}, at = @At("TAIL"))
     private void xenopixels$runFastScriptTicks(CallbackInfo ci) {
         Entity npc = (Entity) (Object) this;
         if (npc.tickCount % 10 != 0 && npc.tickCount % interval() == 0) {

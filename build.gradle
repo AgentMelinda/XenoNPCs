@@ -77,6 +77,10 @@ repositories {
 configurations {
     library
     implementation.extendsFrom library
+    dmzReference {
+        canBeConsumed = false
+        transitive = false
+    }
 }
 
 minecraft.runs.configureEach {
@@ -88,6 +92,7 @@ minecraft.runs.configureEach {
 jarJar.enable()
 
 dependencies {
+    dmzReference "curse.maven:dragonminez-1136088:${dragonminez_curse_file}"
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.7:processor'
     compileOnly(annotationProcessor('io.github.llamalad7:mixinextras-common:0.4.1'))
@@ -123,6 +128,10 @@ tasks.withType(JavaCompile).configureEach {
 tasks.named('test', Test).configure {
     useJUnitPlatform()
     systemProperty 'xenopixels.projectDir', projectDir.absolutePath
+    doFirst {
+        systemProperty 'xenonpcs.auditClasspath', configurations.compileClasspath.asPath
+        systemProperty 'xenonpcs.rawAuditClasspath', (files('libs').asFileTree.matching { include '*.jar' }.files + configurations.dmzReference.files).collect { it.absolutePath }.join(File.pathSeparator)
+    }
     // Tests that need a running Forge game (bootstrap, transformed event bus, constructed mod);
     // listed with reasons in EXPORT_REPORT.md and covered by the in-game checks instead.
     def runtimeOnly = file('runtime-only-tests.txt')
@@ -134,6 +143,26 @@ tasks.named('test', Test).configure {
         }
     }
 }
+
+tasks.register('verifyDragonMineZ') {
+    inputs.files configurations.dmzReference
+    inputs.property 'sha256', dragonminez_sha256
+    doLast {
+        def jar = configurations.dmzReference.singleFile
+        def digest = java.security.MessageDigest.getInstance('SHA-256')
+        jar.withInputStream { stream ->
+            byte[] buffer = new byte[65536]
+            int count
+            while ((count = stream.read(buffer)) > 0) digest.update(buffer, 0, count)
+        }
+        def actual = digest.digest().encodeHex().toString()
+        if (actual != dragonminez_sha256) {
+            throw new GradleException("DragonMineZ checksum mismatch: ${actual}; expected ${dragonminez_sha256}")
+        }
+        logger.lifecycle("Verified official Forge DragonMineZ 2.1.3: ${actual}")
+    }
+}
+tasks.named('compileJava').configure { dependsOn 'verifyDragonMineZ' }
 
 def replaceProperties = [
         minecraft_version      : minecraft_version,
@@ -173,4 +202,56 @@ jar {
 
 tasks.named('build').configure {
     dependsOn 'jarJar'
+}
+
+// Isolated development probes; neither this source set nor optional integrations are packaged.
+sourceSets {
+    releaseProbe {
+        compileClasspath += sourceSets.main.output + configurations.compileClasspath
+        runtimeClasspath += sourceSets.main.runtimeClasspath
+    }
+}
+tasks.named('processReleaseProbeResources').configure {
+    dependsOn tasks.named('compileJava')
+    from(layout.buildDirectory.file("tmp/compileJava/mixins.${mod_id}.refmap.json"))
+}
+def releaseProfile = providers.gradleProperty('releaseNpcProfile').getOrElse('core')
+if (!(releaseProfile in ['core', 'custom', 'gecko'])) throw new GradleException('Unknown releaseNpcProfile')
+if (providers.gradleProperty('releaseProbe').isPresent()) dependencies {
+    if (releaseProfile != 'core') runtimeOnly fg.deobf("blank:CustomNPCs-1.20.1-GBPort-Unofficial:${customnpcs_version}")
+    if (releaseProfile == 'gecko') runtimeOnly fg.deobf("blank:CNPC-Gecko-Addon:${cnpcgecko_version}")
+}
+if (providers.gradleProperty('releaseProbe').isPresent()) ['Client', 'Server'].each { side ->
+    def directory = layout.buildDirectory.dir("release-runtime/${releaseProfile}-${geckolib_version}/${side.toLowerCase()}")
+    def prepare = tasks.register("prepareRelease${side}") {
+        doLast {
+            def dir = directory.get().asFile
+            dir.mkdirs()
+            if (side == 'Server') {
+                new File(dir, 'eula.txt').text = 'eula=true\n'
+                new File(dir, 'server.properties').text = 'online-mode=false\nserver-port=0\nlevel-name=probe-flat-v2\nlevel-type=minecraft:flat\ngenerator-settings={"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}],"biome":"minecraft:plains","features":false,"lakes":false,"structure_overrides":[]}\ngenerate-structures=false\nview-distance=2\nsimulation-distance=2\n'
+            }
+        }
+    }
+    minecraft.runs.named(side.toLowerCase()).configure {
+        workingDirectory directory.get().asFile
+        property 'xenonpcs.releaseProbe', 'true'
+        property 'xenonpcs.releaseProfile', releaseProfile
+        property 'mixin.debug.export', 'true'
+        property 'mixin.debug.countInjections', 'true'
+        mods { xenonpcs_release_probe { source sourceSets.releaseProbe } }
+        lazyToken('minecraft_classpath') {
+            configurations.library.resolve().collect { it.absolutePath }.join(File.pathSeparator)
+        }
+    }
+    tasks.matching { it.name == "run${side}" }.configureEach {
+        dependsOn prepare, tasks.named('releaseProbeClasses')
+        doLast {
+            def log = new File(directory.get().asFile, 'logs/latest.log').text
+            if (!log.contains("XENONPCS_PROBE_${side.toUpperCase()}_PASS") ||
+                    log =~ /(?i)(mixin apply .*failed|InvalidInjectionException|InjectionError|Critical injection failure|NoClassDefFoundError: org\/spongepowered\/asm\/synthetic\/args)/) {
+                throw new GradleException("Release ${side} probe failed; inspect ${directory.get()}/logs/latest.log")
+            }
+        }
+    }
 }

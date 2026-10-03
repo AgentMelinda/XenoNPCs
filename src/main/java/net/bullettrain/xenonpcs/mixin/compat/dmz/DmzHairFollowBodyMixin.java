@@ -37,7 +37,7 @@ public abstract class DmzHairFollowBodyMixin {
     @Unique
     private static float xenopixels$savedHeadYawO;
 
-    @Inject(method = "render", at = @At("HEAD"), require = 0)
+    @Inject(method = "render", at = @At("HEAD"), require = 1)
     private static void xenopixels$hairFollowsBodyPre(
             PoseStack pose,
             net.minecraft.client.renderer.MultiBufferSource buffers,
@@ -62,7 +62,7 @@ public abstract class DmzHairFollowBodyMixin {
         xenopixels$swapped = player;
     }
 
-    @Inject(method = "render", at = @At("RETURN"), require = 0)
+    @Inject(method = "render", at = @At("RETURN"), require = 1)
     private static void xenopixels$hairFollowsBodyPost(
             PoseStack pose,
             net.minecraft.client.renderer.MultiBufferSource buffers,

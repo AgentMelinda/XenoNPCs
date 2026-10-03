@@ -57,7 +57,7 @@ public abstract class DmzMeleeHeadMolangMixin {
     @Inject(
             method = "applyMolangQueries(Lnet/minecraft/client/player/AbstractClientPlayer;D)V",
             at = @At("HEAD"),
-            require = 0
+            require = 1
     )
     private void xenopixels$headFollowsBodyPre(AbstractClientPlayer player, double animTime, CallbackInfo ci) {
         xenopixels$swapped = null;
@@ -76,7 +76,7 @@ public abstract class DmzMeleeHeadMolangMixin {
     @Inject(
             method = "applyMolangQueries(Lnet/minecraft/client/player/AbstractClientPlayer;D)V",
             at = @At("RETURN"),
-            require = 0
+            require = 1
     )
     private void xenopixels$headFollowsBodyPost(AbstractClientPlayer animatable, double animTime, CallbackInfo ci) {
         // Restore the player this pass swapped, not whoever the state names now: the model instance

@@ -18,13 +18,13 @@ public abstract class DmzNpcEyebrowMixin {
             "Ljava/lang/String;[FFIIF)V";
 
     @ModifyArg(method = "renderHumanFace", at = @At(value = "INVOKE", target = COLORED_LAYER, ordinal = 3),
-            index = 4, require = 0)
+            index = 4, require = 1)
     private String xenopixels$baseEyebrows(String path) {
         return replaceIndex(path, "humansaiyan_eye_", "_3.png");
     }
 
     @ModifyArg(method = "renderHumanFace", at = @At(value = "INVOKE", target = COLORED_LAYER, ordinal = 4),
-            index = 4, require = 0)
+            index = 4, require = 1)
     private String xenopixels$ssj3Eyebrows(String path) {
         return replaceIndex(path, "ssj3eyebrows_eye_", ".png");
     }

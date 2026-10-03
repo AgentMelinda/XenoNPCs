@@ -96,7 +96,7 @@ public abstract class GuiNpcStatsDmzAuthorityMixin extends GuiNPCInterface {
         if (guiLabel != null) guiLabel.setMessage(Component.literal(label));
     }
 
-    @Inject(method = "save", at = @At("HEAD"), require = 0)
+    @Inject(method = "save", at = @At("HEAD"), require = 1)
     private void xenopixels$writeCalculatedHealth(CallbackInfo ci) {
         if (npc == null || !XenoServerClientState.npcDmzStatsAuthoritative()) return;
         NpcCombatProfile profile = NpcCombatProfile.read((Entity) npc);

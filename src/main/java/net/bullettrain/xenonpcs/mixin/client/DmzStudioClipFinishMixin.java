@@ -18,7 +18,7 @@ import java.lang.reflect.Field;
  * Lets a Xeno studio clip on DragonMineZ's melee controller finish instead of being cut.
  *
  * <p><b>Target:</b> {@code attackPredicate}, merged into {@link AbstractClientPlayer} by
- * {@code com.dragonminez.mixin.client.PlayerGeoAnimatableMixin} (DMZ 2.1.3, GeckoLib 4.9.2).
+ * {@code com.dragonminez.mixin.client.PlayerGeoAnimatableMixin} (Forge DMZ 2.1.3, GeckoLib 4.8.3).
  *
  * <p><b>The bug.</b> One-shot clips ({@code XenoAnimApi.playClip}, the NPC greet wave) go through
  * {@code dragonminez$playMeleeAnimation}. DMZ's predicate keeps that controller alive for
@@ -33,7 +33,7 @@ import java.lang.reflect.Field;
  * stops it exactly as before. Punches and DMZ's own clips are untouched.
  *
  * <p>The counter is a field another mod's mixin adds, so it is reached by reflection and cached;
- * {@code require = 0} and a failed lookup both degrade to DMZ's original behaviour.
+ * injection matching is required; a failed reflective lookup preserves DMZ's original behaviour.
  */
 @Mixin(value = AbstractClientPlayer.class, remap = false, priority = 1100)
 public abstract class DmzStudioClipFinishMixin {
@@ -42,7 +42,7 @@ public abstract class DmzStudioClipFinishMixin {
     private static volatile Field counter;
     private static volatile boolean lookupFailed;
 
-    @Inject(method = "attackPredicate", at = @At("HEAD"), require = 0, remap = false)
+    @Inject(method = "attackPredicate", at = @At("HEAD"), require = 1, remap = false)
     private <T extends GeoAnimatable> void xeno$letStudioClipFinish(AnimationState<T> state,
                                                                      CallbackInfoReturnable<PlayState> cir) {
         AnimationController<T> controller = state.getController();

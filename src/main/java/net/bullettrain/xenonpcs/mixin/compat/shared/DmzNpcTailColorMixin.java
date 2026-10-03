@@ -9,9 +9,8 @@ import net.minecraft.client.renderer.RenderType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArgs;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 import software.bernie.geckolib.cache.object.GeoBone;
 
 /** Applies an NPC-only tail override after DMZ has resolved its normal race/form inheritance. */
@@ -42,21 +41,64 @@ public abstract class DmzNpcTailColorMixin {
         }
     }
 
-    @ModifyArgs(
+    @ModifyArg(
             method = "renderTargetedBone(Lsoftware/bernie/geckolib/cache/object/GeoBone;" +
                     "Lcom/mojang/blaze3d/vertex/PoseStack;" +
                     "Lnet/minecraft/client/renderer/MultiBufferSource;" +
                     "Lnet/minecraft/client/player/AbstractClientPlayer;" +
                     "Lnet/minecraft/client/renderer/RenderType;FFFFFI)V",
             at = @At(value = "INVOKE", target =
-                    "Lcom/dragonminez/client/render/util/RenderBufferUtil;packColor(FFFF)I"),
-            require = 1)
-    private void xenopixels$useNpcTailColor(Args args) {
+                    "Lsoftware/bernie/geckolib/renderer/GeoRenderer;renderRecursively(" +
+                    "Lcom/mojang/blaze3d/vertex/PoseStack;" +
+                    "Lsoftware/bernie/geckolib/core/animatable/GeoAnimatable;" +
+                    "Lsoftware/bernie/geckolib/cache/object/GeoBone;" +
+                    "Lnet/minecraft/client/renderer/RenderType;" +
+                    "Lnet/minecraft/client/renderer/MultiBufferSource;" +
+                    "Lcom/mojang/blaze3d/vertex/VertexConsumer;ZFIIFFFF)V"),
+            index = 10, require = 1)
+    private float xenopixels$useNpcTailColor0(float original) {
         float[] color = XENOPIXELS_TAIL_COLOR.get();
-        if (color == null || color.length < 3) return;
-        args.set(0, color[0]);
-        args.set(1, color[1]);
-        args.set(2, color[2]);
+        return color == null || color.length < 3 ? original : color[0];
+    }
+
+    @ModifyArg(
+            method = "renderTargetedBone(Lsoftware/bernie/geckolib/cache/object/GeoBone;" +
+                    "Lcom/mojang/blaze3d/vertex/PoseStack;" +
+                    "Lnet/minecraft/client/renderer/MultiBufferSource;" +
+                    "Lnet/minecraft/client/player/AbstractClientPlayer;" +
+                    "Lnet/minecraft/client/renderer/RenderType;FFFFFI)V",
+            at = @At(value = "INVOKE", target =
+                    "Lsoftware/bernie/geckolib/renderer/GeoRenderer;renderRecursively(" +
+                    "Lcom/mojang/blaze3d/vertex/PoseStack;" +
+                    "Lsoftware/bernie/geckolib/core/animatable/GeoAnimatable;" +
+                    "Lsoftware/bernie/geckolib/cache/object/GeoBone;" +
+                    "Lnet/minecraft/client/renderer/RenderType;" +
+                    "Lnet/minecraft/client/renderer/MultiBufferSource;" +
+                    "Lcom/mojang/blaze3d/vertex/VertexConsumer;ZFIIFFFF)V"),
+            index = 11, require = 1)
+    private float xenopixels$useNpcTailColor1(float original) {
+        float[] color = XENOPIXELS_TAIL_COLOR.get();
+        return color == null || color.length < 3 ? original : color[1];
+    }
+
+    @ModifyArg(
+            method = "renderTargetedBone(Lsoftware/bernie/geckolib/cache/object/GeoBone;" +
+                    "Lcom/mojang/blaze3d/vertex/PoseStack;" +
+                    "Lnet/minecraft/client/renderer/MultiBufferSource;" +
+                    "Lnet/minecraft/client/player/AbstractClientPlayer;" +
+                    "Lnet/minecraft/client/renderer/RenderType;FFFFFI)V",
+            at = @At(value = "INVOKE", target =
+                    "Lsoftware/bernie/geckolib/renderer/GeoRenderer;renderRecursively(" +
+                    "Lcom/mojang/blaze3d/vertex/PoseStack;" +
+                    "Lsoftware/bernie/geckolib/core/animatable/GeoAnimatable;" +
+                    "Lsoftware/bernie/geckolib/cache/object/GeoBone;" +
+                    "Lnet/minecraft/client/renderer/RenderType;" +
+                    "Lnet/minecraft/client/renderer/MultiBufferSource;" +
+                    "Lcom/mojang/blaze3d/vertex/VertexConsumer;ZFIIFFFF)V"),
+            index = 12, require = 1)
+    private float xenopixels$useNpcTailColor2(float original) {
+        float[] color = XENOPIXELS_TAIL_COLOR.get();
+        return color == null || color.length < 3 ? original : color[2];
     }
 
     @Inject(

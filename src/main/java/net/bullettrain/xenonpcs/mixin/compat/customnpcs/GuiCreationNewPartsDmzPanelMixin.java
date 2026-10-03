@@ -38,7 +38,7 @@ public abstract class GuiCreationNewPartsDmzPanelMixin {
     private static final int ID_FORM_FIELD = 9106;
     private static final int ID_AURA_BUTTON = 9107;
 
-    @Inject(method = "init", at = @At("RETURN"))
+    @Inject(method = {"init()V", "m_7856_()V"}, at = @At("RETURN"))
     private void xenopixels$addDmzPanel(CallbackInfo ci) {
         if (this.npc == null || this.parent == null) {
             return;

@@ -32,4 +32,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: xenonpcs-1.20.1-jar
-          path: build/libs/*.jar
+          path: build/libs/xenonpcs-0.0.5-1.20.1-all.jar
+          if-no-files-found: error
+      - name: Upload sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: xenonpcs-1.20.1-sources
+          path: build/libs/xenonpcs-0.0.5-1.20.1-sources.jar
+          if-no-files-found: error

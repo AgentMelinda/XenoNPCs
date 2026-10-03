@@ -21,7 +21,7 @@ public abstract class DmzNpcHairProgressMixin {
             "[F[FZZFIIFFF)V";
 
     @ModifyArg(method = "renderHair", at = @At(value = "INVOKE", target = HAIR_RENDER),
-            index = 4, require = 0)
+            index = 4, require = 1)
     private float xenopixels$useNpcTransformProgress(float original) {
         return NpcFullDmzRenderer.hairTransitionFactor(original);
     }

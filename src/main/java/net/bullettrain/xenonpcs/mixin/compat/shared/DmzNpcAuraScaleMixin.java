@@ -35,7 +35,7 @@ public abstract class DmzNpcAuraScaleMixin {
     @Shadow
     private static void applyAndDraw(VertexBuffer mesh, PoseStack pose, Matrix4f projection,
                                      ShaderInstance shader, ResourceLocation texture, float[] color,
-                                     float alpha, float time, boolean mirrored, boolean firstPerson) {
+                                     float alpha, float time, boolean mirrored) {
         throw new AssertionError();
     }
 
@@ -70,10 +70,10 @@ public abstract class DmzNpcAuraScaleMixin {
 
     @Inject(
             method = "renderSparksImpl(Lnet/minecraft/world/entity/player/Player;" +
-                    "Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;FZ)V",
+                    "Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;FZ)V",
             at = @At("HEAD"), cancellable = true, require = 1)
     private static void xenopixels$toggleNpcLightning(
-            Player player, PoseStack pose, Matrix4f projection, float partialTick,
+            Player player, Matrix4f view, PoseStack pose, Matrix4f projection, float partialTick,
             boolean firstPerson, CallbackInfo ci) {
         NpcAuraResolver.Resolved resolved = NpcFullDmzRenderer.nativeAura(player.getUUID());
         if (resolved == null) return;
@@ -87,7 +87,7 @@ public abstract class DmzNpcAuraScaleMixin {
     /** Let an NPC form's explicit lightning override enable the native transformed sparks. */
     @ModifyExpressionValue(
             method = "renderSparksImpl(Lnet/minecraft/world/entity/player/Player;" +
-                    "Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;FZ)V",
+                    "Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;FZ)V",
             at = @At(value = "INVOKE", target = "Ljava/lang/Boolean;booleanValue()Z"),
             require = 2)
     private static boolean xenopixels$useNpcLightningToggle(boolean original) {
@@ -98,7 +98,7 @@ public abstract class DmzNpcAuraScaleMixin {
 
     @ModifyArg(
             method = "renderSparksImpl(Lnet/minecraft/world/entity/player/Player;" +
-                    "Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;FZ)V",
+                    "Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;FZ)V",
             at = @At(value = "INVOKE", target =
                     "Lcom/dragonminez/client/util/ColorUtils;hexToRgb(Ljava/lang/String;)[F"),
             index = 0, require = 1)
@@ -111,10 +111,10 @@ public abstract class DmzNpcAuraScaleMixin {
 
     @Inject(
             method = "renderSparksImpl(Lnet/minecraft/world/entity/player/Player;" +
-                    "Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;FZ)V",
+                    "Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;FZ)V",
             at = @At("RETURN"), require = 1)
     private static void xenopixels$clearNpcLightningPlayer(
-            Player player, PoseStack pose, Matrix4f projection, float partialTick,
+            Player player, Matrix4f view, PoseStack pose, Matrix4f projection, float partialTick,
             boolean firstPerson, CallbackInfo ci) {
         XENOPIXELS_LIGHTNING_PLAYER.remove();
     }
@@ -134,19 +134,19 @@ public abstract class DmzNpcAuraScaleMixin {
                     "Lcom/mojang/blaze3d/vertex/VertexBuffer;" +
                     "Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;" +
                     "Lnet/minecraft/client/renderer/ShaderInstance;" +
-                    "Lnet/minecraft/resources/ResourceLocation;[FFFZZ)V"),
+                    "Lnet/minecraft/resources/ResourceLocation;[FFFZ)V"),
             require = 1)
     private static void xenopixels$toggleNpcSparking(
             VertexBuffer mesh, PoseStack pose, Matrix4f projection,
             ShaderInstance shader, ResourceLocation texture, float[] color,
-            float alpha, float time, boolean mirrored, boolean firstPerson) {
+            float alpha, float time, boolean mirrored) {
         NpcAuraResolver.Resolved resolved =
                 NpcFullDmzRenderer.nativeAura(XENOPIXELS_AURA_PLAYER.get());
         boolean sparkingTexture = texture != null
                 && texture.getPath().endsWith("/sparking_effects.png");
         if (resolved != null && sparkingTexture && !resolved.sparking()) return;
         applyAndDraw(mesh, pose, projection, shader, texture, color,
-                alpha, time, mirrored, firstPerson);
+                alpha, time, mirrored);
     }
 
     @Inject(method = "executeAuraShaderDraw", at = @At("RETURN"), require = 1)

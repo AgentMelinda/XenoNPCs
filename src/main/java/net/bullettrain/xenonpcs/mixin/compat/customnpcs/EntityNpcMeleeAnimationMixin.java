@@ -13,10 +13,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class EntityNpcMeleeAnimationMixin {
 
     @Inject(
-            method = "doHurtTarget(Lnet/minecraft/world/entity/Entity;)Z",
+            method = "doHurtTarget(Lnet/minecraft/world/entity/Entity;)Z", remap = true,
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/world/entity/Entity;hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+                    remap = true,
                     shift = At.Shift.BEFORE))
     private void xenopixels$animateCommittedMelee(Entity target,
                                                    CallbackInfoReturnable<Boolean> cir) {

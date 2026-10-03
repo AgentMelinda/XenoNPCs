@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 public abstract class GuiCustomScrollNopMixin {
 
     @Redirect(
-            method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V",
+            method = "render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V", remap = true,
             at = @At(value = "INVOKE",
                     target = "Lnoppes/npcs/mixin/MouseHelperMixin;getActiveButton()I",
                     remap = false),

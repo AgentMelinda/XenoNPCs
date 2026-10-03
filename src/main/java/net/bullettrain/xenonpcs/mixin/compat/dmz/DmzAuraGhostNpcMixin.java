@@ -15,8 +15,8 @@ import org.spongepowered.asm.mixin.injection.At;
  * NPC, and evicts {@code AURA_CACHE} — the next visible frame restarts the ~3s fade.
  *
  * <p>When the looked-up entity is a Full aura-on NPC, hand back the proxy so DMZ
- * treats it as a still-active player. <b>Written for:</b> Minecraft 1.21.1 /
- * NeoForge 21.1.248, DragonMineZ 2.1.3, MixinExtras 0.5.3. <b>Side:</b> client.
+ * treats it as a still-active player. Target: Forge 1.20.1 DragonMineZ 2.1.3.
+ * Side: client.
  */
 @Mixin(targets = "com.dragonminez.client.render.effects.AuraRenderer", remap = false)
 public abstract class DmzAuraGhostNpcMixin {
@@ -27,9 +27,9 @@ public abstract class DmzAuraGhostNpcMixin {
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/multiplayer/ClientLevel;getEntity(I)"
-                            + "Lnet/minecraft/world/entity/Entity;"
+                            + "Lnet/minecraft/world/entity/Entity;", remap = true
             ),
-            require = 0
+            require = 1
     )
     private static Entity xenopixels$keepFullNpcAura(ClientLevel level, int entityId,
                                                      Operation<Entity> original) {

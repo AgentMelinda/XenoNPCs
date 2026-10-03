@@ -2,6 +2,7 @@ package net.bullettrain.xenonpcs.mixin.compat.customnpcs;
 
 import net.bullettrain.xenonpcs.compat.npc.PlayerScriptsGate;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.eventbus.api.Event;
 import noppes.npcs.constants.EnumScriptType;
 import noppes.npcs.controllers.ScriptContainer;
 import noppes.npcs.controllers.ScriptController;
@@ -69,7 +70,7 @@ public abstract class PlayerScriptDataEnabledMixin {
 
     @Inject(method = "runScript(Lnoppes/npcs/constants/EnumScriptType;Lnet/minecraftforge/eventbus/api/Event;)V",
             at = @At("HEAD"), remap = false, require = 1)
-    private void xenopixels$logSkip(EnumScriptType type, Object event, CallbackInfo ci) {
+    private void xenopixels$logSkip(EnumScriptType type, Event event, CallbackInfo ci) {
         if (isEnabled()) {
             return;
         }

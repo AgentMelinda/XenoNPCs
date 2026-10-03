@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.5 (Minecraft 1.20.1, 2026-10-03)
+
+- Correct Forge DMZ aura and ki weapon render targets and CustomNPCs script callback signatures.
+- Apply native NPC appearance hooks even when CustomNPCs is absent.
+- Correct inventory initialization/click ownership and NPC tick/melee method remapping.
+- Preserve the tail synthetic-argument crash fix and null-player NPC armor defense fix.
+- Audit every registered mixin against dependency bytecode and require injection matches.
+- Verify the official Forge DMZ checksum during compilation. CI uploads the all jar and sources separately.
+- Add isolated development client/server release probes; these are excluded from distribution jars.
+
 ## 0.0.1 (Minecraft 1.21.1)
 
 First public release of XenoNPCs, the NPC system from XenoPixels Network on its own.

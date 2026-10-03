@@ -17,8 +17,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  * shader-pack problem, so it gets the same compat render type.
  *
  * <p>Separate from {@code DmzWeaponsLayerIrisMixin} because the two live on different classes;
- * both are {@code require = 0} so a DMZ version that renames either method degrades to stock
- * behaviour instead of refusing to load.
+ * both require a match so a changed DMZ target is visible during release validation.
  */
 @Mixin(targets = "com.dragonminez.client.render.DMZRenderHand", remap = false)
 public abstract class DmzRenderHandIrisMixin {
@@ -28,7 +27,7 @@ public abstract class DmzRenderHandIrisMixin {
                     "Lcom/dragonminez/client/render/util/ModRenderTypes;kiblast("
                     + "Lnet/minecraft/resources/ResourceLocation;)"
                     + "Lnet/minecraft/client/renderer/RenderType;"),
-            require = 0)
+            require = 1)
     private RenderType xenopixels$shaderSafeHandWeaponType(ResourceLocation texture) {
         return KiWeaponRenderTypes.select(ModRenderTypes.kiblast(texture), texture);
     }
