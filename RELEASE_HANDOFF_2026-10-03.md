@@ -34,3 +34,18 @@ Unrelated untracked NeoForge tail test/handoff and build/server logs remain unco
 First release run 37127285348 failed the new Forge audit because its generated SRG mapping file was not a dependency of test; publishing was skipped. Forge follow-up commit 70e6b05ea807168ac3568fca24bbfd0d0c40c2d3 explicitly generates that file. A full local build/test passed, and the focused audit passed with that output initially absent. The release workflow now pins this corrected Forge commit.
 
 Tag v0.0.5 remains on NeoForge commit 36c81d05b7aed6d731e7636bc3a89efc4e4013a3, with no history rewriting. The corrected release is dispatched from branch 1.21.1 using tag=v0.0.5; the NeoForge build still checks out the immutable tag and Forge checks out the new immutable pin. The workflow run records the exact workflow commit. CI's NeoForge all jar is 15487576 bytes, SHA-256 3f0a669f745738918033aec1b7aea94dba49aebbc36a96a552139e1e2f59a8b3; its embedded version and Nashorn jar were inspected locally.
+
+## Verified publication
+
+On 2026-10-03, corrected release workflow run https://github.com/AgentMelinda/XenoNPCs/actions/runs/37127730254 completed successfully: both build jobs and publish passed. Workflow commit: 30e1002d4ccf3826b4c63ac79a0697945535d6a9. NeoForge input/tag target: 36c81d05b7aed6d731e7636bc3a89efc4e4013a3. Forge input: 70e6b05ea807168ac3568fca24bbfd0d0c40c2d3. Annotated tag object: b6d04eeab6874eed8a119edac1534f882658bc9d, tagger jacky yuval <gitlab_admin_263562@gitlab.xpn.co.il>.
+
+Public release: https://github.com/AgentMelinda/XenoNPCs/releases/tag/v0.0.5 (not a draft). Exactly two runtime assets were published:
+
+| Asset | Bytes | SHA-256 |
+| --- | --- | --- |
+| xenonpcs-0.0.5-1.20.1-all.jar | 13551971 | 49b1fe441dde0fcd68cdda87af0dc7b5c49250933d761f68b0487cedcdcc2333 |
+| xenonpcs-0.0.5-1.21.1-all.jar | 15487576 | 0898095005721b549b1d9ed97041c6f2bff2b5ec8f1cb25057d473b843f1ad4f |
+
+Verification commands: gh run view 37127730254 --json status,conclusion,jobs; gh release view v0.0.5 --json url,isDraft,assets; gh release download v0.0.5 --pattern '*-all.jar' --dir build/published-0.0.5. Python zipfile/hashlib checks confirmed each downloaded SHA-256 matches the release digest, valid ZIP contents, embedded version 0.0.5, correct bundled runtime dependency, and no release probe classes. Forge's shipped refmap contains the NPC armor SRG mapping and both tail mixin classes have no synthetic Args class reference.
+
+Both branch build workflows also passed: Forge run 37127729675 and NeoForge run 37127729809. At verification both branches were 0 ahead / 0 behind their origin branches with no tracked dirty paths; the unrelated untracked files listed above remain preserved. This final documentation commit will create a new NeoForge branch build; it does not change either released artifact or rewrite the tag. Production gameplay limitations above remain unverified.
