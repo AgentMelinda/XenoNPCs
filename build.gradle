@@ -126,6 +126,8 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.named('test', Test).configure {
+    // The mixin audit reads these mappings even on a clean CI checkout.
+    dependsOn 'createSrgToMcp'
     useJUnitPlatform()
     systemProperty 'xenopixels.projectDir', projectDir.absolutePath
     doFirst {

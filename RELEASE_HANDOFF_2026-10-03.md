@@ -183,3 +183,11 @@ text
 ?? validation-final-0.0.5.log
 ?? wiki/
 ```
+
+## Clean CI mapping dependency follow-up
+
+The first branch run 37127282996 and release run 37127285348 failed at RegisteredMixinAuditTest.java:41 because a fresh checkout had no build/createSrgToMcp/output.srg. Publication was skipped. The test task now explicitly depends on createSrgToMcp; this is a build dependency correction, with no runtime code change.
+
+Validation: .\gradlew.bat test build jarJar --console=plain passed after the correction (894 tests). Then output.srg was moved to output.pre-ci-fix.srg under the same generated build directory; .\gradlew.bat test --tests '*RegisteredMixinAuditTest' --console=plain regenerated it and passed. The rebuilt local all jar SHA-256 is 66cf83a1eb8f56819f6cab0dc89300dc182149e31443d43c6f420643ab9cd6b9. The earlier hashes above remain the pre-publication snapshot.
+
+The v0.0.5 tag is preserved. A new workflow dispatch from the corrected 1.21.1 release workflow pins this follow-up Forge commit instead of rewriting the tag. Check that dispatched run for the actual publication result.
