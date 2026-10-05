@@ -63,3 +63,4 @@ Ordinary ki charging no longer adds vertical aura growth. Normal model/power sca
 Validation evidence and remaining gameplay checks are recorded in [RELEASE_HANDOFF_2026-10-05.md](RELEASE_HANDOFF_2026-10-05.md).
 
 For Minecraft 1.21.1, use the exact [patched DragonMineZ dependency](https://github.com/AgentMelinda/XenoNPCs/raw/refs/tags/v0.0.7/libs/dragonminez-2.1.3.jar). Its respawn hook targets NeoForge 21.1.248. Source fix: [DragonMineZ commit](https://github.com/AgentMelinda/dragonminez-1.21.1/commit/f1caa521). Do not use this NeoForge dependency on 1.20.1.
+thank you for using this :)
