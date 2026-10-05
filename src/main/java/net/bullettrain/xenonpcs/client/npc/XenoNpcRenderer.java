@@ -81,6 +81,7 @@ public final class XenoNpcRenderer extends MobRenderer<XenoNpcEntity,
         addLayer(new net.minecraft.client.renderer.entity.layers.ItemInHandLayer<>(this,
                 context.getItemInHandRenderer()));
         addLayer(new NpcOverlayLayer(this));
+        addLayer(new net.bullettrain.xenonpcs.client.compat.npc.NpcHumanoidAppearanceLayer<>(this));
         addLayer(new NpcCapeLayer(this));
         this.geoRenderer = new XenoNpcGeoRenderer(context);
     }

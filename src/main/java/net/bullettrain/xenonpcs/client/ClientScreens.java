@@ -15,6 +15,8 @@ import net.minecraft.nbt.CompoundTag;
  * Dedicated servers must never load {@code net.minecraft.client.*}.
  */
 public final class ClientScreens {
+    public static java.util.function.Consumer<net.bullettrain.xenonpcs.network.maker.MakerNetwork.Response> receiveMakerRace = response -> {};
+    public static java.util.function.BiConsumer<java.util.UUID, CompoundTag> receiveTaotto = (id, tag) -> {};
     public static Runnable openTargetTool = () -> {
     };
 

@@ -28,6 +28,17 @@ public final class ClientProbe {
         }
         ReleaseProbe.forceTargets("mixins");
         ReleaseProbe.forceTargets("client");
+        var title = game.screen;
+        for (var maker : java.util.List.of(
+                new net.bullettrain.xenonpcs.client.maker.XenoMakerHubScreen(title),
+                new net.bullettrain.xenonpcs.client.maker.RaceCharacterMakerScreen(title),
+                new net.bullettrain.xenonpcs.client.maker.FormMakerScreen(title),
+                new net.bullettrain.xenonpcs.client.maker.HairMakerScreen(title),
+                new net.bullettrain.xenonpcs.client.maker.TaottoMakerScreen(title))) {
+            game.setScreen(maker);
+            LogUtils.getLogger().info("XENONPCS_PROBE_MAKER_INIT_PASS screen={}", maker.getClass().getSimpleName());
+        }
+        game.setScreen(title);
         LogUtils.getLogger().info("XENONPCS_PROBE_CLIENT_PASS screen={}", game.screen.getClass().getName());
         game.stop();
     }

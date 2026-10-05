@@ -245,6 +245,15 @@ final class XenoNpcSavePolicy {
             if (!EDITABLE_KEYS.contains(key)) {
                 return Validation.reject("field is not editor-owned: " + key);
             }
+            if (key.equals("DmzAppearance") && tag.getCompound(key).contains("Taotto")) {
+                var tattoo = tag.getCompound(key).getCompound("Taotto");
+                int size = tattoo.getInt("Size");
+                if (size < 8 || size > net.bullettrain.xenonpcs.features.taotto.TaottoDocument.MAX_SIZE
+                        || tattoo.getIntArray("Pixels").length != size * size)
+                    return Validation.reject("invalid tattoo canvas size");
+                if (!Float.isFinite(tattoo.getFloat("U")) || !Float.isFinite(tattoo.getFloat("V"))
+                        || !Float.isFinite(tattoo.getFloat("Scale"))) return Validation.reject("invalid tattoo placement");
+            }
             if (key.equals("SkinPlayer")) {
                 if (!tag.contains(key, Tag.TAG_STRING)
                         || !tag.getString(key).matches("[A-Za-z0-9_]{0,16}")) {

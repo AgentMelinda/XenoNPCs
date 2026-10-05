@@ -2,6 +2,7 @@ package net.bullettrain.xenonpcs.client.compat.npc;
 
 import com.dragonminez.client.render.DMZPlayerRenderer;
 import com.dragonminez.client.render.DMZRendererCache;
+import net.bullettrain.xenonpcs.client.maker.ForgeMakerPreviewRender;
 import com.dragonminez.client.render.effects.AuraRenderer;
 import com.dragonminez.client.render.layer.DMZSkinLayer;
 import com.dragonminez.common.config.FormConfig;
@@ -91,7 +92,6 @@ public final class NpcFullDmzRenderer {
         public net.minecraft.resources.ResourceLocation getSkinTextureLocation() {
             return owner instanceof AbstractClientPlayer player ? player.getSkinTextureLocation() : super.getSkinTextureLocation();
         }
-
         @Override
         public String getModelName() {
             return owner instanceof AbstractClientPlayer player ? player.getModelName() : super.getModelName();
@@ -230,6 +230,12 @@ public final class NpcFullDmzRenderer {
     public static boolean renderPreview(LivingEntity owner, GuiGraphics graphics, int x, int y,
                                         int scale, float yaw, float pitch, float partialTick,
                                         boolean showAura) {
+        return renderPreview(owner, graphics, x, y, scale, yaw, pitch, partialTick, showAura, null, false);
+    }
+
+    public static boolean renderPreview(LivingEntity owner, GuiGraphics graphics, int x, int y,
+                                        int scale, float yaw, float pitch, float partialTick, boolean showAura,
+                                        com.dragonminez.common.config.FormConfig.FormData draftForm, boolean stackDraft) {
         if (owner == null || graphics == null || !(owner.level() instanceof ClientLevel level)) return false;
         NpcAppearanceClient.State state = NpcAppearanceClient.get(owner.getUUID());
         if (state == null) return false;
@@ -283,13 +289,15 @@ public final class NpcFullDmzRenderer {
         graphics.pose().translate(0.0, 0.0, 320.0);
         int eyebrow = NpcDmzAppearance.sanitizeEyebrowType(
                 state.appearance().eyebrowsType, state.appearance().eyesType);
-        RENDER_CONTEXT.set(new RenderContext(stats, stats.getCharacter(), resolveActiveForm(state),
-                resolveActiveStackForm(visual), null, Float.NaN, eyebrow,
+        RENDER_CONTEXT.set(new RenderContext(stats, stats.getCharacter(),
+                draftForm != null && !stackDraft ? draftForm : resolveActiveForm(state),
+                draftForm != null && stackDraft ? draftForm : resolveActiveStackForm(visual), null, Float.NaN, eyebrow,
                 tailColor(state.appearance())));
         DMZSkinLayer.PREVIEW_MODE = true;
         try {
-            net.minecraft.client.gui.screens.inventory.InventoryScreen.renderEntityInInventory(graphics, x, y, scale,
-                    poseRotation, cameraRotation, proxy);
+            net.bullettrain.xenonpcs.dmz.form.MakerFormPreviewContext.draw(stats.getCharacter(), draftForm, stackDraft,
+                    () -> ForgeMakerPreviewRender.renderEntityInInventory(graphics, x, y, scale,
+                    new Vector3f(), poseRotation, cameraRotation, proxy));
             if (showAura) {
                 stats.getStatus().setAuraActive(true);
                 stats.getStatus().setPermanentAura(true);
@@ -587,7 +595,6 @@ public final class NpcFullDmzRenderer {
             // IPlayerAnimatable by mixin, so javac can prove a final class does not implement it and
             // rejects the instanceof outright.
             if (proxy instanceof com.dragonminez.client.animation.IPlayerAnimatable animatable) {
-                if (!NpcAnimationClient.readyForPlayback(pending)) return;
                 NpcAnimationClient.apply(proxy, animatable, pending);
                 if (pending.hold() && !pending.stop()) {
                     net.bullettrain.xenonpcs.client.combat.ScriptAnimSpeedClient.put(
@@ -904,6 +911,7 @@ public final class NpcFullDmzRenderer {
 
     private static void syncCharacter(ProxyPlayer proxy, Character character,
                                       NpcAppearanceClient.State state) {
+        net.bullettrain.xenonpcs.client.maker.TaottoClientOverlays.acceptIfChanged(proxy.getUUID(), state.appearance().taotto);
         NpcDmzAppearance a = state.appearance();
         character.setRace(state.race().isBlank() ? "human" : state.race());
         character.setGender(a.gender);

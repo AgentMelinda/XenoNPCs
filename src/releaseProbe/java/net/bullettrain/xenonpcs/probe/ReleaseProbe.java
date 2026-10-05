@@ -64,6 +64,13 @@ public final class ReleaseProbe {
         player.getAttribute(Attributes.ARMOR).setBaseValue(10);
         require(playerStats.getDefense() > playerDefense, "ordinary player armor path");
         require(level.addFreshEntity(npc), "spawn native NPC");
+        var profileData = new net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile();
+        profileData.appearance.taotto.setPixel(2, 2, 0xFF00FF00);
+        var loaded = net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile.fromTag(profileData.toTag());
+        require(loaded.appearance.taotto.pixel(2, 2) == 0xFF00FF00, "NPC tattoo profile persistence");
+        var shape = net.bullettrain.xenonpcs.combat.aura.AuraScaleCurve.applyCharge(new float[]{1, 2, 1}, 1, 0, 1, 1.8, .25, .25);
+        require(shape[1] == 2 && shape[0] > 1, "ki charge width without height");
+        LogUtils.getLogger().info("XENONPCS_PROBE_MAKER_SERVER_PASS tattooPersistence=true kiHeight=false");
         LogUtils.getLogger().info("XENONPCS_PROBE_ASSERTIONS_PASS defense={} maxDefense={} armoredDefense={} playerDefense={}",
                 defense, maxDefense, stats.getDefense(), playerStats.getDefense());
     }

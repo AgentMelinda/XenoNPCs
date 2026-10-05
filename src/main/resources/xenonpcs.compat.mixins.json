@@ -63,7 +63,10 @@
     "compat.dmz.DmzMeleeHeadLookMixin",
     "compat.dmz.DmzMeleeHeadMolangMixin",
     "compat.dmz.DmzHairFollowBodyMixin",
-    "compat.dmz.DmzRenderHandIrisMixin"
+    "compat.dmz.DmzRenderHandIrisMixin",
+    "compat.dmz.DmzTaottoOverlayMixin",
+    "compat.dmz.DmzMakerFormPreviewMixin",
+    "compat.dmz.DmzRaceCatalogHairMixin"
   ],
   "injectors": {
     "defaultRequire": 1

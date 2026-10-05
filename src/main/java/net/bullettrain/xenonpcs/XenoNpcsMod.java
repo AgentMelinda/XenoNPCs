@@ -38,6 +38,9 @@ public class XenoNpcsMod {
         XenoCapabilities.register(modEventBus);
         net.bullettrain.xenonpcs.compat.npc.NpcDmzStats.register(modEventBus);
         ModNetwork.register();
+        net.bullettrain.xenonpcs.network.taotto.TaottoNetwork.register();
+        net.bullettrain.xenonpcs.network.maker.MakerNetwork.register();
+        net.bullettrain.xenonpcs.network.race.RaceLabelNetwork.register();
         // XenoAPI (xenoapi.npcs.api) over native NPCs; holds no world, resolves the server per call.
         net.bullettrain.xenonpcs.npc.script.api.xeno.NativeNpcApi.register();
         net.bullettrain.xenonpcs.network.form.FormEditorNetwork.register();
@@ -72,6 +75,7 @@ public class XenoNpcsMod {
         public static void onClientSetup(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
                 net.bullettrain.xenonpcs.client.config.XenoClientConfig.load();
+                net.bullettrain.xenonpcs.client.maker.MakerClientBindings.bind();
                 net.bullettrain.xenonpcs.client.ClientScreens.openXenoNpcEditor = data -> {
                     // The editor payload carries the full server profile: it is the save baseline.
                     net.bullettrain.xenonpcs.client.npc.ClientNpcProfiles.accept(

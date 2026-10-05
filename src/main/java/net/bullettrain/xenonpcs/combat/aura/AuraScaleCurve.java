@@ -76,6 +76,17 @@ public final class AuraScaleCurve {
         return (float) (1.0 + Math.max(0.0, extra) * clampRamp(ramp));
     }
 
+    /** KI charging widens the existing aura; only transformation charging increases its height. */
+    public static float[] applyCharge(float[] base, float power, float transform, float ki,
+                                      double transformHeight, double transformWidth, double kiWidth) {
+        float width = Math.max(chargeWidth(transform, transformWidth), chargeWidth(ki, kiWidth));
+        float[] out = base.clone();
+        out[0] *= power * width;
+        out[1] *= power * chargeHeight(transform, transformHeight);
+        out[2] *= power * width;
+        return out;
+    }
+
     private static float clampRamp(float value) {
         if (Float.isNaN(value)) return 0.0f;
         return (float) clamp(value, 0.0, 1.0);

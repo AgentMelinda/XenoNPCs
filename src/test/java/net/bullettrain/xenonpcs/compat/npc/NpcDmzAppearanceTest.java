@@ -66,7 +66,7 @@ class NpcDmzAppearanceTest {
         NpcDmzAppearance appearance = NpcDmzAppearance.fromTag(new CompoundTag());
         assertEquals("", appearance.tailColor);
         assertEquals("", appearance.toTag().getString("TailColor"));
-        assertEquals(4, appearance.toTag().getInt("Schema"));
+        assertEquals(5, appearance.toTag().getInt("Schema"));
     }
 
     @Test
@@ -89,7 +89,7 @@ class NpcDmzAppearanceTest {
 
         NpcDmzAppearance decoded = NpcDmzAppearance.fromTag(tag);
         assertEquals(1, decoded.eyebrowsType);
-        assertEquals(4, decoded.toTag().getInt("Schema"));
+        assertEquals(5, decoded.toTag().getInt("Schema"));
     }
 
     @Test

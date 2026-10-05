@@ -7,8 +7,7 @@ XenoPixels by `tools/xenonpcs/export_xenonpcs.py --target 1.20.1`.
 ## Install
 
 Use Java 17, Minecraft 1.20.1 and Forge 47.4.10. Install DragonMineZ 2.1.3,
-GeckoLib 4.8.3 and `xenonpcs-0.0.5-1.20.1-all.jar` built from this branch.
-Version 0.0.5 is a local release candidate until published.
+GeckoLib 4.8.3 and `xenonpcs-0.0.6-1.20.1-all.jar` built from this branch.
 Curios and CustomNPCs/CNPC Gecko compatibility are optional. MyNPCs compatibility
 is omitted from this version's export.
 
@@ -43,3 +42,15 @@ list 34 tests requiring a running Forge game that are excluded from plain JUnit.
 See `RELEASE_HANDOFF_2026-10-03.md` for dated release evidence. The probes validate startup,
 active mixin target loading and native NPC defense/ticks. Rendering appearance, interactive
 editors, multiplayer and the ledge/respawn scenarios still require gameplay validation.
+
+## Maker Studio (0.0.6)
+
+Open **Model > Maker Studio** in the native NPC editor to edit the selected NPC. The hub shows the target name/id. Race, saved form, hair and tattoo Apply use the editor's existing server save checks. Hair/race/form Apply selects Full DMZ appearance; custom tattoo overlays also work on vanilla humanoid skins. Custom or mimic models need Full DMZ appearance for tattoo overlays.
+
+For your player, use `/xenomaker`, or `/xenomaker race`, `forms`, `hair`, `tattoo` (`taotto` alias), and `/xenohairui`. Previews remain local until Apply. Tattoo paint is additive to DMZ's preset tattoos, survives player death/save/load and NPC profile save/load, and supports body-part placement and scaling.
+
+Race creation and updates require server operator level 2. Built-in race packs are read-only. The server validates race ids and expected revisions, stages custom race edits, and saves a ZIP backup before each update in `config/xenonpcs/race-backups/<race>/`. Remote clients back up existing local packs in `config/xenonpcs/client-race-backups/` before accepting server catalog snapshots. These tools do not convert world/chunk files.
+
+Ordinary ki charging no longer adds vertical aura growth. Normal model/power scaling, transformation growth and charge width remain enabled. Legacy `kiChargeHeight` values are ignored.
+
+Validation evidence and remaining gameplay checks are recorded in [RELEASE_HANDOFF_2026-10-05.md](RELEASE_HANDOFF_2026-10-05.md).

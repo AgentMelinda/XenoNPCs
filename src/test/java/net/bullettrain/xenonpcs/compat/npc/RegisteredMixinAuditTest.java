@@ -53,7 +53,7 @@ class RegisteredMixinAuditTest {
                 }
             }
         }
-        assertEquals(68, checked, "Update audit coverage deliberately when registration changes");
+        assertEquals(71, checked, "Update audit coverage deliberately when registration changes");
         assertTrue(failures.isEmpty(), String.join("\n", failures));
     }
 

@@ -24,8 +24,12 @@ public final class NpcHumanoidAppearanceLayer<T extends LivingEntity, M extends 
                        float limbSwing, float limbSwingAmount, float partialTick,
                        float ageInTicks, float netHeadYaw, float headPitch) {
         NpcAppearanceClient.State state = NpcAppearanceClient.get(owner.getUUID());
-        if (state == null || state.appearance().mode != NpcDmzAppearance.Mode.OVERLAY) return;
+        if (state == null) return;
         NpcDmzAppearance a = state.appearance();
+        net.bullettrain.xenonpcs.client.maker.TaottoClientOverlays.acceptIfChanged(owner.getUUID(), a.taotto);
+        var overlay = net.bullettrain.xenonpcs.client.maker.TaottoClientOverlays.texture(owner.getUUID());
+        if (overlay != null) draw(pose, buffers, packedLight, overlay, 0xFFFFFFFF);
+        if (a.mode != NpcDmzAppearance.Mode.OVERLAY) return;
         // Tattoo 0 is a real DMZ choice, not a sentinel for "none".
         draw(pose, buffers, packedLight, path("tattoos/tattoo_" + a.tattooType + ".png"), 0xFFFFFFFF);
         String race = state.race().toLowerCase(java.util.Locale.ROOT);
@@ -41,7 +45,8 @@ public final class NpcHumanoidAppearanceLayer<T extends LivingEntity, M extends 
     }
 
     private void draw(PoseStack pose, MultiBufferSource buffers, int light, ResourceLocation texture, int color) {
-        if (Minecraft.getInstance().getResourceManager().getResource(texture).isEmpty()) return;
+        if (!(texture.getNamespace().equals("xenonpcs") && texture.getPath().startsWith("dynamic/taotto/"))
+                && Minecraft.getInstance().getResourceManager().getResource(texture).isEmpty()) return;
         getParentModel().renderToBuffer(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(texture)),
                 light, OverlayTexture.NO_OVERLAY, ((color >> 16) & 0xFF) / 255.0f, ((color >> 8) & 0xFF) / 255.0f,
                 (color & 0xFF) / 255.0f, ((color >>> 24) & 0xFF) / 255.0f);

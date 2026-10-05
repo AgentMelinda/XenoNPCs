@@ -40,6 +40,12 @@ public final class NpcAppearanceClient {
     private static final Map<UUID, State> STATES = new ConcurrentHashMap<>();
 
     private NpcAppearanceClient() {}
+    /** Scoped GUI state; never persists or sends a maker draft. */
+    public static void withPreview(UUID id, NpcCombatProfile draft, Runnable draw) {
+        State previous = STATES.get(id);
+        try { applyProfile(id, draft); draw.run(); }
+        finally { if (previous == null) STATES.remove(id); else STATES.put(id, previous); }
+    }
 
     public static void apply(UUID id, String race, String formGroup, String form) {
         apply(id, race, formGroup, form, false, "", "", 0, 0, 0, 0, 0, 0, true,

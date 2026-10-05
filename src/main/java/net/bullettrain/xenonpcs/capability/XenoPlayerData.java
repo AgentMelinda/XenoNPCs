@@ -16,6 +16,12 @@ import java.util.Set;
 import java.util.UUID;
 
 public class XenoPlayerData {
+    private net.bullettrain.xenonpcs.features.taotto.TaottoDocument taotto = net.bullettrain.xenonpcs.features.taotto.TaottoDocument.blank();
+    public net.bullettrain.xenonpcs.features.taotto.TaottoDocument taotto() { return taotto; }
+    public void taotto(net.bullettrain.xenonpcs.features.taotto.TaottoDocument document) {
+        taotto = document == null ? net.bullettrain.xenonpcs.features.taotto.TaottoDocument.blank() : document.copy();
+    }
+
     private float ki = 100f;
     private float maxKi = 100f;
     private float stamina = 100f;
@@ -360,6 +366,7 @@ public class XenoPlayerData {
     }
 
     public void copyFrom(XenoPlayerData other) {
+        taotto(other.taotto);
         this.ki = other.ki;
         this.maxKi = other.maxKi;
         this.stamina = other.stamina;
@@ -396,6 +403,7 @@ public class XenoPlayerData {
     }
 
     public void saveNBT(CompoundTag tag) {
+        CompoundTag overlay = new CompoundTag(); taotto.saveNbt(overlay); tag.put("Taotto", overlay);
         tag.putFloat("Ki", ki);
         tag.putFloat("MaxKi", maxKi);
         tag.putFloat("Stamina", stamina);
@@ -461,6 +469,7 @@ public class XenoPlayerData {
     }
 
     public void loadNBT(CompoundTag tag) {
+        taotto = net.bullettrain.xenonpcs.features.taotto.TaottoDocument.loadNbt(tag.getCompound("Taotto"));
         // Guarded like every field below them. Unguarded, a tag without MaxKi read as 0, and setKi
         // then clamped ki to 0 as well - a player silently lost both pools instead of keeping the
         // constructor's 100f. saveNBT always writes them, so this only bit on a hand-edited or

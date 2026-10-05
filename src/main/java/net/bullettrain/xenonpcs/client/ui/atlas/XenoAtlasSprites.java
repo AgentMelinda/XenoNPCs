@@ -136,6 +136,14 @@ public final class XenoAtlasSprites {
                 }
             }
         }
+        // Unified Maker Studio (PR-D6c): exact Race / Form / Hair region sizes.
+        register("xeno_maker_race_card", 72, 56);
+        register("xeno_maker_category_col", 96, 240);
+        register("xeno_maker_part_grid", 240, 220);
+        register("xeno_maker_form_list", 140, 280);
+        register("xeno_maker_form_settings", 220, 240);
+        register("xeno_maker_preview_sm", 150, 112);
+        register("xeno_maker_hair_preview", 280, 240);
     }
 
     /** Generated bubble outlines beside the rounded original. */
