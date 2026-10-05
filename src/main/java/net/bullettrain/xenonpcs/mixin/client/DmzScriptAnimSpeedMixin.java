@@ -28,11 +28,11 @@ public abstract class DmzScriptAnimSpeedMixin {
             method = "predicate",
             at = @At(
                     value = "INVOKE",
-                    target = "Lsoftware/bernie/geckolib/animation/AnimationController;setAnimationSpeed(D)V",
+                    target = "Lsoftware/bernie/geckolib/animation/AnimationController;setAnimationSpeed(D)Lsoftware/bernie/geckolib/animation/AnimationController;",
                     ordinal = 0,
                     shift = At.Shift.AFTER),
             remap = false,
-            require = 0)
+            require = 1)
     private <T extends GeoAnimatable> void xenopixels$scriptClipSpeed(
             AnimationState<T> state, CallbackInfoReturnable<PlayState> cir) {
         AbstractClientPlayer self = (AbstractClientPlayer) (Object) this;

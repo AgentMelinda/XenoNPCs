@@ -28,7 +28,7 @@ public final class NpcDmzAppearance {
         }
     }
 
-    private static final int SCHEMA = 4;
+    private static final int SCHEMA = 5;
     /** DMZ 2.1.3's eyebrow layer 9 contains one stray body-atlas pixel. */
     public static final int BROKEN_EYEBROW_TYPE = 9;
 
@@ -42,6 +42,7 @@ public final class NpcDmzAppearance {
     public int noseType;
     public int mouthType;
     public int tattooType;
+    public net.bullettrain.xenonpcs.features.taotto.TaottoDocument taotto = net.bullettrain.xenonpcs.features.taotto.TaottoDocument.blank();
     public float boobScale = 1.0f;
     public String bodyColor = "#F4C7A1";
     public String bodyColor2 = "#C98F68";
@@ -78,6 +79,7 @@ public final class NpcDmzAppearance {
         tag.putInt("NoseType", nonNegative(noseType));
         tag.putInt("MouthType", nonNegative(mouthType));
         tag.putInt("TattooType", nonNegative(tattooType));
+        CompoundTag overlay = new CompoundTag(); taotto.saveNbt(overlay); tag.put("Taotto", overlay);
         tag.putFloat("BoobScale", clampBoobScale(boobScale));
         tag.putString("BodyColor", color(bodyColor, "#F4C7A1"));
         tag.putString("BodyColor2", color(bodyColor2, "#C98F68"));
@@ -108,6 +110,7 @@ public final class NpcDmzAppearance {
         out.noseType = nonNegative(tag.getInt("NoseType"));
         out.mouthType = nonNegative(tag.getInt("MouthType"));
         out.tattooType = nonNegative(tag.getInt("TattooType"));
+        out.taotto = net.bullettrain.xenonpcs.features.taotto.TaottoDocument.loadNbt(tag.getCompound("Taotto"));
         out.boobScale = clampBoobScale(tag.contains("BoobScale") ? tag.getFloat("BoobScale") : 1.0f);
         out.bodyColor = color(tag.getString("BodyColor"), out.bodyColor);
         out.bodyColor2 = color(tag.getString("BodyColor2"), out.bodyColor2);

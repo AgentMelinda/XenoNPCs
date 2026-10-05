@@ -45,18 +45,8 @@ public final class XenoAuraScaling {
         float power = AuraScaleCurve.fromBattlePower(stats.getBattlePower(),
                 XenoAuraConfig.powerPivot, XenoAuraConfig.powerGain, XenoAuraConfig.powerMax);
         ChargeRamps ramps = ramps(stats);
-        float height = Math.max(
-                AuraScaleCurve.chargeHeight(ramps.transform, XenoAuraConfig.chargeHeight),
-                AuraScaleCurve.chargeHeight(ramps.ki, XenoAuraConfig.kiChargeHeight));
-        float width = Math.max(
-                AuraScaleCurve.chargeWidth(ramps.transform, XenoAuraConfig.chargeWidth),
-                AuraScaleCurve.chargeWidth(ramps.ki, XenoAuraConfig.kiChargeWidth));
-
-        float[] out = base.clone();
-        out[0] = base[0] * power * width;
-        out[1] = base[1] * power * height;
-        out[2] = base[2] * power * width;
-        return out;
+        return AuraScaleCurve.applyCharge(base, power, ramps.transform, ramps.ki,
+                XenoAuraConfig.chargeHeight, XenoAuraConfig.chargeWidth, XenoAuraConfig.kiChargeWidth);
     }
 
     private static ChargeRamps ramps(StatsData stats) {

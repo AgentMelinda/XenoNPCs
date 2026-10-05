@@ -8,7 +8,7 @@ on:
       tag:
         description: Existing release tag to build
         required: true
-        default: v0.0.5
+        default: v0.0.6
         type: string
 
 permissions:
@@ -35,7 +35,7 @@ jobs:
           - minecraft: '1.20.1'
             java: '17'
             # Pin the Forge export so re-running a release never builds a moving branch.
-            ref: '70e6b05ea807168ac3568fca24bbfd0d0c40c2d3'
+            ref: '602688e107d7084dda0e0fbae61d6c68a3cec7b1'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,6 +63,17 @@ jobs:
             ./gradlew build --no-daemon -PofflineMcMeta -Pmod_version="$VERSION"
           else
             ./gradlew build --no-daemon -Pmod_version="$VERSION"
+          fi
+
+      - name: Fresh server startup probe
+        env:
+          MC_VERSION: ${{ matrix.minecraft }}
+        run: |
+          set -euo pipefail
+          if [ "$MC_VERSION" = '1.21.1' ]; then
+            ./gradlew runServer --no-daemon -PreleaseProbe -PofflineMcMeta
+          else
+            ./gradlew runServer --no-daemon -PreleaseProbe -PreleaseNpcProfile=core
           fi
 
       - name: Select the runtime jar
@@ -124,13 +135,19 @@ jobs:
 
           DragonMineZ 2.1.3 and GeckoLib are required. Do not install XenoNPCs alongside XenoPixels.
 
-          Changes in 0.0.5:
-          - 1.20.1: correct the DragonMineZ 2.1.3 and CustomNPCs mixin targets, Forge event signatures, GUI ownership, and production mappings.
-          - 1.20.1: remove generated Args class references from tail coloring and correct NPC armor stat redirection.
-          - Audit every registered Forge mixin against the exact dependencies; inactive optional integrations remain gated.
-          - Both release assets retain the -all suffix and include their bundled runtime dependencies.
+          Changes in 0.0.6:
+          - Port tattoo placement/painting, race maker, form maker and hair studios to both standalone versions.
+          - Open Model > Maker Studio to apply edits to the selected native NPC, or /xenomaker for your player.
+          - Preserve tattoos in player/NPC saves; restrict custom race writes to server operators with revision checks, staging and backups.
+          - Remove vertical aura growth from ordinary ki charging; retain model/power scaling and transformation growth.
+          - Restore missing NeoForge NPC stat-host mixins and correct the GeckoLib animation-speed target.
 
-          Validation: Forge passed 894 unit tests and twelve fresh development client/server startup probes across GeckoLib 4.8.3/4.8.4 and three optional-mod profiles. Production modpack gameplay, visual rendering, multiplayer, and unavailable Revamp/Noeaj integrations remain unverified. Both CI builds run unit tests before publication. Forge's 34 runtime-only tests remain excluded from plain JUnit. MyNPCs compatibility is omitted from the 1.20.1 export.
+          Minecraft 1.21.1 requires the exact patched NeoForge DragonMineZ 2.1.3 dependency tracked in this release tag:
+          https://github.com/AgentMelinda/XenoNPCs/raw/refs/tags/v0.0.6/libs/dragonminez-2.1.3.jar
+          Source fix: https://github.com/AgentMelinda/dragonminez-1.21.1/commit/f1caa521
+          Minecraft 1.20.1 uses official Forge DragonMineZ 2.1.3, not that NeoForge jar.
+
+          Both CI builds run unit tests and a fresh isolated server probe before publication. Local client probes initialize all five maker screens and load active mixin targets. Interactive visual placement, production modpack gameplay, multiplayer editing and unavailable optional integrations remain unverified. Forge's 34 runtime-only tests remain excluded from plain JUnit. MyNPCs support is omitted from 1.20.1. No parent XenoPixels source or world/chunk conversion code changed.
           NOTES
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "${jars[@]}" --clobber

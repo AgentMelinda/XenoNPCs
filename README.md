@@ -21,16 +21,16 @@ Native NPCs for **DragonMineZ** on Minecraft 1.21.1 (NeoForge).
 | | Version |
 |---|---|
 | Minecraft | 1.21.1 |
-| NeoForge | 21.1.233+ |
-| DragonMineZ | 2.1.3+ (it also needs GeckoLib, TerraBlender and Curios) |
+| NeoForge | 21.1.248 |
+| DragonMineZ | Patched NeoForge 2.1.3 pinned in `libs/` (also needs GeckoLib 4.9.2, TerraBlender and Curios) |
 
 XenoNPCs cannot be installed together with **XenoPixels Network**, which already contains it.
 
 ## Building
 
 ```
-# put dragonminez-2.1.3.jar in libs/ (not redistributed here), then:
-./gradlew build
+# The exact patched DragonMineZ jar is tracked in libs/; its SHA-256 is enforced.
+./gradlew build -PofflineMcMeta
 ```
 
 The jar is in `build/libs/`. `./gradlew test` runs the test suite; `./gradlew runClient` starts a dev
@@ -47,3 +47,17 @@ All Rights Reserved - see [LICENSE](LICENSE).
 
 The scripting API interfaces under `xenoapi/` are adapted from Noppes' CustomNPCsAPI, which publishes
 no licence of its own; their terms are not established here.
+
+## Maker Studio (0.0.6)
+
+Open **Model > Maker Studio** in the native NPC editor to edit the selected NPC. The hub shows the target name/id. Race, saved form, hair and tattoo Apply use the editor's existing server save checks. Hair/race/form Apply selects Full DMZ appearance; custom tattoo overlays also work on vanilla humanoid skins. Custom or mimic models need Full DMZ appearance for tattoo overlays.
+
+For your player, use `/xenomaker`, or `/xenomaker race`, `forms`, `hair`, `tattoo` (`taotto` alias), and `/xenohairui`. Previews remain local until Apply. Tattoo paint is additive to DMZ's preset tattoos, survives player death/save/load and NPC profile save/load, and supports body-part placement and scaling.
+
+Race creation and updates require server operator level 2. Built-in race packs are read-only. The server validates race ids and expected revisions, stages custom race edits, and saves a ZIP backup before each update in `config/xenonpcs/race-backups/<race>/`. Remote clients back up existing local packs in `config/xenonpcs/client-race-backups/` before accepting server catalog snapshots. These tools do not convert world/chunk files.
+
+Ordinary ki charging no longer adds vertical aura growth. Normal model/power scaling, transformation growth and charge width remain enabled. Legacy `kiChargeHeight` values are ignored.
+
+Validation evidence and remaining gameplay checks are recorded in [RELEASE_HANDOFF_2026-10-05.md](RELEASE_HANDOFF_2026-10-05.md).
+
+For Minecraft 1.21.1, use the exact [patched DragonMineZ dependency](https://github.com/AgentMelinda/XenoNPCs/raw/refs/tags/v0.0.6/libs/dragonminez-2.1.3.jar). Its respawn hook targets NeoForge 21.1.248. Source fix: [DragonMineZ commit](https://github.com/AgentMelinda/dragonminez-1.21.1/commit/f1caa521). Do not use this NeoForge dependency on 1.20.1.

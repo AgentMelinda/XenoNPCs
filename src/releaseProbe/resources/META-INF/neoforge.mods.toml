@@ -1,0 +1,13 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+[[mods]]
+modId="xenonpcs_release_probe"
+version="1.0"
+displayName="XenoNPCs isolated release probe"
+[[dependencies.xenonpcs_release_probe]]
+modId="xenonpcs"
+type="required"
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"

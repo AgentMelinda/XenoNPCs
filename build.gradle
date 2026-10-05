@@ -115,6 +115,10 @@ def dragonMineZJar = {
         throw new GradleException("DragonMineZ ${dragonminez_version} jar not found at ${f}. " +
                 "Put dragonminez-${dragonminez_version}.jar in libs/ or pass -PdmzJar=path.")
     }
+    def actual = java.security.MessageDigest.getInstance('SHA-256').digest(f.bytes).encodeHex().toString()
+    if (actual != dragonminez_sha256) {
+        throw new GradleException("DragonMineZ SHA-256 mismatch: expected ${dragonminez_sha256}, got ${actual}")
+    }
     return f
 }()
 
@@ -184,3 +188,64 @@ tasks.named('jar', Jar).configure {
 }
 
 tasks.named('build') { dependsOn 'jarJar' }
+
+// Fresh isolated probes are a separate mod and are never packaged in XenoNPCs.
+sourceSets {
+    releaseProbe {
+        compileClasspath += sourceSets.main.output + configurations.compileClasspath
+        runtimeClasspath += sourceSets.main.runtimeClasspath
+    }
+}
+if (providers.gradleProperty('releaseProbe').isPresent()) {
+    neoForge.mods { xenonpcs_release_probe { sourceSet sourceSets.releaseProbe } }
+    ['Client', 'Server'].each { side ->
+        def directory = layout.buildDirectory.dir("release-runtime/${side.toLowerCase()}/core")
+        def prepare = tasks.register("prepareRelease${side}Probe") {
+            doLast {
+                def dir = directory.get().asFile
+                dir.mkdirs()
+                if (side == 'Server') {
+                    new File(dir, 'eula.txt').text = 'eula=true\n'
+                    new File(dir, 'server.properties').text = 'online-mode=false\nserver-port=0\nlevel-name=probe-flat-v2\nlevel-type=minecraft:flat\ngenerator-settings={"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}],"biome":"minecraft:plains","features":false,"lakes":false,"structure_overrides":[]}\ngenerate-structures=false\nview-distance=2\nsimulation-distance=2\n'
+                }
+            }
+        }
+        neoForge.runs.named(side.toLowerCase()).configure {
+            gameDirectory = directory.get().asFile
+            systemProperty 'xenonpcs.releaseProbe', 'true'
+            systemProperty 'xenonpcs.releaseProfile', 'core'
+            systemProperty 'mixin.debug.countInjections', 'true'
+        }
+        tasks.named("run${side}").configure {
+            dependsOn prepare, tasks.named('releaseProbeClasses')
+            doLast {
+                def log = new File(directory.get().asFile, 'logs/latest.log').text
+                if (!log.contains("XENONPCS_PROBE_${side.toUpperCase()}_PASS") ||
+                        log =~ /(?i)(mixin apply .*failed|InvalidInjectionException|InjectionError|Critical injection failure)/) {
+                    throw new GradleException("Release ${side} probe failed; inspect ${directory.get()}/logs/latest.log")
+                }
+            }
+        }
+    }
+}
+
+// The vendored client metadata lacks Windows classifiers; resolve them only for local probes.
+if (providers.gradleProperty('releaseProbe').isPresent() && System.getProperty('os.name').startsWith('Windows')) {
+    configurations { makerProbeNatives }
+    dependencies {
+        ['lwjgl', 'lwjgl-glfw', 'lwjgl-jemalloc', 'lwjgl-openal', 'lwjgl-opengl', 'lwjgl-stb', 'lwjgl-tinyfd', 'lwjgl-freetype'].each { module ->
+            makerProbeNatives "org.lwjgl:${module}:3.3.3:natives-windows"
+        }
+    }
+    def nativesDir = layout.buildDirectory.dir('maker-probe-natives')
+    def extractNatives = tasks.register('extractMakerProbeNatives', Copy) {
+        from { configurations.makerProbeNatives.collect { zipTree(it) } }
+        include '**/*.dll'
+        eachFile { path = name }
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        into nativesDir
+    }
+    neoForge.runs.named('client').configure { systemProperty 'org.lwjgl.librarypath', nativesDir.get().asFile.absolutePath }
+    tasks.named('runClient').configure { dependsOn extractNatives }
+}

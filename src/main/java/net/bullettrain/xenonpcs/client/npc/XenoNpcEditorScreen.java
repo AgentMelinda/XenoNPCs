@@ -910,6 +910,14 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
         r.add(field("Title", currentTitle(), 64, v -> editedTitle = v, null));
         r.add(spacer());
         r.add(new EditorRow.Action("Model", "mynpcs_button_row", this::openAppearance));
+        r.add(new EditorRow.Action("Maker Studio", "mynpcs_button_row", () ->
+            net.bullettrain.xenonpcs.client.maker.MakerTargets.openNpc(this, entityId, profile, draft -> {
+                var before = profile.toTag(); var after = draft.toTag();
+                for (String key : after.getAllKeys()) if (!java.util.Objects.equals(before.get(key), after.get(key))) markDirty(key);
+                profile = draft;
+                minecraft.setScreen(this);
+                sendNpcSave(false);
+            })));
         r.add(cycle("Model type", NpcCombatProfile.MODEL_KINDS,
                 Math.max(0, NpcCombatProfile.MODEL_KINDS.indexOf(
                         NpcCombatProfile.normalizeModelKind(profile.modelKind))),

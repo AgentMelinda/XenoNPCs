@@ -10,7 +10,16 @@ class MixinPolicyTest {
     private static final String SWING_SUPPRESS =
             "net.bullettrain.xenonpcs.mixin.compat.shared.NpcSwingSuppressMixin";
     private static final String OPTIONAL_SHARED =
-            "net.bullettrain.xenonpcs.mixin.compat.shared.DmzNpcAuraScaleMixin";
+            "net.bullettrain.xenonpcs.mixin.compat.shared.RenderTypeNullTextureGuardMixin";
+
+    @Test
+    void nativeDmzOverridesDoNotRequireCustomNpcs() {
+        for (String hook : java.util.List.of("AuraScale", "Eyebrow", "ActiveForm", "TailColor",
+                "EmbeddedTailColor", "TransformTarget", "HairProgress")) {
+            assertTrue(SharedNpcMixinPolicy.shouldApply(
+                    "net.bullettrain.xenonpcs.mixin.compat.shared.DmzNpc" + hook + "Mixin", false, false));
+        }
+    }
 
     @Test
     void nativeXenoNpcSwingSuppressionDoesNotRequireEitherLegacyNpcMod() {

@@ -100,7 +100,10 @@
     "compat.mynpcs.GuiCustomScrollingPanelMixin",
     "compat.mynpcs.GuiCustomScrollNopMixin",
     "compat.mynpcs.GuiTextAreaMixin",
-    "compat.mynpcs.GuiDialogInteractMixin"
+    "compat.mynpcs.GuiDialogInteractMixin",
+    "compat.dmz.DmzTaottoOverlayMixin",
+    "compat.dmz.DmzMakerFormPreviewMixin",
+    "compat.dmz.DmzRaceCatalogHairMixin"
   ],
   "injectors": {
     "defaultRequire": 0

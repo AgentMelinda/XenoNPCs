@@ -226,6 +226,12 @@ public final class NpcFullDmzRenderer {
     public static boolean renderPreview(LivingEntity owner, GuiGraphics graphics, int x, int y,
                                         int scale, float yaw, float pitch, float partialTick,
                                         boolean showAura) {
+        return renderPreview(owner, graphics, x, y, scale, yaw, pitch, partialTick, showAura, null, false);
+    }
+
+    public static boolean renderPreview(LivingEntity owner, GuiGraphics graphics, int x, int y,
+                                        int scale, float yaw, float pitch, float partialTick, boolean showAura,
+                                        com.dragonminez.common.config.FormConfig.FormData draftForm, boolean stackDraft) {
         if (owner == null || graphics == null || !(owner.level() instanceof ClientLevel level)) return false;
         NpcAppearanceClient.State state = NpcAppearanceClient.get(owner.getUUID());
         if (state == null) return false;
@@ -279,13 +285,15 @@ public final class NpcFullDmzRenderer {
         graphics.pose().translate(0.0, 0.0, 320.0);
         int eyebrow = NpcDmzAppearance.sanitizeEyebrowType(
                 state.appearance().eyebrowsType, state.appearance().eyesType);
-        RENDER_CONTEXT.set(new RenderContext(stats, stats.getCharacter(), resolveActiveForm(state),
-                resolveActiveStackForm(visual), null, Float.NaN, eyebrow,
+        RENDER_CONTEXT.set(new RenderContext(stats, stats.getCharacter(),
+                draftForm != null && !stackDraft ? draftForm : resolveActiveForm(state),
+                draftForm != null && stackDraft ? draftForm : resolveActiveStackForm(visual), null, Float.NaN, eyebrow,
                 tailColor(state.appearance())));
         DMZSkinLayer.PREVIEW_MODE = true;
         try {
-            EntityPreviewRenderContext.renderEntityInInventory(graphics, x, y, scale,
-                    new Vector3f(), poseRotation, cameraRotation, proxy);
+            net.bullettrain.xenonpcs.dmz.form.MakerFormPreviewContext.draw(stats.getCharacter(), draftForm, stackDraft,
+                    () -> EntityPreviewRenderContext.renderEntityInInventory(graphics, x, y, scale,
+                    new Vector3f(), poseRotation, cameraRotation, proxy));
             if (showAura) {
                 stats.getStatus().setAuraActive(true);
                 stats.getStatus().setPermanentAura(true);
@@ -899,6 +907,7 @@ public final class NpcFullDmzRenderer {
 
     private static void syncCharacter(ProxyPlayer proxy, Character character,
                                       NpcAppearanceClient.State state) {
+        net.bullettrain.xenonpcs.client.maker.TaottoClientOverlays.acceptIfChanged(proxy.getUUID(), state.appearance().taotto);
         NpcDmzAppearance a = state.appearance();
         character.setRace(state.race().isBlank() ? "human" : state.race());
         character.setGender(a.gender);

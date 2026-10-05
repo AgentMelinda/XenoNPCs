@@ -43,8 +43,8 @@ public final class XenoAuraConfig {
     public static double chargeHeight = 1.8;
     /** Extra width at a full power-up. Deliberately small — the silhouette is a pillar. */
     public static double chargeWidth = 0.25;
-    /** Extra height while charging ki, independent from the transformation column. */
-    public static double kiChargeHeight = 1.8;
+    /** Retained for old config files; ki charging no longer adds height. */
+    public static double kiChargeHeight = 0.0;
     /** Extra width while charging ki, independent from the transformation column. */
     public static double kiChargeWidth = 0.25;
     /** Ticks a full rise takes. The fall back takes twice as long. */
@@ -86,7 +86,7 @@ public final class XenoAuraConfig {
         powerMax = 2.5;
         chargeHeight = 1.8;
         chargeWidth = 0.25;
-        kiChargeHeight = 1.8;
+        kiChargeHeight = 0.0;
         kiChargeWidth = 0.25;
         rampTicks = 14.0;
         save();
@@ -105,7 +105,7 @@ public final class XenoAuraConfig {
             powerMax = Math.max(1.0, clamp(d.powerMax, MAX_POWER, 2.5));
             chargeHeight = clamp(d.chargeHeight, MAX_CHARGE_HEIGHT, 1.8);
             chargeWidth = clamp(d.chargeWidth, MAX_CHARGE_WIDTH, 0.25);
-            kiChargeHeight = clamp(d.kiChargeHeight, MAX_CHARGE_HEIGHT, 1.8);
+            kiChargeHeight = 0.0; // Legacy values cannot re-enable ki-charge height growth.
             kiChargeWidth = clamp(d.kiChargeWidth, MAX_CHARGE_WIDTH, 0.25);
             rampTicks = Math.max(1.0, clamp(d.rampTicks, MAX_RAMP, 14.0));
         } catch (IOException e) {
@@ -139,7 +139,7 @@ public final class XenoAuraConfig {
         double powerMax = 2.5;
         double chargeHeight = 1.8;
         double chargeWidth = 0.25;
-        double kiChargeHeight = 1.8;
+        double kiChargeHeight = 0.0;
         double kiChargeWidth = 0.25;
         double rampTicks = 14.0;
     }
