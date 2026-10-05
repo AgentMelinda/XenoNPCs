@@ -48,7 +48,9 @@ All Rights Reserved - see [LICENSE](LICENSE).
 The scripting API interfaces under `xenoapi/` are adapted from Noppes' CustomNPCsAPI, which publishes
 no licence of its own; their terms are not established here.
 
-## Maker Studio (0.0.6)
+## Maker Studio
+
+Version 0.0.7 restores all 28 maker panel textures omitted from 0.0.6. Every registered atlas shape is checked in all four palettes during the build. Client probes also resolve the textures and capture the five maker menus in `build/release-runtime/.../maker-screenshots/` at GUI scale 1.
 
 Open **Model > Maker Studio** in the native NPC editor to edit the selected NPC. The hub shows the target name/id. Race, saved form, hair and tattoo Apply use the editor's existing server save checks. Hair/race/form Apply selects Full DMZ appearance; custom tattoo overlays also work on vanilla humanoid skins. Custom or mimic models need Full DMZ appearance for tattoo overlays.
 
@@ -60,4 +62,4 @@ Ordinary ki charging no longer adds vertical aura growth. Normal model/power sca
 
 Validation evidence and remaining gameplay checks are recorded in [RELEASE_HANDOFF_2026-10-05.md](RELEASE_HANDOFF_2026-10-05.md).
 
-For Minecraft 1.21.1, use the exact [patched DragonMineZ dependency](https://github.com/AgentMelinda/XenoNPCs/raw/refs/tags/v0.0.6/libs/dragonminez-2.1.3.jar). Its respawn hook targets NeoForge 21.1.248. Source fix: [DragonMineZ commit](https://github.com/AgentMelinda/dragonminez-1.21.1/commit/f1caa521). Do not use this NeoForge dependency on 1.20.1.
+For Minecraft 1.21.1, use the exact [patched DragonMineZ dependency](https://github.com/AgentMelinda/XenoNPCs/raw/refs/tags/v0.0.7/libs/dragonminez-2.1.3.jar). Its respawn hook targets NeoForge 21.1.248. Source fix: [DragonMineZ commit](https://github.com/AgentMelinda/dragonminez-1.21.1/commit/f1caa521). Do not use this NeoForge dependency on 1.20.1.
