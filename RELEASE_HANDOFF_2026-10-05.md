@@ -1,8 +1,8 @@
 # Handoff — standalone makers and ki aura height
 
-**Date:** 2026-10-05  
-**Repository:** C:\Users\Admin\.grok\worktrees\dragonminez\XenoPixelsNetwork_qwen\XenoNPCs-1.20.1  
-**Branch:** 1.20.1  
+**Date:** 2026-10-05
+**Repository:** C:\Users\Admin\.grok\worktrees\dragonminez\XenoPixelsNetwork_qwen\XenoNPCs-1.20.1
+**Branch:** 1.20.1
 **HEAD before implementation:** 70e6b05ea807168ac3568fca24bbfd0d0c40c2d3
 
 ## Current state
