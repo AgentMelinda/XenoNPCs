@@ -2,6 +2,8 @@
 
 **Date:** 2026-10-05
 
+**Correction (2026-10-05):** The 0.0.6 exports omitted 28 registered Maker Studio PNGs. The initialization-only client probe did not catch missing resources. The 0.0.7 atlas patch restores them and adds asset/dimension tests plus rendered-menu captures; see `RELEASE_ATLAS_2026-10-05.md`. The 0.0.6 receipts below describe the original binaries, which remain immutable.
+
 Published release: https://github.com/AgentMelinda/XenoNPCs/releases/tag/v0.0.6
 Successful combined build/test/server-probe/publication run: https://github.com/AgentMelinda/XenoNPCs/actions/runs/37325263832
 

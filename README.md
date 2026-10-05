@@ -34,8 +34,8 @@ They never use the normal `run/` directory and are excluded from the released ja
 
 Repeat with `custom` and `gecko` profiles to enable the optional local compatibility jars.
 Use `-Pgeckolib_version=4.8.4` to check that GeckoLib build. Servers stop after the
-NPC defense/armor assertions and 40 NPC ticks; clients stop after startup and target classloading.
-These probes do not verify rendering appearance or interactive editor behavior.
+NPC defense/armor assertions and 40 NPC ticks; clients stop after target classloading, atlas validation and five maker menu captures.
+These captures verify menu textures at GUI scale 1; interactive editing and in-world previews require gameplay validation.
 
 The pure unit tests run in this build. `runtime-only-tests.txt` and `EXPORT_REPORT.md`
 list 34 tests requiring a running Forge game that are excluded from plain JUnit.
@@ -43,7 +43,9 @@ See `RELEASE_HANDOFF_2026-10-03.md` for dated release evidence. The probes valid
 active mixin target loading and native NPC defense/ticks. Rendering appearance, interactive
 editors, multiplayer and the ledge/respawn scenarios still require gameplay validation.
 
-## Maker Studio (0.0.6)
+## Maker Studio
+
+Version 0.0.7 restores all 28 maker panel textures omitted from 0.0.6. Every registered atlas shape is checked in all four palettes during the build. Client probes also resolve the textures and capture the five maker menus in `build/release-runtime/.../maker-screenshots/` at GUI scale 1.
 
 Open **Model > Maker Studio** in the native NPC editor to edit the selected NPC. The hub shows the target name/id. Race, saved form, hair and tattoo Apply use the editor's existing server save checks. Hair/race/form Apply selects Full DMZ appearance; custom tattoo overlays also work on vanilla humanoid skins. Custom or mimic models need Full DMZ appearance for tattoo overlays.
 
