@@ -42,7 +42,33 @@ public final class CombatBodyFade {
 
     public static MultiBufferSource wrapHakai(MultiBufferSource buffers, Entity entity,
                                               float partialTick) {
-        if (buffers == null || isWrapped(buffers) || entity == null) return buffers;
+        // OutlineBufferSource has special consumers that do not behave like ordinary entity vertex
+        // buffers. Clipping their quads can emit vertices after the outline builder has ended
+        // (Not building!), aborting the entity renderer mid-pose and leaving LevelRenderer's stack
+        // unbalanced. Keep Minecraft's glow/selection pass intact and clip only the normal pass.
+        if (buffers == null || isWrapped(buffers) || entity == null || outlinePass(buffers)) return buffers;
+        if (HakaiSweepFx.enabled()) {
+            // The sweep has its own smooth clock (and keeps the body cut through the final clear packet).
+            float sweep = HakaiSweepFx.sweepProgress(entity, partialTick);
+            if (sweep <= 0f) return buffers;
+            // Sweep style: a clean cut from the top down (HakaiSweepFx draws the rim at the same height).
+            // 1.21.1 LevelRenderer puts the camera rotation in the model-view stack and renders entities with only a
+            // camera-relative translation, so model vertices are NOT rotated: world Y = camera Y + vertex Y.
+            CameraFrame frame = cameraFrame();
+            if (HakaiSweepFx.impactMode() && !Float.isNaN(frame.y))
+                return new HakaiClipMultiBufferSource(buffers, frame.x, frame.y, frame.z,
+                        HakaiSweepFx.measure(entity, partialTick), HakaiSweepFx.impactPoint(entity, partialTick),
+                        HakaiSweepFx.impactRadius(entity, sweep, partialTick));
+            if (net.bullettrain.xenonpcs.client.config.XenoClientConfig.hakaiSweepDebug)
+                net.bullettrain.xenonpcs.XenoNpcsMod.LOGGER.info("HAKAI_SWEEP clip id={} class={} sweep={} cutY={} partial={} buffers={}",
+                        entity.getId(), entity.getClass().getSimpleName(), sweep, HakaiSweepFx.cutY(entity, sweep, partialTick), partialTick,
+                        buffers.getClass().getSimpleName() + " bounds=" + java.util.Arrays.toString(HakaiSweepFx.bounds(entity, partialTick))
+                                + " feet=" + entity.getPosition(partialTick).y + " h=" + entity.getBbHeight());
+            if (!Float.isNaN(frame.y))
+                return new HakaiClipMultiBufferSource(buffers, HakaiSweepFx.cutY(entity, sweep, partialTick),
+                        frame.x, frame.y, frame.z, HakaiSweepFx.measure(entity, partialTick));
+            return buffers;
+        }
         if (!HakaiFade.dissolving(entity)) return buffers;
         float progress = HakaiFade.progress(entity, partialTick);
         float zanzoken = ZanzokenFade.alpha(entity, partialTick);
@@ -84,7 +110,7 @@ public final class CombatBodyFade {
     }
 
     public static boolean isWrapped(MultiBufferSource buffers) {
-        return buffers instanceof AlphaMultiBufferSource;
+        return buffers instanceof AlphaMultiBufferSource || buffers instanceof HakaiClipMultiBufferSource;
     }
 
     /** True when this source is the vanilla glow outline pass (do not steal its RenderType). */

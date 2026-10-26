@@ -13,7 +13,7 @@ bubbles, and run scripts you write.
 |---|---|
 | Minecraft | 1.21.1 |
 | NeoForge | 21.1.233 or newer |
-| DragonMineZ | 2.1.3 or newer |
+| DragonMineZ | 2.2 or newer |
 | GeckoLib, TerraBlender, Curios | the versions DragonMineZ asks for (it needs all three) |
 
 CustomNPCs or My NPCs are **optional**: when one is installed, XenoNPCs adds its DragonMineZ features

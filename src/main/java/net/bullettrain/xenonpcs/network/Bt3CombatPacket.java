@@ -281,7 +281,7 @@ public class Bt3CombatPacket {
     /** Moved to {@link net.bullettrain.xenonpcs.combat.Bt3Landing}; kept for callers. */
     public static boolean isSpotOpen(Entity player, Vec3 pos) { return false; }
 
-    static void playItSound(ServerPlayer player, double x, double y, double z, boolean leave) { }
+    public static void playItSound(ServerPlayer player, double x, double y, double z, boolean leave) { }
 
     private static void playHitSound(ServerPlayer player, LivingEntity target, boolean finisher) { }
 

@@ -190,10 +190,7 @@ public final class RaceLabelRegistry {
             node.addProperty("displayName", clamp(displayName, MAX_NAME));
             node.addProperty("description", clamp(description, MAX_DESC));
             Files.writeString(raceDir.resolve(SIDECAR), GSON.toJson(node), StandardCharsets.UTF_8);
-            Path configDirectory = FMLPaths.CONFIGDIR.get();
-            if (configDirectory != null && dmzConfigRoot.toAbsolutePath().normalize().equals(
-                    configDirectory.resolve("dragonminez").toAbsolutePath().normalize()))
-                put(key, displayName, description);
+            put(key, displayName, description);
             return RacePackService.ValidationResult.pass();
         } catch (IOException e) {
             return RacePackService.ValidationResult.fail("Failed to write race labels: " + e.getMessage());

@@ -5,6 +5,7 @@ import com.dragonminez.compat.network.NetworkEvent;
 import com.dragonminez.compat.network.NetworkRegistry;
 import com.dragonminez.compat.network.simple.SimpleChannel;
 import net.bullettrain.xenonpcs.XenoNpcsMod;
+import net.bullettrain.xenonpcs.command.XenoPermissions;
 import net.bullettrain.xenonpcs.dmz.race.RaceLabelRegistry;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -34,9 +35,16 @@ public final class RaceLabelNetwork {
             return;
         }
         registered = true;
+        CHANNEL.messageBuilder(SavePacket.class, 0, NetworkDirection.PLAY_TO_SERVER)
+                .decoder(SavePacket::new).encoder(SavePacket::encode)
+                .consumerMainThread(SavePacket::handle).add();
         CHANNEL.messageBuilder(SnapshotPacket.class, 1, NetworkDirection.PLAY_TO_CLIENT)
                 .decoder(SnapshotPacket::new).encoder(SnapshotPacket::encode)
                 .consumerMainThread(SnapshotPacket::handle).add();
+    }
+
+    public static void save(String raceId, String displayName, String description) {
+        CHANNEL.sendToServer(new SavePacket(raceId, displayName, description));
     }
 
     public static void sendSnapshot(ServerPlayer player) {
@@ -60,6 +68,39 @@ public final class RaceLabelNetwork {
         SnapshotPacket packet = new SnapshotPacket(RaceLabelRegistry.snapshotJson());
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             CHANNEL.sendToPlayer(packet, player);
+        }
+    }
+
+    public record SavePacket(String raceId, String displayName, String description) {
+        public SavePacket(FriendlyByteBuf buffer) {
+            this(buffer.readUtf(64), buffer.readUtf(RaceLabelRegistry.MAX_NAME),
+                    buffer.readUtf(RaceLabelRegistry.MAX_DESC));
+        }
+
+        public void encode(FriendlyByteBuf buffer) {
+            buffer.writeUtf(raceId == null ? "" : raceId, 64);
+            buffer.writeUtf(displayName == null ? "" : displayName, RaceLabelRegistry.MAX_NAME);
+            buffer.writeUtf(description == null ? "" : description, RaceLabelRegistry.MAX_DESC);
+        }
+
+        public static void handle(SavePacket packet, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null) {
+                    return;
+                }
+                if (!XenoPermissions.hasPermission(player, XenoPermissions.MAKER_RACE_CREATE)
+                        && !XenoPermissions.hasPermission(player, XenoPermissions.RACE_EDIT)) {
+                    return;
+                }
+                var result = RaceLabelRegistry.writeSidecar(
+                        packet.raceId, packet.displayName, packet.description);
+                if (result.ok()) {
+                    broadcast(player);
+                }
+            });
+            context.setPacketHandled(true);
         }
     }
 

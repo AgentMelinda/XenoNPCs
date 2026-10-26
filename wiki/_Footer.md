@@ -1,1 +1,1 @@
-XenoNPCs · All Rights Reserved · Needs DragonMineZ 2.1.3+ on Minecraft 1.21.1 (NeoForge)
+XenoNPCs · All Rights Reserved · Needs DragonMineZ 2.2+ on Minecraft 1.21.1 (NeoForge)

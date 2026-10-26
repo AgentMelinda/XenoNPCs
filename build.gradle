@@ -1,5 +1,5 @@
 // XenoNPCs - generated from XenoPixels by tools/xenonpcs/export_xenonpcs.py (the build is the
-// hand-written part). Requires DragonMineZ 2.1.3: put dragonminez-2.1.3.jar in libs/ or pass
+// hand-written part). Requires DragonMineZ 2.2: put dragonminez-2.2.jar in libs/ or pass
 // -PdmzJar=path. GeckoLib comes from its maven; CustomNPCs / My NPCs / Curios are optional.
 plugins {
     id 'java'
@@ -34,7 +34,7 @@ neoForge {
         }
         server {
             server()
-            gameDirectory = file('run')
+            gameDirectory = file(findProperty('serverRunDir') ?: 'run')
             programArgument '--nogui'
         }
         configureEach {
@@ -57,6 +57,7 @@ neoForge {
 def useVendoredMcMeta = findProperty('offlineMcMeta') != null || System.getenv('CI') != null
 
 repositories {
+    flatDir { dirs 'libs' }
     mavenCentral()
     if (useVendoredMcMeta) {
         exclusiveContent {
@@ -110,20 +111,37 @@ repositories {
 
 def dragonMineZJar = {
     def explicit = findProperty('dmzJar') ?: System.getenv('DMZ_JAR')
-    def f = explicit ? file(explicit) : file("libs/dragonminez-${dragonminez_version}.jar")
-    if (!f.isFile()) {
-        throw new GradleException("DragonMineZ ${dragonminez_version} jar not found at ${f}. " +
-                "Put dragonminez-${dragonminez_version}.jar in libs/ or pass -PdmzJar=path.")
+    def found = explicit ? file(explicit) : file("libs/dragonminez-${dragonminez_version}.jar")
+    if (!found.isFile()) {
+        throw new GradleException("DragonMineZ ${dragonminez_version} jar not found at ${found}. "
+                + "Put the pinned jar in libs/ or pass -PdmzJar=<path>.")
     }
-    def actual = java.security.MessageDigest.getInstance('SHA-256').digest(f.bytes).encodeHex().toString()
-    if (actual != dragonminez_sha256) {
-        throw new GradleException("DragonMineZ SHA-256 mismatch: expected ${dragonminez_sha256}, got ${actual}")
+    def expected = dragonminez_sha256.trim().toLowerCase(java.util.Locale.ROOT)
+    if (!(expected ==~ /[0-9a-f]{64}/)) {
+        throw new GradleException('dragonminez_sha256 must be a 64-character SHA-256 hash.')
     }
-    return f
+    def digest = java.security.MessageDigest.getInstance('SHA-256')
+    found.withInputStream { input ->
+        byte[] buffer = new byte[65536]
+        int count
+        while ((count = input.read(buffer)) != -1) {
+            digest.update(buffer, 0, count)
+        }
+    }
+    def actual = digest.digest().encodeHex().toString()
+    if (actual != expected) {
+        throw new GradleException("DragonMineZ SHA-256 mismatch at ${found}: expected ${expected}, got ${actual}.")
+    }
+    logger.lifecycle("Using DragonMineZ jar: ${found}")
+    return found
 }()
 
 dependencies {
     implementation files(dragonMineZJar)
+    implementation files('libs/aaa_particles-neoforge-1.21.1-2.3.1.jar')
+    jarJar('local.libs:aaa_particles-neoforge-1.21.1:2.3.1') {
+        version { strictly '2.3.1'; prefer '2.3.1' }
+    }
     implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:${geckolib_version}"
     implementation "top.theillusivec4.curios:curios-neoforge:${curios_version}"
     // DragonMineZ itself requires TerraBlender (and GeckoLib, Curios) to load.
@@ -171,9 +189,7 @@ tasks.named('processResources', ProcessResources).configure {
     }
 }
 
-// ModDev embeds jarJar dependencies into this runtime jar. Label it explicitly.
 tasks.named('jar', Jar).configure {
-    archiveClassifier = 'all'
     manifest {
         attributes([
                 'Specification-Title'   : mod_id,
@@ -188,64 +204,3 @@ tasks.named('jar', Jar).configure {
 }
 
 tasks.named('build') { dependsOn 'jarJar' }
-
-// Fresh isolated probes are a separate mod and are never packaged in XenoNPCs.
-sourceSets {
-    releaseProbe {
-        compileClasspath += sourceSets.main.output + configurations.compileClasspath
-        runtimeClasspath += sourceSets.main.runtimeClasspath
-    }
-}
-if (providers.gradleProperty('releaseProbe').isPresent()) {
-    neoForge.mods { xenonpcs_release_probe { sourceSet sourceSets.releaseProbe } }
-    ['Client', 'Server'].each { side ->
-        def directory = layout.buildDirectory.dir("release-runtime/${side.toLowerCase()}/core")
-        def prepare = tasks.register("prepareRelease${side}Probe") {
-            doLast {
-                def dir = directory.get().asFile
-                dir.mkdirs()
-                if (side == 'Server') {
-                    new File(dir, 'eula.txt').text = 'eula=true\n'
-                    new File(dir, 'server.properties').text = 'online-mode=false\nserver-port=0\nlevel-name=probe-flat-v2\nlevel-type=minecraft:flat\ngenerator-settings={"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}],"biome":"minecraft:plains","features":false,"lakes":false,"structure_overrides":[]}\ngenerate-structures=false\nview-distance=2\nsimulation-distance=2\n'
-                }
-            }
-        }
-        neoForge.runs.named(side.toLowerCase()).configure {
-            gameDirectory = directory.get().asFile
-            systemProperty 'xenonpcs.releaseProbe', 'true'
-            systemProperty 'xenonpcs.releaseProfile', 'core'
-            systemProperty 'mixin.debug.countInjections', 'true'
-        }
-        tasks.named("run${side}").configure {
-            dependsOn prepare, tasks.named('releaseProbeClasses')
-            doLast {
-                def log = new File(directory.get().asFile, 'logs/latest.log').text
-                if (!log.contains("XENONPCS_PROBE_${side.toUpperCase()}_PASS") ||
-                        log =~ /(?i)(mixin apply .*failed|InvalidInjectionException|InjectionError|Critical injection failure)/) {
-                    throw new GradleException("Release ${side} probe failed; inspect ${directory.get()}/logs/latest.log")
-                }
-            }
-        }
-    }
-}
-
-// The vendored client metadata lacks Windows classifiers; resolve them only for local probes.
-if (providers.gradleProperty('releaseProbe').isPresent() && System.getProperty('os.name').startsWith('Windows')) {
-    configurations { makerProbeNatives }
-    dependencies {
-        ['lwjgl', 'lwjgl-glfw', 'lwjgl-jemalloc', 'lwjgl-openal', 'lwjgl-opengl', 'lwjgl-stb', 'lwjgl-tinyfd', 'lwjgl-freetype'].each { module ->
-            makerProbeNatives "org.lwjgl:${module}:3.3.3:natives-windows"
-        }
-    }
-    def nativesDir = layout.buildDirectory.dir('maker-probe-natives')
-    def extractNatives = tasks.register('extractMakerProbeNatives', Copy) {
-        from { configurations.makerProbeNatives.collect { zipTree(it) } }
-        include '**/*.dll'
-        eachFile { path = name }
-        includeEmptyDirs = false
-        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-        into nativesDir
-    }
-    neoForge.runs.named('client').configure { systemProperty 'org.lwjgl.librarypath', nativesDir.get().asFile.absolutePath }
-    tasks.named('runClient').configure { dependsOn extractNatives }
-}

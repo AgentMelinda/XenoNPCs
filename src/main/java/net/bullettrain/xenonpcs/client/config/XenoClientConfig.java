@@ -24,8 +24,10 @@ import java.nio.file.Path;
 public final class XenoClientConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path PATH = FMLPaths.CONFIGDIR.get().resolve("xenonpcs-client.json");
-    /** Version 3 restores Guard while its dedicated key keeps right-click placement vanilla. */
-    private static final int CURRENT_CONFIG_VERSION = 6;
+    /** Version 3 restores Guard while its dedicated key keeps right-click placement vanilla.
+     * Version 8 adds the space sky mode; version 12 adds ambient fallen-star density; version 13
+     * adds the opt-in outbound space camera coast. */
+    private static final int CURRENT_CONFIG_VERSION = 13;
 
     // --- UI ---
     public static boolean xenoHudEnabled = true;
@@ -69,6 +71,10 @@ public final class XenoClientConfig {
     public static boolean partyHudEnabled = true;
     /** Compact BT3 cooldown chip strip (vanish / chase / combo / charge). */
     public static boolean cooldownHudEnabled = true;
+    /** Show combat key prompts while a living DragonMineZ target is locked. */
+    public static boolean combatPromptsWithLockOn = true;
+    /** Show combat key prompts without a DragonMineZ lock, including grab/throw prompts. */
+    public static boolean combatPromptsWithoutLockOn = true;
 
     // --- Combat client (prediction / input) ---
     public static boolean bt3CombatClient = true;
@@ -143,9 +149,61 @@ public final class XenoClientConfig {
     /** Which aura draws: dmz (DragonMineZ's), hd (generated) or both (default). /xenoaura. */
     public static String auraStyle = "both";
     /** HD aura size on top of body size (/xenoaura size). */
-    public static float auraSize = 0.5f;
+    public static float auraSize = 1.0f;
+    /**
+     * HD aura: every DMZ layer (stack form, the form being transformed into) is its own aura.
+     * Off is the first behaviour, one aura from the two lowest layers. /xenoaura layers.
+     */
+    public static boolean auraLayers = true;
+    /**
+     * HD aura on a player whose second aura is switched off: true plays it whenever DragonMineZ's
+     * aura shows (the behaviour before the switch existed), false never. /xenoaura follow.
+     *
+     * <p>On by default. It was off for a few hours on 2026-10-02 and the HD aura then never showed
+     * until /secondaura was run, which read as the aura being broken; the stored key was renamed
+     * (auraWithDmzAura) so configs saved in that window come back to on.
+     */
+    public static boolean auraFollowDmz = true;
     /** HD aura brightness, 0.5-1.3 (baked levels, the nearest is used). /xenoaura brightness. */
     public static float auraBrightness = 1.0f;
+    /**
+     * The inner HD aura (the shell and glow on the body) relative to the outer one, 0.4-1: it picks
+     * a dimmer baked level, which is also more see-through. /xenoaura inner. 1 is the first look.
+     */
+    public static float auraInnerBrightness = 0.7f;
+    /**
+     * Which HD aura plays: v1 (dense fire-puff column), v2 (spiked silhouette), v3 (full v1 plus
+     * silhouette / punch edges / sparking), or v4 (v3 silhouette plus a lean column — default).
+     * /xenoaura v1|v2|v3|v4, or Ki Actions in DMZ's X menu.
+     */
+    public static String auraVariant = "v4";
+    /** DragonMineZ ki attacks drawn with the HD Effekseer ki effects (true) or by DragonMineZ. /xenoaura ki. */
+    public static boolean hdKi = true;
+    /**
+     * Background music player (2026-10-08, owner request). Client-only: the server cannot set
+     * these through /xenoset. Tracks are sound-event ids resolved by this client's sound manager,
+     * so a resource pack can add its own; the default list is DragonMineZ's bundled menu music.
+     * /xenomusic on|off|next|prev|volume|track.
+     */
+    public static boolean musicEnabled = true;
+    /** Attack soundtrack overlays; independent of ordinary playlist playback. */
+    public static boolean cinematicMusicEnabled = true;
+    public static float musicVolume = 0.45f;
+    public static int musicTrack = 0;
+    public static java.util.List<String> musicTracks = new java.util.ArrayList<>(
+            net.bullettrain.xenonpcs.client.music.XenoMusicTracks.defaults());
+    /** HD aura resized every frame with the ki aura (true) or fixed when sent. /xenoaura live. */
+    public static boolean auraLiveScale = true;
+    /** Your own v2 aura in third person is drawn over particles (true). /xenoaura overlay. */
+    public static boolean auraOverParticles = true;
+    /**
+     * Keep your HD aura sighting in first person so it does not reset on returning to third
+     * person. The world-space flame is hidden either way (it filled the camera when placed
+     * ahead). /xenoaura firstperson.
+     */
+    public static boolean auraFirstPerson = true;
+    /** The tallest the HD aura is stretched by the ki aura curve, 1-10. /xenoaura maxheight. */
+    public static float auraMaxHeight = 10.0f;
 
     /**
      * Use the rewritten Controlify integration in {@code client.pad2} instead of {@code client.pad}.
@@ -170,6 +228,23 @@ public final class XenoClientConfig {
      */
     public static java.util.List<String> padRadialExtras = java.util.List.of();
 
+    /**
+     * XenoCombat v2 keybind cleanup: the first time the v2 controller is active, unbind every key
+     * mapping that does not belong to Minecraft, DragonMineZ or XenoPixels, after writing a backup.
+     * {@code /xenokeybind auto off} turns it off; {@code /xenokeybind restore} undoes it.
+     */
+    public static boolean keybindAutoClean = true;
+    /** Set once the automatic cleanup has run, so it never runs twice on its own. */
+    public static boolean keybindAutoCleanDone = false;
+    /** Translation-key prefixes of other mods whose bindings the cleanup must leave alone. */
+    public static java.util.List<String> keybindKeepPrefixes = java.util.List.of();
+    /** Which set of XenoCombat v2 default keys this profile has been moved to; see V2Keys. */
+    public static int v2KeyLayout = 0;
+    /** Which keybind-cleanup repairs this profile has had; see XenoKeybinds.repairOnce. */
+    public static int keybindRepair = 0;
+    /** Whether the shader reload key has been given its new home once; see XenoKeybinds.moveShaderReload. */
+    public static int shaderReloadKey = 0;
+
     /** Controller gameplay layer; BT3 is the first-install default and the last choice is saved. */
     public static PadMode padMode = PadMode.BT3;
     public static boolean bt3BackstepClient = true;
@@ -185,6 +260,11 @@ public final class XenoClientConfig {
      * {@code hasLineOfSight} (androids still keep lock through walls).
      */
     public static boolean lockOnThroughBlocks = true;
+    /**
+     * Seconds a dropped DragonMineZ lock is re-pinned while the target still passes DMZ's own
+     * lock rules (owner request 2026-10-09: a failed attack must not cost the lock). 0 disables.
+     */
+    public static double stickyLockSeconds = 1.5;
     /**
      * Skills delete-X confirm window in milliseconds. 0 deletes on the first click.
      */
@@ -356,7 +436,56 @@ public final class XenoClientConfig {
     /** Fraction of the pilot's current velocity inherited by the visual projectile model. */
     public static float leadAssistShooterVelocityInheritance = 1.0f;
 
+    // ---- Space visuals ----
+    /**
+     * Which sky this client draws in a space dimension: {@code void} (black fading to a little purple,
+     * one cube, no star buffer — the default and the cheapest), {@code stars} (the cached star field on
+     * top of that cube), or {@code off} (draw nothing here and let vanilla's end-style void have the
+     * frame). {@code /xenoset sky}, resolved by {@link net.bullettrain.xenonpcs.client.space.SpaceSkyMode}.
+     *
+     * <p>Client-local like every other key here: the server has no opinion about what you can see
+     * comfortably, and a player on a weak GPU should be able to trade the star field for frames
+     * without asking anyone else to restart anything.
+     */
+    public static String spaceSkyMode = "stars";
+    /** Chance (0..100) per 30-second Voidsea sky window to show one deterministic shooting star; 0 disables it. */
+    public static int spaceFallenStarDensity = 25;
+
+    /** Draw low-cost chart planet projections when no replicated Sable body is available. */
+    public static String spacePlanetMode = "bodies";
+    public static boolean spacePlanetProjections = true;
+    /**
+     * Far projections sample each body's own HD map instead of the shared three-globe style strip.
+     * Off keeps the legacy strip until the per-body path has been seen working in game.
+     */
+    /** Per-body reduced maps keep far planets identifiable; the shared Earth/Moon/Namek atlas remains selectable. */
+    public static boolean spacePlanetProjectionMaps = true;
+
+    /** Client-side Hakai presentation: classic fade, legacy top-down sweep, or crosshair-origin impact spread. */
+    public static String hakaiEraseStyle = "impact";
+
+    /** Draw bounded, deterministic small planets from afar (SmallPlanetFarRenderer). */
+    public static boolean smallPlanetLod = true;
+
+    /** Debug: log every Hakai sweep packet and per-frame sweep value (not saved; {@code /xenoset hakai debug}). */
+    public static boolean hakaiSweepDebug = false;
+
+    /**
+     * Hides the "Downloading terrain" screen on every entry into or exit from a planet dimension, not
+     * only on Voidsea crossings. Off restores the host-only behaviour, where direct planet-to-planet
+     * travel and ordinary portals into a planet keep the vanilla screen. Read when the screen opens, so
+     * it applies on the next crossing without a restart.
+     */
+    public static boolean spaceHidePlanetLoadScreen = true;
+
+    /** Experimental outbound Voidsea camera coast; off keeps the proven captured-frame curtain. */
+    public static boolean spaceCameraCoast = false;
+
     private XenoClientConfig() {}
+
+    public static boolean showCombatPrompts(boolean locked) {
+        return locked ? combatPromptsWithLockOn : combatPromptsWithoutLockOn;
+    }
 
     public static void load() {
         if (!Files.exists(PATH)) {
@@ -378,7 +507,16 @@ public final class XenoClientConfig {
             // Version 5 saved Sable cull on. That hid plot meshes at deep Y and
             // looked like a black world; force it off once so the new default sticks.
             boolean migrateSableCullOff = data.configVersion < 6;
+            // Version 9 introduced impact mode, but configs already written as v9 can still carry
+            // the previous default (sweep). Version 10 migrates that old default once; users can
+            // still explicitly select it afterward with /xenoset hakai sweep.
+            boolean migrateHakaiImpactDefault = HakaiEraseStylePolicy.shouldUpgradeDefaultToImpact(
+                    data.configVersion, HakaiEraseStylePolicy.IMPACT_DEFAULT_VERSION, data.hakaiEraseStyle);
+            boolean migratePlanetProjectionMapDefault = PlanetProjectionMapPolicy
+                    .shouldUpgradeToPerBodyDefault(data.configVersion, CURRENT_CONFIG_VERSION);
             apply(data);
+            if (migrateHakaiImpactDefault) hakaiEraseStyle = "impact";
+            if (migratePlanetProjectionMapDefault) spacePlanetProjectionMaps = true;
             if (migrateDirectBinds) {
                 bt3DirectHakai = true;
                 bt3DirectZanzoken = true;
@@ -430,6 +568,8 @@ public final class XenoClientConfig {
         d.senzuCooldownMessages = senzuCooldownMessages;
         d.partyHudEnabled = partyHudEnabled;
         d.cooldownHudEnabled = cooldownHudEnabled;
+        d.combatPromptsWithLockOn = combatPromptsWithLockOn;
+        d.combatPromptsWithoutLockOn = combatPromptsWithoutLockOn;
         d.bt3CombatClient = bt3CombatClient;
         d.bt3ComboClient = bt3ComboClient;
         d.bt3VanishClient = bt3VanishClient;
@@ -452,10 +592,30 @@ public final class XenoClientConfig {
         d.bt3DirectLiftcombo = bt3DirectLiftcombo;
         d.bt3DirectMashLauncher = bt3DirectMashLauncher;
         d.auraStyle = auraStyle;
-        d.auraSize = auraSize;
+        d.auraSizeDmz = auraSize;
+        d.auraLayers = auraLayers;
+        d.auraWithDmzAura = auraFollowDmz;
         d.auraBrightness = auraBrightness;
+        d.auraInnerBrightness = auraInnerBrightness;
+        d.auraVariant = auraVariant;
+        d.auraLiveScale = auraLiveScale;
+        d.hdKi = hdKi;
+        d.musicEnabled = musicEnabled;
+        d.cinematicMusicEnabled = cinematicMusicEnabled;
+        d.musicVolume = musicVolume;
+        d.musicTrack = musicTrack;
+        d.musicTracks = musicTracks.isEmpty() ? null : java.util.List.copyOf(musicTracks);
+        d.auraOverParticles = auraOverParticles;
+        d.auraFirstPerson = auraFirstPerson;
+        d.auraMaxHeight = auraMaxHeight;
         d.padRewrite = padRewrite;
         d.padRadialExtras = padRadialExtras.isEmpty() ? null : java.util.List.copyOf(padRadialExtras);
+        d.keybindAutoClean = keybindAutoClean;
+        d.keybindAutoCleanDone = keybindAutoCleanDone;
+        d.keybindKeepPrefixes = keybindKeepPrefixes.isEmpty() ? null : java.util.List.copyOf(keybindKeepPrefixes);
+        d.v2KeyLayout = v2KeyLayout;
+        d.keybindRepair = keybindRepair;
+        d.shaderReloadKey = shaderReloadKey;
         d.padMode = padMode.name();
         d.bt3BackstepClient = bt3BackstepClient;
         d.bt3ChargeAttackClient = bt3ChargeAttackClient;
@@ -466,6 +626,7 @@ public final class XenoClientConfig {
         d.bt3ZBurstClient = bt3ZBurstClient;
         d.bt3LockCycleClient = bt3LockCycleClient;
         d.lockOnThroughBlocks = lockOnThroughBlocks;
+        d.stickyLockSeconds = stickyLockSeconds;
         d.deleteConfirmMs = deleteConfirmMs;
         d.bt3CombatSfx = bt3CombatSfx;
         d.bt3ChargeGlow = bt3ChargeGlow;
@@ -523,6 +684,15 @@ public final class XenoClientConfig {
         d.leadAssistShooterVelocityInheritance = leadAssistShooterVelocityInheritance;
         d.flightThrottleScrollStep = flightThrottleScrollStep;
         d.flightThrottleKeyRatePerSec = flightThrottleKeyRatePerSec;
+        d.spaceSkyMode = spaceSkyMode;
+        d.spaceFallenStarDensity = spaceFallenStarDensity;
+        d.spacePlanetMode = spacePlanetMode;
+        d.spacePlanetProjections = spacePlanetProjections;
+        d.spacePlanetProjectionMaps = spacePlanetProjectionMaps;
+        d.hakaiEraseStyle = hakaiEraseStyle;
+        d.smallPlanetLod = smallPlanetLod;
+        d.spaceHidePlanetLoadScreen = spaceHidePlanetLoadScreen;
+        d.spaceCameraCoast = spaceCameraCoast;
         return d;
     }
 
@@ -542,6 +712,8 @@ public final class XenoClientConfig {
         senzuCooldownMessages = d.senzuCooldownMessages;
         partyHudEnabled = d.partyHudEnabled;
         cooldownHudEnabled = d.cooldownHudEnabled;
+        combatPromptsWithLockOn = d.combatPromptsWithLockOn;
+        combatPromptsWithoutLockOn = d.combatPromptsWithoutLockOn;
         bt3CombatClient = d.bt3CombatClient;
         bt3ComboClient = d.bt3ComboClient;
         bt3VanishClient = d.bt3VanishClient;
@@ -564,13 +736,42 @@ public final class XenoClientConfig {
         bt3DirectLiftcombo = d.bt3DirectLiftcombo == null || d.bt3DirectLiftcombo;
         bt3DirectMashLauncher = d.bt3DirectMashLauncher != null && d.bt3DirectMashLauncher;
         auraStyle = net.bullettrain.xenonpcs.fx.aura.AuraStyle.parse(d.auraStyle).id();
+        auraLayers = d.auraLayers == null || d.auraLayers;
+        auraVariant = net.bullettrain.xenonpcs.fx.aura.HdAuraPlan.parseVariant(d.auraVariant);
+        auraLiveScale = d.auraLiveScale == null || d.auraLiveScale;
+        hdKi = d.hdKi == null || d.hdKi;
+        musicEnabled = d.musicEnabled == null || d.musicEnabled;
+        cinematicMusicEnabled = d.cinematicMusicEnabled == null || d.cinematicMusicEnabled;
+        musicVolume = d.musicVolume == null || !Float.isFinite(d.musicVolume) ? 0.45f
+                : Math.max(0.0f, Math.min(1.0f, d.musicVolume));
+        var musicSelection = net.bullettrain.xenonpcs.client.music.XenoMusicTracks.migrate(d.musicTracks, d.musicTrack);
+        musicTracks = new java.util.ArrayList<>(musicSelection.tracks());
+        musicTrack = musicSelection.index();
+        auraOverParticles = d.auraOverParticles == null || d.auraOverParticles;
+        auraFirstPerson = d.auraFirstPerson == null || d.auraFirstPerson;
+        auraMaxHeight = d.auraMaxHeight == null || !Float.isFinite(d.auraMaxHeight) ? 10.0f
+                : Math.max(1.0f, Math.min(10.0f, d.auraMaxHeight));
+        auraInnerBrightness = d.auraInnerBrightness == null || !Float.isFinite(d.auraInnerBrightness) ? 0.7f
+                : Math.max(0.4f, Math.min(1.0f, d.auraInnerBrightness));
+        auraFollowDmz = d.auraWithDmzAura == null || d.auraWithDmzAura;
         auraBrightness = d.auraBrightness == null || !Float.isFinite(d.auraBrightness) ? 1.0f
-                : Math.max(0.5f, Math.min(1.3f, d.auraBrightness));
-        auraSize = d.auraSize == null || !Float.isFinite(d.auraSize) ? 0.5f : Math.max(0.2f, Math.min(5f, d.auraSize));
+                : Math.max(0.0f, Math.min(1.3f, d.auraBrightness));
+        // Stored as auraSizeDmz since 2026-10-02: 1 now means DragonMineZ's own aura size, and a
+        // size saved under either earlier key (auraSize, auraScale) was set against a wrong scale.
+        auraSize = d.auraSizeDmz == null || !Float.isFinite(d.auraSizeDmz) ? 1.0f
+                : Math.max(0.2f, Math.min(5f, d.auraSizeDmz));
         padRewrite = d.padRewrite == null || d.padRewrite;
         // Absent means never configured, which takes the defaults. Bounded on read as well as on
         // write: this is a hand-editable JSON file, and a list of a thousand ids would otherwise
         // become a thousand radial slots nobody asked for.
+        keybindAutoClean = d.keybindAutoClean == null || d.keybindAutoClean;
+        keybindAutoCleanDone = d.keybindAutoCleanDone != null && d.keybindAutoCleanDone;
+        v2KeyLayout = d.v2KeyLayout == null ? 0 : d.v2KeyLayout;
+        keybindRepair = d.keybindRepair == null ? 0 : d.keybindRepair;
+        shaderReloadKey = d.shaderReloadKey == null ? 0 : d.shaderReloadKey;
+        keybindKeepPrefixes = d.keybindKeepPrefixes == null ? java.util.List.of()
+                : java.util.List.copyOf(d.keybindKeepPrefixes.stream()
+                        .filter(v -> v != null && !v.isBlank()).limit(64).toList());
         padRadialExtras = d.padRadialExtras == null ? java.util.List.of()
                 : java.util.List.copyOf(d.padRadialExtras.stream()
                         .filter(java.util.Objects::nonNull)
@@ -586,6 +787,8 @@ public final class XenoClientConfig {
         bt3ZBurstClient = d.bt3ZBurstClient;
         bt3LockCycleClient = d.bt3LockCycleClient;
         lockOnThroughBlocks = d.lockOnThroughBlocks == null || d.lockOnThroughBlocks;
+        stickyLockSeconds = d.stickyLockSeconds == null ? 1.5
+                : Math.max(0.0, Math.min(10.0, d.stickyLockSeconds));
         deleteConfirmMs = d.deleteConfirmMs == null ? 3000 : Math.max(0, Math.min(30_000, d.deleteConfirmMs));
         bt3CombatSfx = d.bt3CombatSfx;
         bt3ChargeGlow = d.bt3ChargeGlow;
@@ -660,6 +863,22 @@ public final class XenoClientConfig {
                 : Math.max(0.01f, Math.min(0.5f, d.flightThrottleScrollStep));
         flightThrottleKeyRatePerSec = d.flightThrottleKeyRatePerSec == null ? 0.6f
                 : Math.max(0.05f, Math.min(4.0f, d.flightThrottleKeyRatePerSec));
+        // Resolved through the enum rather than trusted: this file is hand-editable, and the sky has
+        // to pick one of three modes whether the stored value is "stars", "STARS ", or nonsense.
+        spaceSkyMode = net.bullettrain.xenonpcs.client.space.SpaceSkyMode.byName(d.spaceSkyMode).id;
+        spaceFallenStarDensity = d.spaceFallenStarDensity == null ? 25 : Math.max(0, Math.min(100, d.spaceFallenStarDensity));
+        spacePlanetMode = net.bullettrain.xenonpcs.client.space.SpacePlanetMode.byName(d.spacePlanetMode).id;
+        spacePlanetProjections = d.spacePlanetProjections == null || d.spacePlanetProjections;
+        // Missing setting means the new identity-correct mode. Preserve an explicit atlas opt-out in saved files.
+        spacePlanetProjectionMaps = d.spacePlanetProjectionMaps == null || d.spacePlanetProjectionMaps;
+        hakaiEraseStyle = switch (d.hakaiEraseStyle == null ? "" : d.hakaiEraseStyle.toLowerCase(java.util.Locale.ROOT)) {
+            case "classic" -> "classic";
+            case "impact" -> "impact";
+            default -> "sweep";
+        };
+        smallPlanetLod = d.smallPlanetLod == null || d.smallPlanetLod;
+        spaceHidePlanetLoadScreen = d.spaceHidePlanetLoadScreen == null || d.spaceHidePlanetLoadScreen;
+        spaceCameraCoast = Boolean.TRUE.equals(d.spaceCameraCoast);
     }
 
     public static class Data {
@@ -678,6 +897,8 @@ public final class XenoClientConfig {
         public boolean senzuCooldownMessages = true;
         public boolean partyHudEnabled = true;
         public boolean cooldownHudEnabled = true;
+        public boolean combatPromptsWithLockOn = true;
+        public boolean combatPromptsWithoutLockOn = true;
         public boolean bt3CombatClient = true;
         public boolean bt3ComboClient = true;
         public boolean bt3VanishClient = true;
@@ -700,10 +921,30 @@ public final class XenoClientConfig {
         public Boolean bt3DirectLiftcombo;
         public Boolean bt3DirectMashLauncher;
         public String auraStyle;
-        public Float auraSize;
+        public Float auraSizeDmz;
+        public Boolean auraLayers;
+        public Boolean auraWithDmzAura;
         public Float auraBrightness;
+        public Float auraInnerBrightness;
+        public String auraVariant;
+        public Boolean auraLiveScale;
+        public Boolean hdKi;
+        public Boolean musicEnabled;
+        public Boolean cinematicMusicEnabled;
+        public Float musicVolume;
+        public Integer musicTrack;
+        public java.util.List<String> musicTracks;
+        public Boolean auraOverParticles;
+        public Boolean auraFirstPerson;
+        public Float auraMaxHeight;
         public Boolean padRewrite;
         public java.util.List<String> padRadialExtras;
+        public Boolean keybindAutoClean;
+        public Boolean keybindAutoCleanDone;
+        public java.util.List<String> keybindKeepPrefixes;
+        public Integer v2KeyLayout;
+        public Integer keybindRepair;
+        public Integer shaderReloadKey;
         public String padMode;
         public boolean bt3BackstepClient = true;
         public boolean bt3ChargeAttackClient = true;
@@ -714,6 +955,7 @@ public final class XenoClientConfig {
         public boolean bt3ZBurstClient = true;
         public boolean bt3LockCycleClient = true;
         public Boolean lockOnThroughBlocks;
+        public Double stickyLockSeconds;
         public Integer deleteConfirmMs;
         public boolean bt3CombatSfx = true;
         public boolean bt3ChargeGlow = true;
@@ -771,5 +1013,14 @@ public final class XenoClientConfig {
         public Float leadAssistShooterVelocityInheritance;
         public Float flightThrottleScrollStep;
         public Float flightThrottleKeyRatePerSec;
+        public String spaceSkyMode;
+        public Integer spaceFallenStarDensity;
+        public String spacePlanetMode;
+        public Boolean spacePlanetProjections;
+        public Boolean spacePlanetProjectionMaps;
+        public String hakaiEraseStyle;
+        public Boolean smallPlanetLod;
+        public Boolean spaceHidePlanetLoadScreen;
+        public Boolean spaceCameraCoast;
     }
 }

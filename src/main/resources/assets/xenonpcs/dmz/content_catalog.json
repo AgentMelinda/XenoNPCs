@@ -111,7 +111,7 @@
       "id": "group_god",
       "title": "XenoPixels Gods Forms",
       "subtitle": "Beerus / Whis only · formType xenopixels_divinity",
-      "detail": "Own form skill (not shared godforms). /dmzform set xenopixels_divinity <1-8>. SSG → SSB → SSBE → Rose → Rose Evo → UI Sign → MUI → Ultra Ego. Beerus/Whis masters. Icons: gui/icons/xenopixels_divinity.png.",
+      "detail": "Own form skill (not shared godforms). /dmzform set xenopixels_divinity <1-10>. SSG → SSB → SSBE → Rose → Rose Evo → UI Sign → MUI → Ultra Ego. Beerus/Whis masters. Icons: gui/icons/xenopixels_divinity.png.",
       "accent": 4294952372
     },
     {
@@ -169,6 +169,20 @@
       "subtitle": "God Forms Lv.8 · 300,000 TP",
       "detail": "Purple destruction ego, buffed body. Req: SSBE path. Beerus/Whis Lv.8.",
       "accent": 4286856165
+    },
+    {
+      "id": "ssb3",
+      "title": "Super Saiyan Blue 3",
+      "subtitle": "God Forms Lv.9 · STR 7.4",
+      "detail": "Blue with Super Saiyan 3 hair. Heavy ki drain. Req: SSB Evolution mastery 30.",
+      "accent": 4280923894
+    },
+    {
+      "id": "ssrose3",
+      "title": "Super Saiyan Rose 3",
+      "subtitle": "God Forms Lv.10 · STR 7.4",
+      "detail": "Rosé with Super Saiyan 3 hair. Heavy ki drain. Req: Rose Evolution mastery 30.",
+      "accent": 4294928820
     },
     {
       "id": "group_legendary",

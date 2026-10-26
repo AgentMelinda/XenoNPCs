@@ -22,6 +22,9 @@ The saved-clone library, as operator commands.
 
 `/xenonpcimport` — read My NPCs / CustomNPCs content off disk into the Xeno store.
 
+- `playerdata`
+  - `<uuid> (word)`
+    - `confirm`
 - `factions`
   - `confirm`
 - `all`

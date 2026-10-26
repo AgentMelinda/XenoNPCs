@@ -127,6 +127,10 @@ public final class XenoCloneSystem {
      */
     public static XenoCloneEntity leaveStationary(ServerPlayer player, Vec3 at, int lifetimeTicks) { return null; }
 
+    /** Real decoys, placed in travel order without occupying the fighter's landing position. */
+    public static List<XenoCloneEntity> trail(ServerPlayer owner, Vec3 from, Vec3 to,
+                                             int configuredCount, int lifetimeTicks) { return java.util.List.of(); }
+
     /**
      * Surrounds a target with a closed ring of copies, for Zanzoken.
      *

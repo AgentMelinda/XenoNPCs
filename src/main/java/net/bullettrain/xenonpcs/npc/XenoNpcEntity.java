@@ -290,7 +290,7 @@ public class XenoNpcEntity extends PathfinderMob
 
     private void updateBossBar(NpcCombatProfile profile) {
         if (nativeBossBar == null) return;
-        nativeBossBar.setVisible(profile.bossBar && isAlive());
+        nativeBossBar.setVisible(profile.showBossBar(getTarget() != null) && isAlive());
         if (!profile.bossBar) return;
         nativeBossBar.setName(getDisplayName());
         nativeBossBar.setColor(XenoNpcBehaviour.bossBarColor(profile));
@@ -330,6 +330,10 @@ public class XenoNpcEntity extends PathfinderMob
     // worth keeping - is on the profile and saved there.
     private int pathIndex = -1;
     private int pathPointTicks;
+    private int pathDwellTicks = -1;
+
+    public int pathDwellTicks() { return pathDwellTicks; }
+    public void setPathDwellTicks(int ticks) { pathDwellTicks = ticks; }
     private boolean pathForward = true;
 
     /** Which point of its route this NPC is heading for, or -1 when it is not patrolling. */
@@ -567,6 +571,80 @@ public class XenoNpcEntity extends PathfinderMob
 
     @Override
     public void aiStep() {
+        if (!level().isClientSide()
+                && net.bullettrain.xenonpcs.combat.v3.technique.V3PostAttackFreeze.allowsKnockback(this)) {
+            // NoAI stops goal decisions AND Mob's normal travel. Dash recovery
+            // owns only decisions: consume the current impulse exactly once.
+            float yaw = getYRot(), pitch = getXRot(), head = yHeadRot, body = yBodyRot;
+            float yawOld = yRotO, pitchOld = xRotO, headOld = yHeadRotO, bodyOld = yBodyRotO;
+            getNavigation().stop();
+            super.aiStep();
+            if (net.bullettrain.xenonpcs.combat.v3.technique.V3PostAttackFreeze.allowsKnockback(this)) {
+                setNoAi(false);
+                try { super.travel(net.minecraft.world.phys.Vec3.ZERO); }
+                finally {
+                    if (net.bullettrain.xenonpcs.combat.v3.technique.V3PostAttackFreeze.allowsKnockback(this)) setNoAi(true);
+                }
+                // DMZ/Mob travel updates the head and body independently. Recovery must let the
+                // knockback move the NPC without publishing a one-tick yaw snap to clients.
+            }
+            setYRot(yaw);
+            setXRot(pitch);
+            yHeadRot = head;
+            yBodyRot = body;
+            yRotO = yawOld;
+            xRotO = pitchOld;
+            yHeadRotO = headOld;
+            yBodyRotO = bodyOld;
+            return;
+        }
+        boolean controlledVictim = !level().isClientSide()
+                && net.bullettrain.xenonpcs.combat.v3.technique.V3TechniqueRuntime
+                        .isControlledVictim(getUUID());
+        boolean recovering = !level().isClientSide()
+                && (net.bullettrain.xenonpcs.compat.npc.NpcKnockbackGrace.active(this)
+                || controlledVictim);
+        if (recovering) {
+            // Mob NoAI also disables local travel. Run the vanilla bookkeeping without goals,
+            // then consume the impulse once after restoring ordinary AI ownership. A cinematic
+            // or editor NoAI NPC stays under its external movement controller.
+            // Owner revert 2026-03-22: do not force face-away/toward — keep the yaw that already
+            // existed this tick so fly combat can keep facing the player.
+            boolean previousNoAi = isNoAi();
+            float yaw = getYRot(), pitch = getXRot(), head = yHeadRot, body = yBodyRot;
+            getNavigation().stop();
+            if (controlledVictim || previousNoAi) {
+                // Keep externally owned flags entirely untouched, including callback release.
+                super.aiStep();
+                return;
+            }
+            // Borrow the freeze through FreezeOwnership instead of writing the flag directly. It
+            // stamps the pre-freeze value into persistent data, so a crash between here and the
+            // release is repaired on the next load rather than persisting NoAI forever.
+            //
+            // The release is unconditional now. The old finally only cleared the flag when
+            // isControlledVictim had gone false, which meant a leaked VICTIMS entry — one nothing
+            // ever cleared when the victim unloaded — pinned this NPC in the early-return branch
+            // above with NoAI set and no owner left to restore it. With ownership refcounted by
+            // reason, releasing RECOVERY while a technique still holds TECHNIQUE correctly leaves
+            // the flag set, so the guard is no longer needed to express that.
+            net.bullettrain.xenonpcs.combat.FreezeOwnership.acquire(
+                    this, net.bullettrain.xenonpcs.combat.FreezeOwnership.Reason.RECOVERY);
+            try {
+                super.aiStep();
+            } finally {
+                net.bullettrain.xenonpcs.combat.FreezeOwnership.release(
+                        this, net.bullettrain.xenonpcs.combat.FreezeOwnership.Reason.RECOVERY);
+            }
+            if (net.bullettrain.xenonpcs.combat.v3.technique.V3TechniqueRuntime
+                    .isControlledVictim(getUUID())) return;
+            super.travel(net.minecraft.world.phys.Vec3.ZERO);
+            setYRot(yaw);
+            setXRot(pitch);
+            yHeadRot = head;
+            yBodyRot = body;
+            return;
+        }
         if (!level().isClientSide()) {
             net.bullettrain.xenonpcs.compat.npc.NpcTargetKeeper.dropInvalidTarget(this);
         }
@@ -1426,6 +1504,11 @@ public class XenoNpcEntity extends PathfinderMob
         return PlayState.STOP;
     }
 
+    /** A scripted clip (a wave, a nod) is queued or playing on the attack controller. */
+    public boolean scriptedClipActive() {
+        return scriptedAttackPlaying || scriptedAttackClip != null;
+    }
+
     /** Called on the render thread after the queued server packet reaches the Gecko renderer. */
     public void acceptScriptAnimation(String clip, boolean hold, boolean stop) {
         scriptedAttackStop = stop;
@@ -1464,7 +1547,9 @@ public class XenoNpcEntity extends PathfinderMob
 
     private boolean brainFlying() {
         return !level().isClientSide()
-                && net.bullettrain.xenonpcs.compat.npc.NpcFlightOwnership.brainDirectsFlight(getUUID());
+                && (net.bullettrain.xenonpcs.compat.npc.NpcFlightOwnership.brainDirectsFlight(getUUID())
+                || getTarget() != null && net.bullettrain.xenonpcs.compat.npc.NpcNativePursuit.owns(
+                        this, NpcCombatProfile.readCached(this)));
     }
 
     /** Called by the client model each time it resolves this NPC's animation file. */

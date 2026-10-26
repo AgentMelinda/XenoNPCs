@@ -37,6 +37,8 @@ public final class HakaiFade {
 
     /** Test hook with an explicit game-time so lerp can be checked without a client. */
     static void set(int entityId, int amplifier, long gameTime) {
+        if (net.bullettrain.xenonpcs.client.config.XenoClientConfig.hakaiSweepDebug)
+            net.bullettrain.xenonpcs.XenoNpcsMod.LOGGER.info("HAKAI_SWEEP packet id={} amp={} tick={}", entityId, amplifier, gameTime);
         int clamped = Math.max(0, Math.min(255, amplifier));
         Lerp previous = LERPS.get(entityId);
         Integer currentTarget = AMPLIFIERS.get(entityId);
@@ -91,6 +93,8 @@ public final class HakaiFade {
     }
 
     private static Float progressOf(LivingEntity living, float partialTick) {
+        Float synchronizedValue = HakaiSweepFx.synchronizedProgress(living, partialTick);
+        if (synchronizedValue != null) return synchronizedValue;
         Lerp lerp = LERPS.get(living.getId());
         if (lerp != null) {
             return lerpedAmplifier(living.getId(), partialTick, nowTick()) / 255.0f;
@@ -268,6 +272,8 @@ public final class HakaiFade {
     /** True while this entity is a Hakai victim, even if the body fade itself is off. */
     public static boolean targeted(Entity entity) {
         if (!(entity instanceof LivingEntity living)) return false;
+        Float synchronizedValue = HakaiSweepFx.synchronizedProgress(living, 0f);
+        if (synchronizedValue != null) return synchronizedValue > 0f;
         return AMPLIFIERS.containsKey(living.getId())
                 || living.getEffect(ModEffects.HAKAI_DISSOLVE) != null;
     }

@@ -303,6 +303,27 @@ public final class Bt3CombatClient {
         return clientGuarding;
     }
 
+    /**
+     * Under the legacy and manual controllers: a throw has just opened its chase, and one tap of
+     * forward will take it. Read by the combat prompt, and true only while that tap would do
+     * something, so the prompt never offers a chase the client would not send.
+     */
+    public static boolean throwChaseLive() {
+        return DragonHomingClient.isLive() && throwChaseOpen()
+                && XenoClientConfig.bt3ChaseDashClient && XenoServerClientState.chase();
+    }
+
+    /**
+     * The server has a chase open on whoever this fighter threw, and that is still who they are
+     * locked on. The grab needed the lock, and so does what follows from it.
+     */
+    private static boolean throwChaseOpen() {
+        int thrownId = net.bullettrain.xenonpcs.client.combat.v2.V2ClientState.homingTargetId();
+        if (thrownId < 0) return false;
+        LivingEntity locked = LockOnEvent.getLockedTarget();
+        return locked != null && locked.isAlive() && locked.getId() == thrownId;
+    }
+
     public static boolean isCounterWindowFlash() {
         return counterFlashTicks > 0;
     }
@@ -329,16 +350,20 @@ public final class Bt3CombatClient {
 
     /** 0..1 current charge progress for glow renderer. */
     public static float getChargeProgress() {
+        if (XenoServerClientState.v3Controller()) return net.bullettrain.xenonpcs.client.combat.v3.V3ClientState.chargeProgress();
+        if (XenoServerClientState.v2Controller()) return net.bullettrain.xenonpcs.client.combat.v2.V2InputLayer.chargeProgress();
         if (chargeMode == ChargeMode.NONE) return 0f;
         int max = Math.max(1, XenoServerClientState.get().chargeMaxTicks);
         return Math.min(1f, chargeTicks / (float) max);
     }
 
     public static boolean isFullyCharged() {
-        return chargeMode != ChargeMode.NONE && getChargeProgress() >= 1f;
+        return isCharging() && getChargeProgress() >= 1f;
     }
 
     public static boolean isCharging() {
+        if (XenoServerClientState.v3Controller()) return net.bullettrain.xenonpcs.client.combat.v3.V3ClientState.charging();
+        if (XenoServerClientState.v2Controller()) return net.bullettrain.xenonpcs.client.combat.v2.V2InputLayer.charging();
         return chargeMode != ChargeMode.NONE;
     }
 
@@ -355,6 +380,8 @@ public final class Bt3CombatClient {
     }
 
     public static boolean isKickCharge() {
+        if (XenoServerClientState.v3Controller()) return net.bullettrain.xenonpcs.client.combat.v3.V3ClientState.kickCharging();
+        if (XenoServerClientState.v2Controller()) return net.bullettrain.xenonpcs.client.combat.v2.V2InputLayer.kickCharging();
         return chargeMode == ChargeMode.KICK;
     }
 
@@ -386,18 +413,23 @@ public final class Bt3CombatClient {
     }
 
     public static int getComboStep() {
+        if(XenoServerClientState.v3Controller())return net.bullettrain.xenonpcs.client.combat.v3.V3ClientState.comboHits();
         return comboStep;
     }
 
     public static int getComboTicksLeft() {
+        if(XenoServerClientState.v3Controller())return net.bullettrain.xenonpcs.client.combat.v3.V3ClientState.comboTicksLeft();
         return Math.max(0, comboTicksLeft);
     }
 
     public static int getComboWindowMaxTicks() {
+        if(XenoServerClientState.v3Controller())return net.bullettrain.xenonpcs.combat.v3.CombatComboCounter.WINDOW;
         return COMBO_WINDOW_TICKS;
     }
 
     public static float getComboWindowFraction() {
+        if(XenoServerClientState.v3Controller())return net.bullettrain.xenonpcs.client.combat.v3.V3ClientState.comboTicksLeft()
+                /(float)net.bullettrain.xenonpcs.combat.v3.CombatComboCounter.WINDOW;
         if (comboTicksLeft <= 0) return 0f;
         return Math.min(1f, comboTicksLeft / (float) COMBO_WINDOW_TICKS);
     }
@@ -439,6 +471,9 @@ public final class Bt3CombatClient {
         moveCooldown = moveCooldownMax;
     }
 
+    /** The server ran the v2 controller last tick, so the switch either way is seen once. */
+    private static boolean v2WasActive;
+    private static boolean v3WasActive;
     private static boolean scrubbedDualWasdBinds;
     /** One-shot per session: transfer DMZ Block's key to Xeno Guard and retire duplicate blocking. */
     private static boolean migratedGuardBinding;
@@ -543,6 +578,7 @@ public final class Bt3CombatClient {
             moveCooldown = 0;
             clientGuarding = false;
             clearGuardInputState();
+            throwHomingWas = false;
             zanzokenUnboundNoticed = false;
         }
 
@@ -590,6 +626,8 @@ public final class Bt3CombatClient {
             }
 
             if (mc.player == null || mc.level == null || mc.screen != null || !mc.player.isAlive() || mc.player.isSpectator()) {
+                net.bullettrain.xenonpcs.client.combat.v2.V2InputLayer.pause();
+                net.bullettrain.xenonpcs.client.combat.v3.V3InputLayer.pause();
                 stopClientChase(mc.getConnection() != null);
                 if (clientGuarding) {
                     clientGuarding = false;
@@ -611,6 +649,8 @@ public final class Bt3CombatClient {
             // chair anyway. Presses are drained rather than ignored so none is banked and
             // replayed the instant the pilot stands up.
             if (mc.player.getVehicle() instanceof net.bullettrain.xenonpcs.aero.seat.XenoPilotSeatEntity) {
+                net.bullettrain.xenonpcs.client.combat.v2.V2InputLayer.pause();
+                net.bullettrain.xenonpcs.client.combat.v3.V3InputLayer.pause();
                 stopClientChase(true);
                 if (clientGuarding) {
                     clientGuarding = false;
@@ -629,6 +669,8 @@ public final class Bt3CombatClient {
             tickHakai(mc);
             tickZanzoken(mc);
             if (!XenoClientConfig.bt3CombatClient || !XenoServerClientState.combat()) {
+                net.bullettrain.xenonpcs.client.combat.v2.V2InputLayer.pause();
+                net.bullettrain.xenonpcs.client.combat.v3.V3InputLayer.pause();
                 stopClientChase(true);
                 if (clientGuarding) {
                     clientGuarding = false;
@@ -639,6 +681,73 @@ public final class Bt3CombatClient {
                 resetCharge();
                 resetRushHold();
                 return;
+            }
+
+            // Combat V3 reads the mouse through its own layer once a target is locked. The shared
+            // keys (lock cycle, ultimate, Sparking, Multi-Form) still run; no legacy fist does.
+            if (XenoServerClientState.v3Controller()) {
+                if (!v3WasActive) {
+                    v3WasActive = true;
+                    if (v2WasActive) {
+                        v2WasActive = false;
+                        net.bullettrain.xenonpcs.client.combat.v2.V2InputLayer.release();
+                    }
+                    stopClientChase(false);
+                    if (clientGuarding) {
+                        clientGuarding = false;
+                        send(new Bt3CombatPacket(Bt3CombatPacket.Action.GUARD, -1, 0));
+                    }
+                    clearGuardInputState();
+                    resetCharge();
+                    resetRushHold();
+                    comboStep = 0;
+                    comboTicksLeft = 0;
+                }
+                if (ultimateCd > 0) ultimateCd--;
+                if (moveCooldown > 0) moveCooldown--;
+                tickXenoDrivenDig(mc);
+                tickMultiForm(mc);
+                tickPhase1Keys(mc);
+                // Guard is the controller-independent server guard, but on the v2 guard key: the
+                // legacy binding defaults to right mouse, which in V3 is the heavy attack.
+                tickGuard(mc, net.bullettrain.xenonpcs.client.combat.v2.V2Keys.down(
+                        net.bullettrain.xenonpcs.client.combat.v2.V2Keys.GUARD));
+                net.bullettrain.xenonpcs.client.combat.v3.V3InputLayer.tick(mc);
+                return;
+            }
+            if (v3WasActive) {
+                v3WasActive = false;
+                net.bullettrain.xenonpcs.client.combat.v3.V3InputLayer.release();
+            }
+
+            // XenoCombat v2 owns the fists, guard, vanish, chase and dash through its own
+            // input layer. The legacy keys it has not replaced (lock cycle, ultimate, Sparking,
+            // rush and lift combos, Multi-Form) still run; everything else below is v1 only.
+            if (XenoServerClientState.v2Controller()) {
+                if (!v2WasActive) {
+                    v2WasActive = true;
+                    stopClientChase(false);
+                    if (clientGuarding) {
+                        clientGuarding = false;
+                        send(new Bt3CombatPacket(Bt3CombatPacket.Action.GUARD, -1, 0));
+                    }
+                    clearGuardInputState();
+                    resetCharge();
+                    resetRushHold();
+                    comboStep = 0;
+                    comboTicksLeft = 0;
+                }
+                if (ultimateCd > 0) ultimateCd--;
+                if (moveCooldown > 0) moveCooldown--;
+                tickXenoDrivenDig(mc);
+                tickMultiForm(mc);
+                tickPhase1Keys(mc);
+                net.bullettrain.xenonpcs.client.combat.v2.V2InputLayer.tick(mc);
+                return;
+            }
+            if (v2WasActive) {
+                v2WasActive = false;
+                net.bullettrain.xenonpcs.client.combat.v2.V2InputLayer.release();
             }
 
             sampleComboLauncherTap(mc);
@@ -665,10 +774,32 @@ public final class Bt3CombatClient {
 
             DmzAnimHelperClient.ClientStrikeChain.tick(mc.player);
 
+            // The grab is the one move this controller shares with XenoCombat v2. Its state is
+            // the server's, mirrored in V2ClientState. While it has this fighter, at either end,
+            // no other combat key is read: both hands are in the grab, or held by someone else's.
+            net.bullettrain.xenonpcs.client.combat.v2.V2ClientState.tick();
+            if (net.bullettrain.xenonpcs.client.combat.v2.V2ClientState.inGrab()) {
+                yieldToGrab(mc);
+                drainCombatKeys();
+                net.bullettrain.xenonpcs.client.combat.v2.V2InputLayer.tickSharedGrab(
+                        mc, false, leftMouseDown(mc));
+                tickXenoDrivenDig(mc);
+                return;
+            }
+            // A throw opens the same window a launching kick does: one tap of forward homes in
+            // on whoever was thrown. The server opened its side when the throw landed.
+            boolean thrown = throwChaseOpen();
+            if (thrown && !throwHomingWas) DragonHomingClient.open();
+            throwHomingWas = thrown;
+
             // Left click owns Xeno's empty-hand mash/charge.
             tickCharge(mc);
             tickFistKey(mc);
             tickGuard(mc);
+            // Guard and punch together is the grab. Read after the guard, so the two keys may go
+            // down on the same tick.
+            net.bullettrain.xenonpcs.client.combat.v2.V2InputLayer.tickSharedGrab(
+                    mc, clientGuarding, leftMouseDown(mc));
             tickChase(mc);
             tickXenoDrivenDig(mc);
             tickMultiForm(mc);
@@ -953,13 +1084,20 @@ public final class Bt3CombatClient {
             // Visual only — server owns the real counter window
             counterFlashTicks = Math.max(counterFlashTicks,
                     Math.max(4, XenoServerClientState.get().superCounterWindowTicks));
-            mc.player.displayClientMessage(Component.literal("§bCounter window — vanish!"), true);
+            if (XenoClientConfig.showCombatPrompts(
+                    net.bullettrain.xenonpcs.client.combat.v2.CombatStance.lockedTarget() != null)) {
+                mc.player.displayClientMessage(Component.literal("§bCounter window — vanish!"), true);
+            }
         }
     }
 
     /** Xeno Guard engages immediately while the shared Use/place input remains available. */
     private static void tickGuard(Minecraft mc) {
-        boolean down = GUARD.isDown();
+        tickGuard(mc, GUARD.isDown());
+    }
+
+    /** @param down the guard key as the running controller reads it */
+    private static void tickGuard(Minecraft mc, boolean down) {
         boolean want = XenoClientConfig.bt3GuardClient && XenoServerClientState.guard()
                 && down && chargeMode == ChargeMode.NONE;
         LocalPlayer local = mc.player;
@@ -1022,6 +1160,41 @@ public final class Bt3CombatClient {
 
     private static void clearGuardInputState() {
         guardWasDown = false;
+    }
+
+    /** A throw's chase window was open on the last tick, so its opening is acted on once. */
+    private static boolean throwHomingWas;
+
+    /**
+     * Stands every legacy input down for a tick in which a grab has this fighter, at either end.
+     *
+     * <p>The same thing an open screen or a pilot seat does, for the same reason: for now the
+     * keys are not this controller's to read. The guard is let go rather than left up, so that
+     * when the grab is over a guard key still held raises it again, on the server as well as
+     * here; a grab takes the guard down on the server at both ends.
+     */
+    private static void yieldToGrab(Minecraft mc) {
+        stopClientChase(true);
+        if (clientGuarding) {
+            clientGuarding = false;
+            send(new Bt3CombatPacket(Bt3CombatPacket.Action.GUARD, -1, 0));
+            if (mc.player != null) DmzAnimHelperClient.playLocalBlockStop(mc.player);
+        }
+        clearGuardInputState();
+        resetCharge();
+        resetRushHold();
+        fistHoldTicks = 0;
+        holdComboCooldown = 0;
+        fistChargeArmedUntilMs = 0;
+        // Keys held through the grab are not fresh presses when it ends. The punch key is the
+        // exception: held past the grab it simply goes back to being the punch, hold and all,
+        // with nothing to release first.
+        captureKeys(mc);
+        swayLeftWasDown = mc.options.keyLeft.isDown();
+        swayRightWasDown = mc.options.keyRight.isDown();
+        fistWasDown = leftMouseDown(mc);
+        kickWasDown = heldNow(CHARGE_KICK);
+        dragonWasDown = heldNow(DRAGON_DASH);
     }
 
     /**
@@ -1190,6 +1363,8 @@ public final class Bt3CombatClient {
         // Z-Burst mid-combo
         while (Bt3DirectBind.Z_BURST.consume(Z_BURST)) {
             if (!XenoClientConfig.bt3ZBurstClient || !XenoServerClientState.zBurst()) continue;
+            // Under v2 the Z-Burst comes out of a swing at a target that is out of reach.
+            if (XenoServerClientState.v2Controller()) continue;
             if (clientGuarding || chargeMode != ChargeMode.NONE) continue;
             if (comboStep <= 0 || comboTicksLeft <= 0) {
                 if (mc.player != null) {
@@ -1215,6 +1390,8 @@ public final class Bt3CombatClient {
         // and cancel no longer has to stand down while a beam is out.
         while (KI_BLAST_CANCEL.consumeClick()) {
             if (!XenoClientConfig.bt3KiBlastCancelClient || !XenoServerClientState.kiBlastCancel()) continue;
+            // Under v2 the ki blast has its own key and no "mid-combo only" rule.
+            if (XenoServerClientState.v2Controller()) continue;
             if (clientGuarding || chargeMode != ChargeMode.NONE) continue;
             if (comboStep <= 0 || comboTicksLeft <= 0) {
                 if (mc.player != null) {
@@ -1296,6 +1473,7 @@ public final class Bt3CombatClient {
      */
     private static void trySonic(Minecraft mc, int side, boolean fromGuard) {
         if (!XenoServerClientState.get().bt3SonicSwayEnabled) return;
+        if (XenoServerClientState.v2Controller()) return;
         if ((clientGuarding && !fromGuard) || chargeMode != ChargeMode.NONE) return;
         if (sonicCd > 0 || moveCooldown > 0) return;
         LocalPlayer p = mc.player;
@@ -1712,7 +1890,15 @@ public final class Bt3CombatClient {
         if (player == null) return false;
         boolean combo = XenoClientConfig.bt3ComboClient && XenoServerClientState.combo();
         boolean charge = XenoClientConfig.bt3ChargeAttackClient && XenoServerClientState.chargeAttack();
-        boolean claim = net.bullettrain.xenonpcs.combat.FistInputPolicy.ownsLegacyFists(
+        // Under v2 the light attack is Xeno's only while locked on (or held in a grab, where it
+        // is the way out). With nothing locked v2 does not exist: the click is DragonMineZ's own
+        // punch, and the legacy fists stay out of it too, because the server refuses them in v2.
+        // V3 claims the mouse only while the server-approved lock is held, like v2.
+        boolean claim = XenoServerClientState.v3Controller()
+                ? net.bullettrain.xenonpcs.client.combat.v3.V3ClientState.target() != null
+                : XenoServerClientState.v2Controller()
+                ? net.bullettrain.xenonpcs.client.combat.v2.CombatStance.claimsFists()
+                : net.bullettrain.xenonpcs.combat.FistInputPolicy.ownsLegacyFists(
                 XenoServerClientState.manualController(), combo, charge);
         return net.bullettrain.xenonpcs.combat.FistInputPolicy.fistsActive(
                 handsFreeForFists(mc),
@@ -1745,7 +1931,11 @@ public final class Bt3CombatClient {
      */
     public static boolean suppressesNativeAttack(Minecraft mc) {
         return fistsActive(mc) || chargeMode != ChargeMode.NONE
-                || (clientGuarding && handsFreeForFists(mc));
+                // In a grab at either end the click is the throw's or the break-out's, under
+                // every controller: under the manual one it would otherwise be DragonMineZ's punch.
+                || net.bullettrain.xenonpcs.client.combat.v2.V2ClientState.inGrab()
+                || ((clientGuarding || net.bullettrain.xenonpcs.client.combat.v2.V2InputLayer.guarding())
+                        && handsFreeForFists(mc));
     }
 
     /**
@@ -2079,7 +2269,7 @@ public final class Bt3CombatClient {
         startMoveCooldown(action);
     }
 
-    private static LivingEntity findLookTarget(Minecraft mc, double range) {
+    public static LivingEntity findLookTarget(Minecraft mc, double range) {
         LocalPlayer player = mc.player;
         if (player == null || mc.level == null) return null;
         Vec3 eye = player.getEyePosition(1f);

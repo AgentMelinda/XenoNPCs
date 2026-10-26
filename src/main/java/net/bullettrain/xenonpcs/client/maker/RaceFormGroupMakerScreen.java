@@ -83,7 +83,6 @@ public final class RaceFormGroupMakerScreen extends ScaledScreen {
     private RaceFormGroupMakerScreen(Screen parent, String race, String group, String refuseOverride) {
         super(Component.literal("Race Form Group Maker"));
         this.parent = parent;
-        MakerTargets.inherit(this, parent);
         this.race = race == null ? "" : race.trim().toLowerCase(Locale.ROOT);
         this.group = group == null ? "" : group.trim().toLowerCase(Locale.ROOT);
         RaceFormGroupGuard.Result raceResult = RaceFormGroupGuard.validateRace(this.race);

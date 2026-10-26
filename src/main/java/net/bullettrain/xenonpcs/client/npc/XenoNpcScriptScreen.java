@@ -58,8 +58,8 @@ public final class XenoNpcScriptScreen extends ScaledScreen {
 
     /** Drawn at the vanilla GUI Scale; see {@link NpcGuiScale}. */
     @Override
-    protected float computeDynamicScale(float available) {
-        return NpcGuiScale.dynamicScale(super.computeDynamicScale(available));
+    protected float computeDynamicScale(int width, int height) {
+        return NpcGuiScale.dynamicScale(super.computeDynamicScale(width, height));
     }
     private static final int GOLD = 0xFFFFC14A;
     private static final int CYAN = 0xFF80D8FF;
@@ -71,7 +71,11 @@ public final class XenoNpcScriptScreen extends ScaledScreen {
     private static final List<String> LANGUAGES = List.of("ECMAScript");
 
     /** Calls a script can make, shown under the hooks when functions are visible. */
-    private static final List<String> API = List.of(
+    private static final List<String> API = apiCalls();
+
+    private static List<String> apiCalls() {
+        var calls = new java.util.TreeSet<>(net.bullettrain.xenonpcs.npc.script.ScriptFunctionCatalog.calls());
+        calls.addAll(List.of(
             "npc.say(text)", "npc.say(text, palette)", "npc.say(text, palette, shape)",
             "npc.sayTo(player, text)", "npc.getName()", "npc.getTarget()", "npc.setTarget(entity)",
             "npc.clearTarget()", "npc.getHealth()", "npc.setHealth(v)", "npc.setPosition(x, y, z)",
@@ -84,7 +88,9 @@ public final class XenoNpcScriptScreen extends ScaledScreen {
             "player.message(text)", "player.addXenoPoints(n)", "player.startQuest(id)",
             "event.npc", "event.player", "event.source", "event.entity", "event.target",
             "event.damage", "event.getOption()",
-            "event.setCanceled(true)", "log.line(text)");
+            "event.setCanceled(true)", "log.line(text)"));
+        return List.copyOf(calls);
+    }
 
     private enum Mode { EDITOR, TOOL, LIBRARY, PLAYER, FORGE }
 
@@ -263,18 +269,25 @@ public final class XenoNpcScriptScreen extends ScaledScreen {
     /** Reply to a fetch (tab text) from {@code NpcScriptResultPacket}. */
     public void receive(String id, String message, String transcript, @Nullable CompoundTag payload,
                         boolean ran, boolean ok) {
+        // Fetches are asynchronous: preserve any draft entered while the reply was in flight.
+        keepCodeText();
         if (message != null && message.startsWith("script engine:")) {
             engine = message.substring("script engine:".length()).trim();
         }
         for (TabState tab : tabs) {
             if (!wireId(tab.id).equals(id) || tab.fetched) continue;
             tab.fetched = true;
-            if (ok && payload != null) {
+            if (ok && payload != null && !tab.dirty) {
                 XenoNpcScripts.Script script = XenoNpcScripts.Script.of(id, payload);
                 tab.text = script.script();
                 tab.language = script.language();
                 tab.enabled = script.enabled();
                 tab.chatOnly = payload.getBoolean("ChatOnly");
+                if (globalStore()) {
+                    tab.loaded.clear();
+                    ListTag loaded = payload.getList("Loaded", Tag.TAG_STRING);
+                    for (int i = 0; i < loaded.size(); i++) tab.loaded.add(loaded.getString(i));
+                }
             } else if (!ran && message != null && !message.isBlank()
                     && !message.startsWith("script engine:")) {
                 log(id + ": " + message);
@@ -384,6 +397,11 @@ public final class XenoNpcScriptScreen extends ScaledScreen {
             boolean on = !globalStore() || tab.enabled;
             CompoundTag payload = new XenoNpcScripts.Script(tab.id, tab.id, lang, on, tab.text).toTag();
             if (mode == Mode.PLAYER) payload.putBoolean("ChatOnly", tab.chatOnly);
+            if (globalStore()) {
+                ListTag loaded = new ListTag();
+                for (String id : tab.loaded) loaded.add(net.minecraft.nbt.StringTag.valueOf(id));
+                payload.put("Loaded", loaded);
+            }
             String invalid = XenoNpcScripts.rejectPayload(payload);
             if (invalid != null) {
                 log(tab.id + " not saved: " + invalid);
@@ -605,11 +623,13 @@ public final class XenoNpcScriptScreen extends ScaledScreen {
         addRenderableWidget(button(px + 145, py + 40, 55, ">", () -> {
             String pick = availableList.selectedItem();
             if (pick != null && tab.loaded.size() < NpcScriptContainer.MAX_LOADED) tab.loaded.add(pick);
+            if (globalStore()) tab.dirty = true;
             rebuild();
         }));
         addRenderableWidget(button(px + 145, py + 62, 55, "<", () -> {
             String pick = loadedList.selectedItem();
             if (pick != null) tab.loaded.remove(pick);
+            if (globalStore()) tab.dirty = true;
             rebuild();
         }));
         addRenderableWidget(button(px + 145, py + 90, 55, ">>", () -> {
@@ -617,10 +637,12 @@ public final class XenoNpcScriptScreen extends ScaledScreen {
                 if (tab.loaded.size() >= NpcScriptContainer.MAX_LOADED) break;
                 tab.loaded.add(id);
             }
+            if (globalStore()) tab.dirty = true;
             rebuild();
         }));
         addRenderableWidget(button(px + 145, py + 112, 55, "<<", () -> {
             tab.loaded.clear();
+            if (globalStore()) tab.dirty = true;
             rebuild();
         }));
         addRenderableWidget(button(px + 260, py + 194, 60, "Done", () -> {

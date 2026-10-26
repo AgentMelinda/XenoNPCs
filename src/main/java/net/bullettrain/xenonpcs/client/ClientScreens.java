@@ -16,7 +16,6 @@ import net.minecraft.nbt.CompoundTag;
  */
 public final class ClientScreens {
     public static java.util.function.Consumer<net.bullettrain.xenonpcs.network.maker.MakerNetwork.Response> receiveMakerRace = response -> {};
-    public static java.util.function.BiConsumer<java.util.UUID, CompoundTag> receiveTaotto = (id, tag) -> {};
     public static Runnable openTargetTool = () -> {
     };
 
@@ -48,6 +47,52 @@ public final class ClientScreens {
     };
 
     public static Runnable openParty = () -> {
+    };
+
+    /** Tournament queue UI from S2C open cue or client {@code /xenotourneyui}. */
+    public static Runnable openTournamentQueue = () -> {
+    };
+
+    /**
+     * Race form-group maker (green shell). Bound on the client; args are race then group
+     * (empty group → first installed group for that race).
+     */
+    public static java.util.function.BiConsumer<String, String> openRaceFormGroupMaker = (race, group) -> {
+    };
+
+    /**
+     * Advanced Hair Editor ({@code /xenohairui} and {@code /xenomaker hair}).
+     * Apply via UpdateCustomHairC2S (PR-D7c; path READY / runtime unverified).
+     */
+    public static Runnable openHairMaker = () -> {
+    };
+
+    /** Unified Maker Studio hub ({@code /xenomaker}). */
+    public static Runnable openXenoMakerHub = () -> {
+    };
+
+    /** Race Character Maker ({@code /xenomaker race}). */
+    public static Runnable openRaceCharacterMaker = () -> {
+    };
+
+    /** Form Maker ({@code /xenomaker forms}). */
+    public static Runnable openFormMaker = () -> {
+    };
+
+    /** Taotto per-pixel tattoo painter ({@code /xenomaker taotto}). */
+    public static Runnable openTaottoMaker = () -> {
+    };
+
+    /** Client overlay bake from Taotto sync. */
+    public static java.util.function.BiConsumer<java.util.UUID, CompoundTag> receiveTaotto = (id, tag) -> {
+    };
+
+    /** Alias for {@link #openFormMaker} (pre-Task-11 stub name). */
+    public static Runnable openXenoMakerFormsStub = () -> {
+    };
+
+    /** Alias for {@link #openHairMaker} (pre-Task-12 stub name). */
+    public static Runnable openXenoMakerHairStub = () -> {
     };
 
     public static Consumer<XenoNpcOpenData> openXenoNpcEditor = data -> {

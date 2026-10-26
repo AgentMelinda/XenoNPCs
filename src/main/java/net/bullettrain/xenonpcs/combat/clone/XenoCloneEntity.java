@@ -44,6 +44,7 @@ public class XenoCloneEntity extends LivingEntity {
     /** 0 while still bursting out of the fighter, 1 once the body has reached its place. */
     private static EntityDataAccessor<Float> TRAVEL = null;
     private static EntityDataAccessor<Integer> LIFETIME = null;
+    private static EntityDataAccessor<Boolean> TRAIL = null;
 
     /** A Zanzoken image: it does not follow, it stays exactly where it was placed. */
     public static final int SLOT_STATIONARY = -1;
@@ -91,6 +92,12 @@ public class XenoCloneEntity extends LivingEntity {
     private float healthCapacity;
     private Vec3 travelOrigin = null;
     private Vec3 recallOrigin = null;
+    private boolean disappearancePlayed;
+
+    public boolean isTrailImage() { return false; }
+
+    /** Freeze the departure pose; later owner movement must not animate an old image. */
+    public void configureTrail(Player owner) { }
 
     public XenoCloneEntity(EntityType<? extends XenoCloneEntity> type, Level level) { super(type, level); }
 

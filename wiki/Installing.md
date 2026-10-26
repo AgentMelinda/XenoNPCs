@@ -5,7 +5,7 @@ XenoNPCs is a normal NeoForge mod. Install it the same way on the **client and t
 1. Install **NeoForge 21.1.233 or newer** for Minecraft **1.21.1**.
 2. Put these jars in your `mods` folder:
    - `xenonpcs-<version>.jar`
-   - DragonMineZ **2.1.3** or newer
+   - DragonMineZ **2.2** or newer
    - GeckoLib, TerraBlender and Curios - DragonMineZ needs all three, so you probably have them
      already.
 3. Optional: CustomNPCs **or** My NPCs, if you also use those NPCs. Install only one of them.
@@ -18,7 +18,7 @@ XenoNPCs is a normal NeoForge mod. Install it the same way on the **client and t
 |---|---|
 | "XenoPixels Network already includes XenoNPCs" | Remove one of the two. XenoPixels has everything XenoNPCs has. |
 | "Mod dragonminez requires terrablender ..." | Install TerraBlender (DragonMineZ needs it, not XenoNPCs). |
-| "requires dragonminez 2.1.3 or above" | Update DragonMineZ. |
+| "requires dragonminez 2.2 or above" | Update DragonMineZ. |
 
 ## Servers
 

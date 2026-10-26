@@ -22,7 +22,6 @@ public final class RaceLabelEvents {
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             RaceLabelNetwork.sendSnapshot(player);
-            MakerRaceService.sendSnapshots(player);
         }
     }
 }

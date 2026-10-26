@@ -95,15 +95,15 @@
     "compat.dmz.DmzPlayerModelAnimationFilesMixin",
     "compat.dmz.DmzMeleeHeadLookMixin",
     "compat.dmz.DmzMeleeHeadMolangMixin",
-    "compat.dmz.DmzHairFollowBodyMixin",
     "compat.dmz.DmzRenderHandIrisMixin",
     "compat.mynpcs.GuiCustomScrollingPanelMixin",
     "compat.mynpcs.GuiCustomScrollNopMixin",
     "compat.mynpcs.GuiTextAreaMixin",
     "compat.mynpcs.GuiDialogInteractMixin",
+    "compat.dmz.DmzAuraLayersInvoker",
     "compat.dmz.DmzTaottoOverlayMixin",
-    "compat.dmz.DmzMakerFormPreviewMixin",
-    "compat.dmz.DmzRaceCatalogHairMixin"
+    "compat.dmz.DmzRaceCatalogHairMixin",
+    "compat.dmz.DmzMakerFormPreviewMixin"
   ],
   "injectors": {
     "defaultRequire": 0

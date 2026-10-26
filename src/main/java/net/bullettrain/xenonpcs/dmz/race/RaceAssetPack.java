@@ -18,7 +18,7 @@ import java.util.Objects;
  */
 public final class RaceAssetPack {
     public static final String PACK_FORMAT = "34";
-    public static final String PACK_ID = "xenonpcs_race_catalogs";
+    public static final String PACK_ID = "xenopixels_race_catalogs";
 
     private RaceAssetPack() {
     }

@@ -1,0 +1,9 @@
+{
+  "created": "2026-10-15",
+  "generator": "tools/generate_space_textures.py (procedural, numpy)",
+  "seed": 20261015,
+  "use": "Moon albedo with baked crater relief for the physical Moon sphere",
+  "projection": "Equirectangular 2:1; each pixel computed from its 3D sphere direction, seamless at the longitude edge and at the poles",
+  "upload": "2048x1024, four additional mip levels, trilinear filtering, repeat sampling",
+  "limitations": "Procedural stand-in, not surveyed or artist-made; replace by dropping a 2:1 map at the same path. Crater style follows the lunar terrain generator; the craters are not the same ones."
+}

@@ -104,7 +104,10 @@ public final class ProgressionEvents {
             }
 
             // Milestone skill points
-            if (hits == 25 || hits == 100 || hits == 250) {
+            // Off by default (2026-10-02 owner): every /xenotrain spawn restarts the hit count, so
+            // the milestones could be earned again with each new dummy.
+            if (net.bullettrain.xenonpcs.config.XenoServerConfig.trainingDummySkillPoints
+                    && (hits == 25 || hits == 100 || hits == 250)) {
                 data.addSkillPoints(1);
                 atk.displayClientMessage(Component.literal(
                         "§a+1 Skill Point §7(dummy milestone " + hits + " hits)"), false);

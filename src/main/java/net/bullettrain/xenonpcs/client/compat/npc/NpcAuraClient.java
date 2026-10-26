@@ -58,7 +58,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class NpcAuraClient {
     private static final ResourceLocation KAKAROT_AURA =
             ResourceLocation.fromNamespaceAndPath("dragonminez", "textures/entity/races/aura/kakarot_aura.png");
-    private static final float CNPC_DEFAULT_SIZE = 5.0f;
     /**
      * The 1.05 alone. DMZ's expanding floor rings are scaled from {@code data.auraScaleX}
      * directly (AuraRenderer :910), which is this base <i>without</i> the 2.2 draw multiplier
@@ -170,6 +169,41 @@ public final class NpcAuraClient {
         }
     }
 
+    /**
+     * Whether DragonMineZ's own renderer draws this NPC, and with it the aura. Full appearance
+     * alone is not enough: a Xeno NPC on a GeckoLib or mimic model keeps that model whatever its
+     * appearance mode, so skipping the fallback for it left the NPC with no aura at all
+     * (2026-10-02 owner: "aura on gekolib models not showing").
+     */
+    private static boolean drawnByDmz(LivingEntity entity) {
+        if (!NpcFullDmzRenderer.isFull(entity)) {
+            return false;
+        }
+        if (entity instanceof net.bullettrain.xenonpcs.npc.XenoNpcEntity) {
+            String kind = NpcCombatProfile.normalizeModelKind(
+                    NpcAppearanceClient.renderProfile(entity).modelKind);
+            return !NpcCombatProfile.MODEL_GECKOLIB.equals(kind)
+                    && !NpcCombatProfile.MODEL_ENTITY.equals(kind);
+        }
+        return true;
+    }
+
+    /** The aura layers of an NPC whose aura is on, for the HD aura; null when it is off. */
+    public static List<NpcAuraResolver.Layer> hdLayers(UUID entityUuid) {
+        AuraState state = entityUuid == null ? null : ACTIVE.get(entityUuid);
+        if (state == null || !state.on()) {
+            return null;
+        }
+        return state.layers().isEmpty()
+                ? List.of(new NpcAuraResolver.Layer("kakarot", 0, state.rgb())) : state.layers();
+    }
+
+    /** Same display/profile sizing for the native shader and every HD aura layer. */
+    public static float auraRenderScale(LivingEntity entity) {
+        AuraState state = ACTIVE.get(entity.getUUID());
+        return (state == null ? 1.0f : state.scale()) * cnpcSizeMul(entity);
+    }
+
     public static boolean isActive(UUID entityUuid) {
         AuraState state = entityUuid == null ? null : ACTIVE.get(entityUuid);
         return state != null && state.on();
@@ -196,7 +230,12 @@ public final class NpcAuraClient {
         lastAdvancedFrame = Long.MIN_VALUE;
     }
 
-    @SubscribeEvent
+    /**
+     * HIGH, so the aura is drawn before the speech and dialogue bubbles of the same stage: they
+     * draw on top of everything, and an aura drawn after them showed through the answer
+     * bubbles (2026-10-02 owner).
+     */
+    @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.HIGH)
     public static void onRenderLevel(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) {
             return;
@@ -267,7 +306,7 @@ public final class NpcAuraClient {
             }
             // FULL appearance uses DMZ's native AuraRenderer while the body is in view.
             // When the camera culls it, draw this fallback so the column does not blank.
-            if (NpcFullDmzRenderer.isFull(entity) && inView.contains(entity.getId())) {
+            if (drawnByDmz(entity) && inView.contains(entity.getId())) {
                 continue;
             }
             Vec3 feet = visualFeet(mc, entity, partial);
@@ -342,7 +381,8 @@ public final class NpcAuraClient {
             Vec3 toCamera = cam.subtract(mid);
             float lookYaw = CameraAimHelper.yaw(entity, toCamera);
             pose.mulPose(Axis.YP.rotationDegrees(180.0f - lookYaw));
-            if (state.on()) {
+            // /xenoaura hd: the HD aura replaces this column on NPCs as it does on players.
+            if (state.on() && !net.bullettrain.xenonpcs.client.aura.HdAuraClient.replacesDmzAura()) {
                 drawColumn(pose, projection, shader, entity, state, scale, partial,
                         crossFactor, pitchSquash, fade * insideFade);
             }
@@ -546,8 +586,11 @@ public final class NpcAuraClient {
                                    float partial, float crossFactor, float pitchSquash, float fade) {
         float billboardAlpha = fade;
         float anim = (entity.tickCount + partial) * 0.5f;
-        List<NpcAuraResolver.Layer> activeLayers = state.layers().isEmpty()
-                ? List.of(new NpcAuraResolver.Layer("kakarot", 0, state.rgb())) : state.layers();
+        // Profiles carry the authoritative per-layer rendering switches; the legacy aura packet
+        // remains wire-compatible and continues to carry activation and effects.
+        List<NpcAuraResolver.Layer> resolvedLayers = NpcAuraResolver.resolve(NpcAppearanceClient.renderProfile(entity)).layers();
+        List<NpcAuraResolver.Layer> activeLayers = resolvedLayers.isEmpty()
+                ? List.of(new NpcAuraResolver.Layer("kakarot", 0, state.rgb())) : resolvedLayers;
         for (NpcAuraResolver.Layer layer : activeLayers) {
             int rgb = layer.rgb();
             float r = ((rgb >> 16) & 0xFF) / 255f;
@@ -563,6 +606,27 @@ public final class NpcAuraClient {
             ResourceLocation texture = ResourceLocation.fromNamespaceAndPath("dragonminez",
                     "textures/entity/races/aura/" + auraType + "_aura.png");
             pose.pushPose();
+            if (layer.threeD() && com.dragonminez.client.render.effects.Aura3DRenderer.isAvailable()) {
+                var style = com.dragonminez.client.render.effects.AuraStyle.resolve(
+                        com.dragonminez.common.config.FormConfig.Aura3DStyle.DEFAULT, new float[]{r, g, b});
+                float body = DMZ_AURA_SCALE * scale * layerScale;
+                float time = (entity.tickCount + partial) / 20.0f;
+                if (com.dragonminez.client.render.effects.Aura3DRenderer.isGod(auraType)) {
+                    com.dragonminez.client.render.effects.Aura3DRenderer.drawGod(pose, projection,
+                            style, fade, fade, time, body, body, body, 0.45f);
+                } else if (com.dragonminez.client.render.effects.Aura3DRenderer.isSmooth(auraType)) {
+                    com.dragonminez.client.render.effects.Aura3DRenderer.drawSmooth(pose, projection,
+                            style, fade, fade, time, time * style.waveSpeed, body, body, body, 0.01f);
+                } else {
+                    float width = body * com.dragonminez.client.render.effects.Aura3DRenderer.widthFactor(auraType);
+                    com.dragonminez.client.render.effects.Aura3DRenderer.drawSparking(pose, projection,
+                            style, fade, fade, time, width,
+                            body * com.dragonminez.client.render.effects.Aura3DRenderer.heightFactor(auraType),
+                            width, com.dragonminez.client.render.effects.Aura3DRenderer.pivotFactor(auraType), 0.02f);
+                }
+                pose.popPose();
+                continue;
+            }
             pose.scale(base, base * pitchSquash, base);
             pose.translate(0.0, DMZ_AURA_LIFT, 0.0);
             VertexBuffer billboard = AuraMeshFactory.getBillboardQuad();
@@ -588,11 +652,7 @@ public final class NpcAuraClient {
     }
 
     private static float cnpcSizeMul(LivingEntity entity) {
-        int size = NpcDisplayApply.getSize(entity);
-        if (size <= 0) {
-            return 1.0f;
-        }
-        return size / CNPC_DEFAULT_SIZE;
+        return NpcDisplayApply.sizeScale(entity, NpcAppearanceClient.renderProfile(entity));
     }
 
     private static ShaderInstance shader() {

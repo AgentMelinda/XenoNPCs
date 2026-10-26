@@ -5,11 +5,18 @@ import net.bullettrain.xenonpcs.compat.npc.NpcKiAim;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import net.bullettrain.xenonpcs.client.XenoServerClientState;
+import net.bullettrain.xenonpcs.client.combat.v3.V3ClientState;
+import net.minecraft.client.Minecraft;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 /**
  * Target: {@code LockOnEvent} acquire/persist/HUD.
@@ -22,6 +29,30 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  */
 @Mixin(value = LockOnEvent.class, remap = false)
 public abstract class DmzLockOnNpcMixin {
+    @Unique private static boolean xenopixels$v3WasActive;
+
+    @Inject(method = "toggleLock", at = @At("HEAD"), cancellable = true)
+    private static void xenopixels$v3RequestLock(CallbackInfo ci) {
+        if (!XenoServerClientState.v3Controller()) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && mc.screen == null) V3ClientState.toggleLock();
+        ci.cancel();
+    }
+
+    @Inject(method = "onClientTick", at = @At("HEAD"), cancellable = true)
+    private static void xenopixels$v3RetainApprovedTarget(ClientTickEvent.Post event, CallbackInfo ci) {
+        if (!XenoServerClientState.v3Controller()) {
+            if (xenopixels$v3WasActive) {
+                DmzLockOnAccessor.xenopixels$setLockedTarget(null);
+                DmzLockOnAccessor.xenopixels$setMarkerVisible(false);
+                xenopixels$v3WasActive = false;
+            }
+            return;
+        }
+        xenopixels$v3WasActive = true;
+        V3ClientState.syncNativeLock();
+        ci.cancel();
+    }
 
     @Redirect(
             method = "findTargetInFront",
@@ -39,7 +70,7 @@ public abstract class DmzLockOnNpcMixin {
     }
 
     @Redirect(
-            method = "lambda$findTargetInFront$4",
+            method = "lambda$findTargetInFront$5",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/world/entity/LivingEntity;isPickable()Z",
@@ -72,7 +103,7 @@ public abstract class DmzLockOnNpcMixin {
     }
 
     @ModifyConstant(
-            method = {"lambda$toggleLock$2", "lambda$onClientTick$3"},
+            method = {"lambda$toggleLock$2", "isLockValid"},
             constant = @Constant(doubleValue = 15.0)
     )
     private static double xenopixels$lockRangeBase(double original) {

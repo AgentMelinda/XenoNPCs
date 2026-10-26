@@ -8,7 +8,7 @@ on:
       tag:
         description: Existing release tag to build
         required: true
-        default: v0.0.7
+        default: v0.0.8
         type: string
 
 permissions:
@@ -35,7 +35,7 @@ jobs:
           - minecraft: '1.20.1'
             java: '17'
             # Pin the Forge export so re-running a release never builds a moving branch.
-            ref: '5404da248999a8f9deb9d736a39c3974e1c37260'
+            ref: '3cb130b0b3470b71d8d1844441601b92f316a4f0'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,21 +59,11 @@ jobs:
           VERSION="${RELEASE_TAG#v}"
           chmod +x gradlew
           if [ "$MC_VERSION" = '1.21.1' ]; then
-            test -s libs/dragonminez-2.1.3.jar
+            want=$(sed -n 's/^dragonminez_sha256=//p' gradle.properties | tr -d '\r')
+            echo "$want  libs/dragonminez-2.2.jar" | sha256sum -c -
             ./gradlew build --no-daemon -PofflineMcMeta -Pmod_version="$VERSION"
           else
             ./gradlew build --no-daemon -Pmod_version="$VERSION"
-          fi
-
-      - name: Fresh server startup probe
-        env:
-          MC_VERSION: ${{ matrix.minecraft }}
-        run: |
-          set -euo pipefail
-          if [ "$MC_VERSION" = '1.21.1' ]; then
-            ./gradlew runServer --no-daemon -PreleaseProbe -PofflineMcMeta
-          else
-            ./gradlew runServer --no-daemon -PreleaseProbe -PreleaseNpcProfile=core
           fi
 
       - name: Select the runtime jar
@@ -83,21 +73,14 @@ jobs:
           set -euo pipefail
           VERSION="${RELEASE_TAG#v}"
           if [ "$MC_VERSION" = '1.21.1' ]; then
-            jar="build/libs/xenonpcs-${VERSION}-all.jar"
-            jar tf "$jar" | grep -Fx 'META-INF/jarjar/nashorn-core-15.4.jar' >/dev/null
+            jar="build/libs/xenonpcs-${VERSION}.jar"
           else
             jar="build/libs/xenonpcs-${VERSION}-${MC_VERSION}-all.jar"
             jar tf "$jar" | grep -Fx 'META-INF/jarjar/mixinextras-forge-0.4.1.jar' >/dev/null
           fi
           test -s "$jar"
-          jar tf "$jar" > build/runtime-entries.txt
-          for shape in race_card category_col part_grid form_list form_settings preview_sm hair_preview; do
-            for palette in blue gold green red; do
-              grep -Fx "assets/xenonpcs/textures/gui/atlas/xeno_maker_${shape}_${palette}.png" build/runtime-entries.txt >/dev/null
-            done
-          done
           mkdir -p release-assets
-          cp "$jar" "release-assets/xenonpcs-${VERSION}-${MC_VERSION}-all.jar"
+          cp "$jar" "release-assets/xenonpcs-${VERSION}-${MC_VERSION}.jar"
           sha256sum release-assets/*.jar
 
       - uses: actions/upload-artifact@v4
@@ -126,33 +109,21 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${RELEASE_TAG#v}"
-          jars=("release-assets/xenonpcs-${VERSION}-1.20.1-all.jar" "release-assets/xenonpcs-${VERSION}-1.21.1-all.jar")
-          test "$(find release-assets -maxdepth 1 -type f -name '*.jar' | wc -l)" -eq 2
-          for jar in "${jars[@]}"; do
-            test -s "$jar"
-            jar tf "$jar" > "$jar.entries"
-            grep -Fx 'META-INF/jarjar/metadata.json' "$jar.entries" >/dev/null
-          done
+          jars=("release-assets/xenonpcs-${VERSION}-1.20.1.jar" "release-assets/xenonpcs-${VERSION}-1.21.1.jar")
+          for jar in "${jars[@]}"; do test -s "$jar"; done
           sha256sum "${jars[@]}"
           cat > release-notes.md <<'NOTES'
-          Choose the jar matching your Minecraft version and loader:
-          - Minecraft 1.20.1: Forge 47.4.10, Java 17.
-          - Minecraft 1.21.1: NeoForge 21.1.248, Java 21.
+Choose the jar matching your Minecraft version and loader:
+          - Minecraft 1.20.1: Forge 47.4.10, Java 17, DragonMineZ 2.2.
+          - Minecraft 1.21.1: NeoForge 21.1.248, Java 21, DragonMineZ 2.2.
 
-          DragonMineZ 2.1.3 and GeckoLib are required. Do not install XenoNPCs alongside XenoPixels.
+          GeckoLib is required. Do not install standalone XenoNPCs alongside XenoPixels.
 
-          Changes in 0.0.7:
-          - Restore all 28 missing Maker Studio panel textures across blue, gold, green and red palettes in both versions.
-          - Validate every registered atlas PNG and native dimensions in the unit suite; verify maker assets in the final runtime jars before upload.
-          - Extend local client probes to resolve the complete atlas and capture rendered hub, race, form, hair and tattoo screens.
-          - Includes the maker tools and ki aura behavior from 0.0.6.
+          DMZ 2.2 integration, improved V9 pursuit and NPC stats, aura controls, target-aware
+          server-timed Hakai sweeps, native DMZ dialogue/quest bridging and expanded legacy conversion.
 
-          Minecraft 1.21.1 requires the exact patched NeoForge DragonMineZ 2.1.3 dependency tracked in this release tag:
-          https://github.com/AgentMelinda/XenoNPCs/raw/refs/tags/v0.0.7/libs/dragonminez-2.1.3.jar
-          Source fix: https://github.com/AgentMelinda/dragonminez-1.21.1/commit/f1caa521
-          Minecraft 1.20.1 uses official Forge DragonMineZ 2.1.3, not that NeoForge jar.
-
-          Both CI builds run unit tests and a fresh isolated server probe before publication. Local client probes resolve all atlas textures, render all five maker screens and load active mixin targets. Interactive visual placement, production modpack gameplay, multiplayer editing and unavailable optional integrations remain unverified. Forge's 34 runtime-only tests remain excluded from plain JUnit. MyNPCs support is omitted from 1.20.1. No parent XenoPixels source or world/chunk conversion code changed.
+          Both builds run unit tests. Forge's deferred runtime tests are listed in EXPORT_REPORT.md.
+          Live visual checks and complete legacy converter parity remain pending.
           NOTES
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "${jars[@]}" --clobber

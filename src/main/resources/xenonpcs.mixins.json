@@ -6,9 +6,7 @@
   "mixins": [
     "common.KiLaserAimMixin",
     "common.KiWaveAimMixin",
-    "common.StatsProviderNpcGetMixin",
-    "common.StatsNpcHostMixin",
-    "common.StatsDataNpcHostMixin"
+    "common.StatsProviderNpcGetMixin"
   ],
   "client": [
     "client.DmzLockOnAccessor",
@@ -16,7 +14,9 @@
     "client.DmzStudioPoseMixin",
     "client.DmzStudioClipFinishMixin",
     "client.DmzResourceSyncPartialLoadMixin",
-    "client.DmzScriptAnimSpeedMixin"
+    "client.DmzScriptAnimSpeedMixin",
+    "client.MinecraftAuraRimGlowMixin",
+    "client.EntityAuraRimGlowColorMixin"
   ],
   "injectors": {
     "defaultRequire": 1

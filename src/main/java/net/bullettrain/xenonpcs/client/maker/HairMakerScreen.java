@@ -72,9 +72,11 @@ public final class HairMakerScreen extends ScaledScreen {
     private boolean toolDragActive;
     private boolean appearanceDirty = true;
 
-    private String status = "Hair Studio (2.1.3) — Outliner | Grow/Rotate/Curve | Inspector. "
+    private String status = "Hair Studio (2.2) — Outliner | Grow/Rotate/Curve | Inspector. "
             + "Ctrl+Z undo. Pixel paint = next PR.";
     private int statusColor = MUTED;
+    private AtlasButton applyButton;
+    private Boolean applyAvailable;
     private int styleScroll;
     private int strandScroll;
     private String selectedPresetId = "";
@@ -121,7 +123,7 @@ public final class HairMakerScreen extends ScaledScreen {
     private EditBox extraColorBox;
 
     public HairMakerScreen(Screen parent) {
-        this(parent, MakerTargets.initialHair(parent));
+        this(parent, HairMakerDocument.oneStrandDemo());
     }
 
     public HairMakerScreen(Screen parent, HairMakerDocument document) {
@@ -132,7 +134,6 @@ public final class HairMakerScreen extends ScaledScreen {
                            java.util.function.Consumer<HairMakerDocument> packSink) {
         super(Component.literal("Hair Editor"));
         this.parent = parent;
-        MakerTargets.inherit(this, parent);
         this.document = document == null ? new HairMakerDocument() : document;
         this.packSink = packSink;
     }
@@ -150,7 +151,7 @@ public final class HairMakerScreen extends ScaledScreen {
     @Override
     protected void init() {
         super.init();
-        preview.bindScreen(this, minecraft);
+        preview.bindLocalPlayer(minecraft);
 
         // Studio chrome: Outliner | Viewport | Inspector (2.2 design idea; Xeno layout math).
         bannerW = XenoAtlasSprites.get(BANNER).width();
@@ -244,8 +245,9 @@ public final class HairMakerScreen extends ScaledScreen {
                 Component.literal("Export"), TOOL, b -> exportNow()));
         AtlasButton apply = new AtlasButton(originX + compact + g, footerY,
                 Component.literal("Apply"), TOOL, b -> applyNow());
-        apply.active = document.isApplyEnabled();
-        apply.setTooltip(Tooltip.create(Component.literal(HairMakerDocument.APPLY_ENABLED_TOOLTIP)));
+        applyButton = apply;
+        applyAvailable = null;
+        updateApplyAvailability();
         addRenderableWidget(apply);
         addRenderableWidget(new AtlasButton(originX + (compact + g) * 2, footerY,
                 Component.literal("Undo"), TOOL, b -> undoEdit()));
@@ -830,6 +832,24 @@ public final class HairMakerScreen extends ScaledScreen {
         }
     }
 
+    private void updateApplyAvailability() {
+        if (applyButton == null) return;
+        boolean available = document.isApplyEnabled() && HairApplyService.canApplyClient();
+        if (applyAvailable != null && applyAvailable == available) return;
+        applyAvailable = available;
+        applyButton.active = available;
+        String tooltip = applyButton.active
+                ? HairMakerDocument.APPLY_ENABLED_TOOLTIP + " " + HairApplyService.APPLY_REQUIREMENTS
+                : HairApplyService.APPLY_UNAVAILABLE;
+        applyButton.setTooltip(Tooltip.create(Component.literal(tooltip)));
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        updateApplyAvailability();
+    }
+
     private void applyNow() {
         if (!document.isApplyEnabled()) {
             status = HairMakerDocument.APPLY_DISABLED_TOOLTIP;
@@ -837,9 +857,9 @@ public final class HairMakerScreen extends ScaledScreen {
             return;
         }
         try {
-            MakerTargets.applyHair(this, document);
-            status = "Sent replace-current-style for " + displayStyle(document.style())
-                    + " (full slot overwrite; " + HairMakerDocument.APPLY_STATUS + ").";
+            HairApplyService.applyClient(document);
+            status = "Requested " + displayStyle(document.style())
+                    + " replacement. Requires creation, recustomization wish, or nearby Popo.";
             statusColor = OK;
         } catch (Exception e) {
             status = "Apply failed: " + e.getMessage();

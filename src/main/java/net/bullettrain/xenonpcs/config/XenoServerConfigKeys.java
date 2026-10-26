@@ -61,6 +61,9 @@ public final class XenoServerConfigKeys {
     private static final Map<String, String> ALIAS = new LinkedHashMap<>();
 
     static {
+        integer("npcHitRecoveryTicks", "NPC hit recovery before turning/attacking (0-200 ticks; 0 disables)",
+                () -> XenoServerConfig.npcHitRecoveryTicks,
+                v -> XenoServerConfig.npcHitRecoveryTicks = Math.max(0, Math.min(200, v)), "npcHitRecovery");
         bool("bt3CombatEnabled", "Master combat switch",
                 () -> XenoServerConfig.bt3CombatEnabled,
                 v -> XenoServerConfig.bt3CombatEnabled = v,
@@ -81,7 +84,7 @@ public final class XenoServerConfigKeys {
                 () -> XenoServerConfig.hakaiEnabled,
                 v -> XenoServerConfig.hakaiEnabled = v,
                 "hakai");
-        bool("hakaiTargetGlow", "Outline the Hakai target while the channel runs",
+        bool("hakaiTargetGlow", "Glow the Hakai target during channels and at planet impact",
                 () -> XenoServerConfig.hakaiTargetGlow,
                 v -> XenoServerConfig.hakaiTargetGlow = v,
                 "hakaiglow");
@@ -128,6 +131,18 @@ public final class XenoServerConfigKeys {
                 () -> XenoServerConfig.hakaiBlockFadeTicks,
                 v -> XenoServerConfig.hakaiBlockFadeTicks = Math.max(0, Math.min(100, v)),
                 "hakaiblockfade");
+        bool("hakaiBlockSweep", "Area Hakai erases blocks and ship blocks with a top-to-bottom sweep",
+                () -> XenoServerConfig.hakaiBlockSweep,
+                v -> XenoServerConfig.hakaiBlockSweep = v,
+                "hakaisweep");
+        integer("hakaiSweepBlocksPerTick", "Most blocks the Hakai sweep erases per tick",
+                () -> XenoServerConfig.hakaiSweepBlocksPerTick,
+                v -> XenoServerConfig.hakaiSweepBlocksPerTick = Math.max(32, Math.min(16384, v)),
+                "hakaisweepbudget");
+        flt("hakaiSweepSpeed", "Hakai block sweep speed (blocks per second)",
+                () -> XenoServerConfig.hakaiSweepSpeed,
+                v -> XenoServerConfig.hakaiSweepSpeed = Math.max(0.5f, Math.min(64f, v)),
+                "hakaisweepspeed");
         bool("hakaiBlocksUnbreakable", "Area Hakai erases unbreakable blocks too (never bedrock)",
                 () -> XenoServerConfig.hakaiBlocksUnbreakable,
                 v -> XenoServerConfig.hakaiBlocksUnbreakable = v,
@@ -172,6 +187,10 @@ public final class XenoServerConfigKeys {
                 () -> XenoServerConfig.hakaiMantle,
                 v -> XenoServerConfig.hakaiMantle = v,
                 "mantle");
+        bool("hakaiMantleNoKnockback", "Hakaishin: punches and kicks cannot knock the wearer back",
+                () -> XenoServerConfig.hakaiMantleNoKnockback,
+                v -> XenoServerConfig.hakaiMantleNoKnockback = v,
+                "mantleknockback");
         bool("uiDodge", "Ultra Instinct: auto-dodge by mastery (none against another UI)",
                 () -> XenoServerConfig.uiDodge,
                 v -> XenoServerConfig.uiDodge = v,
@@ -196,6 +215,10 @@ public final class XenoServerConfigKeys {
                 () -> XenoServerConfig.hakaiFadeEnabled,
                 v -> XenoServerConfig.hakaiFadeEnabled = v,
                 "hakaifade");
+        bool("hakaiOriginArbitration", "Keep one Hakai dissolve origin per target while a sweep is erasing it",
+                () -> XenoServerConfig.hakaiOriginArbitration,
+                v -> XenoServerConfig.hakaiOriginArbitration = v,
+                "hakaiorigin");
         flt("hakaiFadeMinAlpha", "Lowest alpha a fading Hakai body may reach (0 = invisible)",
                 () -> XenoServerConfig.hakaiFadeMinAlpha,
                 v -> XenoServerConfig.hakaiFadeMinAlpha = Math.max(0f, Math.min(1f, v)),
@@ -284,6 +307,14 @@ public final class XenoServerConfigKeys {
                 () -> XenoServerConfig.effekseerKiImpacts,
                 v -> XenoServerConfig.effekseerKiImpacts = v,
                 "kiimpact", "kifx");
+        bool("effekseerKiAttacks", "Owned Combat V3 ki: true = AAA HD effects, false = native DragonMineZ rendering (legacy; prefer kiAttackVisualMode)",
+                () -> XenoServerConfig.effekseerKiAttacks,
+                v -> {
+                    XenoServerConfig.effekseerKiAttacks = v;
+                    XenoServerConfig.kiAttackVisualMode = v ? "aaa" : "dmz";
+                },
+                "hdki", "kiattacks");
+        // String modes use the bool bridge above plus /xenokiattacks; registry string helper may be absent.
         flt("effekseerKiImpactScale", "Ki explosion impact size (0.05-5)",
                 () -> XenoServerConfig.effekseerKiImpactScale,
                 v -> XenoServerConfig.effekseerKiImpactScale = XenoServerConfig.effectScale(v),
@@ -324,7 +355,7 @@ public final class XenoServerConfigKeys {
                 () -> XenoServerConfig.hakaiSilhouetteColor,
                 v -> XenoServerConfig.hakaiSilhouetteColor = v & 0xFFFFFF,
                 "hakaisilhouettecolor");
-        rgb("hakaiGlowColor", "Packed RGB for the Hakai target outline",
+        rgb("hakaiGlowColor", "Packed RGB for the Hakai target and planet impact glow",
                 () -> XenoServerConfig.hakaiGlowColor,
                 v -> XenoServerConfig.hakaiGlowColor = v & 0xFFFFFF,
                 "hakaiglowcolor");
@@ -388,9 +419,9 @@ public final class XenoServerConfigKeys {
                 () -> (float) XenoServerConfig.vanishSide,
                 v -> XenoServerConfig.vanishSide = Math.max(0.0, Math.min(8.0, v)),
                 "vanishside");
-        flt("chargePunchKnockback", "Charged punch knockback distance (1 = original, 0-10)",
+        flt("chargePunchKnockback", "Charged punch knockback distance (1 = original, 0-30)",
                 () -> XenoServerConfig.chargePunchKnockback,
-                v -> XenoServerConfig.chargePunchKnockback = Math.max(0f, Math.min(10f, v)),
+                v -> XenoServerConfig.chargePunchKnockback = Math.max(0f, Math.min(30f, v)),
                 "punchkb", "punchknockback");
         bool("chargePunchParabolic", "Charged punch throws the target in an arc (parabola)",
                 () -> XenoServerConfig.chargePunchParabolic,
@@ -406,7 +437,7 @@ public final class XenoServerConfigKeys {
                 "kicktap");
         flt("kickKnockbackScale", "Kick knockback distance scale",
                 () -> XenoServerConfig.kickKnockbackScale,
-                v -> XenoServerConfig.kickKnockbackScale = Math.max(0.1f, Math.min(8f, v)),
+                v -> XenoServerConfig.kickKnockbackScale = Math.max(0.1f, Math.min(30f, v)),
                 "kickkb", "kickknockback");
         integer("comboAnimGeneration", "Combat animation generation: 1 original, 2 twins, 3 BT3, 4 centred BT3 rush",
                 () -> XenoServerConfig.comboAnimGeneration,
@@ -848,6 +879,10 @@ public final class XenoServerConfigKeys {
                 () -> XenoServerConfig.trainingDummyEnabled,
                 v -> XenoServerConfig.trainingDummyEnabled = v,
                 "dummy", "trainingdummy");
+        bool("trainingDummySkillPoints", "Training dummies pay a skill point at 25, 100 and 250 hits",
+                () -> XenoServerConfig.trainingDummySkillPoints,
+                v -> XenoServerConfig.trainingDummySkillPoints = v,
+                "dummypoints");
         bool("parallelQuestEnabled", "Parallel quests",
                 () -> XenoServerConfig.parallelQuestEnabled,
                 v -> XenoServerConfig.parallelQuestEnabled = v,
@@ -866,7 +901,7 @@ public final class XenoServerConfigKeys {
                 v -> XenoServerConfig.npcCommandsIgnoreCommandBlockSetting = v,
                 "npccommands", "npccommandblock");
         text("combatControllerMode",
-                "Combat controller: legacy (default, pre-manual Xeno) or bt3_manual. "
+                "Combat controller: legacy (default, v1), bt3_manual, or v2 (XenoCombat v2). "
                         + "Prefer /xenocombat mode so live combat state is swept on switch",
                 XenoServerConfig::normalizedCombatControllerMode,
                 v -> XenoServerConfig.combatControllerMode = XenoServerConfig.normalizeCombatControllerMode(v),
@@ -943,6 +978,9 @@ public final class XenoServerConfigKeys {
         integer("kiDestructionBlocksPerTick", "Synchronous cube-check budget",
                 () -> XenoServerConfig.kiDestructionBlocksPerTick,
                 v -> XenoServerConfig.kiDestructionBlocksPerTick = Math.max(64, v));
+        bool("kiPlanetShellDestructionEnabled", "Allow DMZ Ki attacks to break planet shells in Sable bodies",
+                () -> XenoServerConfig.kiPlanetShellDestructionEnabled,
+                v -> XenoServerConfig.kiPlanetShellDestructionEnabled = v);
 
         integer("kiDurationTicks", "All-type fire window (0 = stock)",
                 () -> XenoServerConfig.kiDurationTicks,

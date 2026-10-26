@@ -27,6 +27,13 @@ public final class ModEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<XenoNpcEntity>> XENO_NPC_TRANSPORTER = npc("xeno_npc_transporter", XenoNpcRole.TRANSPORTER);
     public static final DeferredHolder<EntityType<?>, EntityType<XenoNpcEntity>> XENO_NPC_BANK = npc("xeno_npc_bank", XenoNpcRole.BANK);
 
+    public static final DeferredHolder<EntityType<?>, EntityType<net.bullettrain.xenonpcs.npc.projectile.XenoItemProjectileEntity>> NPC_ITEM_PROJECTILE =
+            ENTITIES.register("npc_item_projectile", () ->
+                    EntityType.Builder.<net.bullettrain.xenonpcs.npc.projectile.XenoItemProjectileEntity>of(
+                                    net.bullettrain.xenonpcs.npc.projectile.XenoItemProjectileEntity::new, MobCategory.MISC)
+                            .sized(0.25f, 0.25f).clientTrackingRange(8).updateInterval(1)
+                            .build(XenoNpcsMod.MOD_ID + ":npc_item_projectile"));
+
     private ModEntities() {}
 
     public static void register(IEventBus bus) {

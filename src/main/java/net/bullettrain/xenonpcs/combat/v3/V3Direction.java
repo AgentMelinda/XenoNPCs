@@ -1,0 +1,12 @@
+package net.bullettrain.xenonpcs.combat.v3;
+
+/** V3 directional intent. Append only. */
+public enum V3Direction {
+    NONE, FORWARD, BACK, LEFT, RIGHT,
+    /** Grab throw / vertical launch: jump chord. */
+    UP, DOWN;
+    public static V3Direction decode(int ordinal) {
+        if (ordinal < 0 || ordinal >= values().length) throw new IllegalArgumentException("Unknown V3 direction");
+        return values()[ordinal];
+    }
+}

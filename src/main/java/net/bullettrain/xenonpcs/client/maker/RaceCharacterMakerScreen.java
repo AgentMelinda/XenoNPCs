@@ -7,6 +7,7 @@ import net.bullettrain.xenonpcs.client.ui.atlas.AtlasCycle;
 import net.bullettrain.xenonpcs.client.ui.atlas.ColorSwatch;
 import net.bullettrain.xenonpcs.client.ui.atlas.InlineColorPicker;
 import net.bullettrain.xenonpcs.client.ui.atlas.XenoAtlasSprites;
+import net.bullettrain.xenonpcs.command.XenoPermissions;
 import net.bullettrain.xenonpcs.dmz.race.RaceAppearanceCatalog;
 import net.bullettrain.xenonpcs.dmz.race.RaceLabelRegistry;
 import net.bullettrain.xenonpcs.dmz.race.RaceLabels;
@@ -84,7 +85,6 @@ public final class RaceCharacterMakerScreen extends ScaledScreen {
     private final InlineColorPicker colorPicker = new InlineColorPicker();
 
     private String selectedRace = "saiyan";
-    private boolean npcSeeded;
     private String gender = "male";
     private RaceMakerParts.Category category = RaceMakerParts.Category.BODY;
     private String selectedPartId = "";
@@ -149,7 +149,6 @@ public final class RaceCharacterMakerScreen extends ScaledScreen {
     public RaceCharacterMakerScreen(Screen parent) {
         super(Component.literal("Race Character Maker"));
         this.parent = parent;
-        MakerTargets.inherit(this, parent);
     }
 
     @Override
@@ -165,16 +164,7 @@ public final class RaceCharacterMakerScreen extends ScaledScreen {
     @Override
     protected void init() {
         super.init();
-        preview.bindScreen(this, minecraft);
-        var target = MakerTargets.get(this);
-        if (target != null && !npcSeeded) {
-            npcSeeded = true;
-            var p = target.draft(); var a = p.appearance;
-            selectedRace = p.raceId; gender = a.gender; bodyType = a.bodyType;
-            eyesType = a.eyesType; noseType = a.noseType; mouthType = a.mouthType; tattooType = a.tattooType;
-            skinColorHex = a.bodyColor; skin2Hex = a.bodyColor2; skin3Hex = a.bodyColor3;
-            eyeColorHex = a.eye1Color; eye2Hex = a.eye2Color; hairColorHex = p.hairColor; hairPreset = p.hairStyleId;
-        }
+        preview.bindLocalPlayer(minecraft);
 
         bannerW = XenoAtlasSprites.get(BANNER).width();
         bannerH = XenoAtlasSprites.get(BANNER).height();
@@ -291,14 +281,12 @@ public final class RaceCharacterMakerScreen extends ScaledScreen {
                     "Create Race disabled — see " + CREATE_RACE_EVIDENCE)));
         } else if (!mayCreateRace()) {
             create.setTooltip(Tooltip.create(Component.literal(
-                    "Requires " + "operator level 2")));
+                    "Requires " + XenoPermissions.MAKER_RACE_CREATE.getNodeName())));
         } else {
             create.setTooltip(Tooltip.create(Component.literal(
                     "Writes races/<id>/character.json plus Display name / Description literals (not en_us keys).")));
         }
         addRenderableWidget(create);
-        if (MakerTargets.get(this) != null) addRenderableWidget(new AtlasButton(originX, footerY - 24,
-                Component.literal("Apply NPC"), TOOL, b -> applyToNpc()));
 
         boolean custom = RacePackService.isCustomPack(selectedRace);
         AtlasButton save = new AtlasButton(originX + 92 + compact + g, footerY,
@@ -749,62 +737,74 @@ public final class RaceCharacterMakerScreen extends ScaledScreen {
     }
 
     private void saveRace() {
-        submitRace(net.bullettrain.xenonpcs.network.maker.MakerNetwork.Operation.UPDATE, selectedRace);
+        if (!mayCreateRace()) {
+            status = "Missing permission " + XenoPermissions.MAKER_RACE_CREATE.getNodeName();
+            statusColor = WARN;
+            return;
+        }
+        if (!RacePackService.isCustomPack(selectedRace)) {
+            status = "Pick a created race pack to edit (default DMZ races are read-only here).";
+            statusColor = WARN;
+            return;
+        }
+        RacePackService.CreateResult result =
+                RacePackService.updateRacePack(selectedRace, currentTemplate(), currentParts(),
+                        currentLabels(selectedRace));
+        if (!result.ok()) {
+            status = result.message();
+            statusColor = WARN;
+            return;
+        }
+        pushLabelsToServer(result.raceId());
+        boolean loaded = reloadDmz("Saved " + result.raceId());
+        if (!loaded) {
+            return;
+        }
+        status = "Updated " + result.raceId() + " at "
+                + RacePackService.characterRelativePath(result.raceId())
+                + (dmzHasRace(result.raceId()) ? " — DMZ has it loaded." : " — folder written.");
+        statusColor = OK;
     }
 
     private void createRace() {
-        submitRace(net.bullettrain.xenonpcs.network.maker.MakerNetwork.Operation.CREATE,
-                createIdBox == null ? createIdText : createIdBox.getValue());
+        if (!CREATE_RACE_READY) {
+            status = "Create Race blocked — " + CREATE_RACE_EVIDENCE;
+            statusColor = WARN;
+            return;
+        }
+        if (!mayCreateRace()) {
+            status = "Missing permission " + XenoPermissions.MAKER_RACE_CREATE.getNodeName();
+            statusColor = WARN;
+            return;
+        }
+        String id = createIdBox == null ? createIdText : createIdBox.getValue();
+        RacePackService.CreateResult result =
+                RacePackService.createRacePack(id, currentTemplate(), currentParts(), currentLabels(id));
+        if (!result.ok()) {
+            status = result.message();
+            statusColor = WARN;
+            return;
+        }
+        pushLabelsToServer(result.raceId());
+        String reloadNote = "";
+        try {
+            ConfigManager.reload();
+            reloadNote = dmzHasRace(result.raceId())
+                    ? " DMZ loaded it."
+                    : " Folder written; DMZ list did not include it yet.";
+        } catch (Throwable t) {
+            reloadNote = " Pack written but ConfigManager.reload failed: " + t.getMessage();
+        }
+        String shown = RaceLabelRegistry.displayName(result.raceId());
+        status = "Created " + result.raceId()
+                + (shown.isBlank() ? "" : " (“" + shown + "”)")
+                + " at " + RacePackService.characterRelativePath(result.raceId()) + "."
+                + reloadNote + " Save is on — this is a custom pack.";
+        statusColor = OK;
+        refreshRaces();
+        selectRace(result.raceId(), false);
     }
 
-    private void submitRace(net.bullettrain.xenonpcs.network.maker.MakerNetwork.Operation operation, String id) {
-        var json = new com.google.gson.JsonObject();
-        json.add("template", MakerRaceClient.GSON.toJsonTree(currentTemplate()));
-        json.add("parts", MakerRaceClient.GSON.toJsonTree(currentParts()));
-        json.add("labels", MakerRaceClient.GSON.toJsonTree(currentLabels(id)));
-        status = "Waiting for the server..."; statusColor = GOLD;
-        MakerRaceClient.request(operation, id, json, result -> {
-            status = result.message(); statusColor = result.success() ? OK : WARN;
-            if (result.success()) { refreshRaces(); selectRace(result.race(), false); }
-        });
-    }
-    private void submitCatalog(net.bullettrain.xenonpcs.network.maker.MakerNetwork.Operation operation, com.google.gson.JsonObject json) {
-        status = "Waiting for the server..."; statusColor = GOLD;
-        MakerRaceClient.request(operation, selectedRace, json, result -> {
-            status = result.message(); statusColor = result.success() ? OK : WARN;
-            if (result.success()) { refreshParts(); schedulePreview(); rebuild(); }
-        });
-    }
-    private void applyToNpc() {
-        var target = MakerTargets.get(this);
-        if (target == null) return;
-        try {
-            target.apply(p -> {
-                if (!java.util.Objects.equals(p.raceId, selectedRace) || p.hairStyleId != hairPreset) p.hairCode = "";
-                p.raceId = selectedRace; p.appearance.mode = net.bullettrain.xenonpcs.compat.npc.NpcDmzAppearance.Mode.FULL;
-                p.appearance.gender = gender; p.appearance.bodyType = bodyType;
-                p.appearance.eyesType = eyesType; p.appearance.noseType = noseType;
-                p.appearance.mouthType = mouthType; p.appearance.tattooType = tattooType;
-                p.appearance.bodyColor = skinColorHex; p.appearance.bodyColor2 = skin2Hex; p.appearance.bodyColor3 = skin3Hex;
-                p.appearance.eye1Color = eyeColorHex; p.appearance.eye2Color = eye2Hex;
-                p.hairColor = hairColorHex; p.hairStyleId = hairPreset; p.hairEnabled = true;
-                p.auraColor = net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile.parseHexColor(auraHex).orElse(p.auraColor);
-                p.formGroup = ""; p.formId = ""; p.stackGroup = ""; p.stackId = "";
-                p.selectedFormGroup = ""; p.selectedFormId = ""; p.selectedStackGroup = ""; p.selectedStackId = "";
-                if (!selectedHairStyleId.isBlank()) {
-                    var catalog = RaceAppearanceCatalog.loadLive(selectedRace);
-                    var style = catalog.hairById(selectedHairStyleId);
-                    if (style != null) {
-                        try {
-                            var hair = catalog.readHair(RacePackService.dmzRoot(), style);
-                            p.hairCode = com.dragonminez.common.hair.HairManager.toCode(HairApplyService.toCustomHair(HairApplyService.plan(hair)));
-                            p.hairStyleId = 0;
-                        } catch (java.io.IOException ex) { throw new IllegalStateException("Race hair could not be loaded", ex); }
-                    }
-                }
-            });
-        } catch (RuntimeException error) { status = error.getMessage(); statusColor = WARN; }
-    }
     private RacePackTemplate currentTemplate() {
         return new RacePackTemplate(
                 true, true, true, "human", "kakarot",
@@ -841,15 +841,58 @@ public final class RaceCharacterMakerScreen extends ScaledScreen {
     }
 
     private void saveHairToCatalog(HairMakerDocument document) {
-        var json = new com.google.gson.JsonObject();
-        json.add("document", document.toCatalogJson()); json.addProperty("style", selectedHairStyleId);
-        submitCatalog(net.bullettrain.xenonpcs.network.maker.MakerNetwork.Operation.SAVE_HAIR, json);
+        if (!RacePackService.isCustomPack(selectedRace)) {
+            status = "Pick a created race pack to store hair styles.";
+            statusColor = WARN;
+            return;
+        }
+        try {
+            RaceAppearanceCatalog catalog = RaceAppearanceCatalog.loadLive(selectedRace);
+            if (!selectedHairStyleId.isBlank() && catalog.hairById(selectedHairStyleId) != null) {
+                catalog.updateHairStyle(RacePackService.dmzRoot(), selectedHairStyleId, document);
+            } else {
+                var style = catalog.addHairStyle(RacePackService.dmzRoot(), document.name(), document);
+                selectedHairStyleId = style.id();
+            }
+            catalog.save(RacePackService.dmzRoot());
+            status = "Saved hair style into races/" + selectedRace + "/catalog/.";
+            statusColor = OK;
+            schedulePreview();
+            refreshParts();
+        } catch (Exception e) {
+            status = "Hair catalog save failed: " + e.getMessage();
+            statusColor = WARN;
+        }
     }
 
     private void addBodyType() {
-        var json = new com.google.gson.JsonObject();
-        json.addProperty("gender", gender); json.addProperty("color", skinColorHex);
-        submitCatalog(net.bullettrain.xenonpcs.network.maker.MakerNetwork.Operation.ADD_BODY, json);
+        if (!mayCreateRace() || !RacePackService.isCustomPack(selectedRace)) {
+            status = "Create a custom race pack first, then Add Body.";
+            statusColor = WARN;
+            return;
+        }
+        try {
+            RaceAppearanceCatalog catalog = RaceAppearanceCatalog.loadLive(selectedRace);
+            var body = catalog.addGeneratedBody(RacePackService.dmzRoot(), gender, skinColorHex);
+            catalog.save(RacePackService.dmzRoot());
+            ConfigManager.reload();
+            RaceAssetPackClient.reload().whenComplete((ignored, error) -> {
+                if (error != null) {
+                    status = "Body saved; texture reload failed: " + error.getMessage();
+                    statusColor = WARN;
+                }
+            });
+            bodyType = body.index();
+            selectedPartId = "body:" + body.index();
+            status = "Added " + body.label() + " (" + body.texturePath() + "). Reloading textures for the DMZ wizard.";
+            statusColor = OK;
+            refreshParts();
+            schedulePreview();
+            rebuild();
+        } catch (Exception e) {
+            status = "Add Body failed: " + e.getMessage();
+            statusColor = WARN;
+        }
     }
 
     private void openTaotto() {
@@ -870,7 +913,16 @@ public final class RaceCharacterMakerScreen extends ScaledScreen {
                 name == null ? "" : name, desc == null ? "" : desc);
     }
 
-
+    private void pushLabelsToServer(String raceId) {
+        RaceLabels labels = currentLabels(raceId);
+        if (labels.hasLiteral()) {
+            try {
+                RaceLabelNetwork.save(raceId, labels.displayName(), labels.description());
+            } catch (Throwable ignored) {
+                // Dedicated-server sync is best-effort; sidecar already landed locally.
+            }
+        }
+    }
 
     private boolean reloadDmz(String prefix) {
         try {
@@ -901,7 +953,7 @@ public final class RaceCharacterMakerScreen extends ScaledScreen {
             if (server != null) {
                 ServerPlayer sp = server.getPlayerList().getPlayer(mc.player.getUUID());
                 if (sp != null) {
-                    return sp.hasPermissions(2);
+                    return XenoPermissions.hasPermission(sp, XenoPermissions.MAKER_RACE_CREATE);
                 }
             }
         }

@@ -51,12 +51,6 @@ public final class MakerPreviewController {
 
     private Minecraft minecraft;
     private LocalPlayer boundPlayer;
-    private MakerTargets.Target npcTarget;
-    private net.bullettrain.xenonpcs.features.taotto.TaottoDocument tattooPreview;
-    public void tattooPreview(net.bullettrain.xenonpcs.features.taotto.TaottoDocument document) { tattooPreview = document; }
-    public void bindScreen(net.minecraft.client.gui.screens.Screen screen, Minecraft mc) {
-        bindLocalPlayer(mc); npcTarget = MakerTargets.get(screen);
-    }
     private GlowTarget glowTarget = GlowTarget.NONE;
     private String glowId = "";
     private String highlightFace = "";
@@ -276,21 +270,6 @@ public final class MakerPreviewController {
             drawGlowRect(g, x, y, w, h);
         }
 
-        if (npcTarget != null) {
-            var entity = npcTarget.entity();
-            if (entity == null) {
-                g.drawCenteredString(Minecraft.getInstance().font, "NPC is no longer loaded", x + w / 2, y + h / 2, MUTED);
-                return;
-            }
-            int size = Math.max(20, Math.round(h * 0.35f * zoom));
-            lastEntityX = Math.round(x + w / 2f + panX); lastEntityY = Math.round(y + h - 12 + panY); lastScale = size;
-            var draft = appearance.npcDraft(npcTarget.draft());
-            if (tattooPreview != null) draft.appearance.taotto = tattooPreview.copy();
-            net.bullettrain.xenonpcs.client.compat.npc.NpcAppearanceClient.withPreview(entity.getUUID(), draft, () ->
-                net.bullettrain.xenonpcs.client.compat.npc.NpcFullDmzRenderer.renderPreview(entity, g,
-                    lastEntityX, lastEntityY, size, yaw, 0f, partial, false, appearance.formData(), appearance.stackForm()));
-            return;
-        }
         LocalPlayer player = resolvePlayer();
         Font font = Minecraft.getInstance().font;
         if (player == null) {
@@ -346,7 +325,7 @@ public final class MakerPreviewController {
         try {
             appearance.apply(player);
             net.bullettrain.xenonpcs.dmz.form.MakerFormPreviewContext.draw(
-                    MakerPreviewAppearance.characterOf(player), appearance.formData(), appearance.stackForm(),
+                    MakerPreviewAppearance.characterOf(player), appearance.formData(),
                     () -> EntityPreviewRenderContext.renderEntityInInventory(
                             g, entityX, entityY, (float) scale, translation, pose, camera, player));
             drew = true;

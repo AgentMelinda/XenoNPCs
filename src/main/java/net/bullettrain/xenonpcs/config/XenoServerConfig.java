@@ -58,8 +58,11 @@ public final class XenoServerConfig {
      * <p>Bumped to 23 (2026-09-20) for independent rush vs lift combo knock travel keys.
      *
      * <p>Bumped to 24 (2026-09-26) for the XenoNPC size-linked hitbox switch.
+     *
+     * <p>Bumped to 27 (2026-10-03) for {@code tournamentOutOfBoundsLose} (default false; geometry-only v1).
+     * Bumped to 26 (2026-10-03) for tournament queue+KotH keys ({@code tournamentEnabled=false}).
      */
-    private static final int CURRENT_CONFIG_VERSION = 25;
+    private static final int CURRENT_CONFIG_VERSION = 28;
 
     // --- HUD / DMZ ---
     /**
@@ -70,6 +73,8 @@ public final class XenoServerConfig {
      * accident, and because a killed NPC respawns anyway - deletion is its own action.
      */
     public static boolean xenoNpcKillCommandImmune = true;
+    /** Server ticks during which a damaged NPC cannot turn or resume an attack (0-200). */
+    public static int npcHitRecoveryTicks = 10;
 
     /**
      * Whether a dialogue option may run a server command.
@@ -251,6 +256,19 @@ public final class XenoServerConfig {
     /** Mentor pairing assist ({@code /xenomentor}). */
     public static boolean mentorEnabled = true;
 
+    // --- Tournament (queue + KotH) ---
+    /** Master switch for {@code /xenotourney}. Off by default. */
+    public static boolean tournamentEnabled = false;
+    /** Dimension id string for static arenas, e.g. {@code minecraft:overworld}. */
+    public static String tournamentArenaDimension = "minecraft:overworld";
+    /** Static arena BlockPos list as {@code x,y,z;x,y,z;…}. */
+    public static String tournamentArenaPositions = "0,64,0;8,64,0";
+    /**
+     * When true, leaving the active match AABB during a fight would auto-lose (follow-on).
+     * v1 stores bounds only; leave false until auto-KO PR ships.
+     */
+    public static boolean tournamentOutOfBoundsLose = false;
+
     // --- Copycat glowstone power ---
     /** Require Forge Energy for copycat glowstone light. False keeps the block always lit. */
     public static boolean copycatForgeEnergyEnabled = false;
@@ -319,8 +337,21 @@ public final class XenoServerConfig {
     public static boolean effekseerSparkingSmooth = false;
     /** A ki attack's explosion plays the punch impact instead of DMZ's explosion visual. */
     public static boolean effekseerKiImpacts = true;
+    /** Owned Combat V3 ki uses HD Effekseer effects; off restores native DragonMineZ rendering. */
+    public static boolean effekseerKiAttacks = true;
+    /** Strike Ki presentation: dmz | aaa | neweffects (neweffects aliases aaa HD). */
+    public static String kiAttackVisualMode = "aaa";
     /** Size of that impact (on top of the blast's own size). */
     public static float effekseerKiImpactScale = 1.0f;
+
+    /** Resolved Strike Ki presentation mode (falls back to legacy {@link #effekseerKiAttacks}). */
+    public static net.bullettrain.xenonpcs.combat.v3.ki.KiAttackVisualMode kiAttackVisual() {
+        try {
+            return net.bullettrain.xenonpcs.combat.v3.ki.KiAttackVisualMode.parse(kiAttackVisualMode);
+        } catch (RuntimeException ignored) {
+            return net.bullettrain.xenonpcs.combat.v3.ki.KiAttackVisualMode.fromLegacy(effekseerKiAttacks);
+        }
+    }
     /**
      * Per-effect size on top of its category size, keyed by slot folder name (for example
      * {@code missile_explosion}); /xenoset <slot> <scale>. 2026-09-29 owner: sparking_flight 3.5.
@@ -639,6 +670,12 @@ public final class XenoServerConfig {
     public static int hakaiBlockFadeTicks = 20;
     /** Everything but bedrock can be erased; false spares every unbreakable block (the first rule). */
     public static boolean hakaiBlocksUnbreakable = true;
+    /** Area Hakai erases blocks (and Sable ship blocks) with a plane sweeping top to bottom instead of the crack fade. */
+    public static boolean hakaiBlockSweep = false;
+    /** Sweep speed in blocks per second (the whole sweep is still clamped to 2..20 s). */
+    public static float hakaiSweepSpeed = 6.0f;
+    /** Most blocks the sweep erases in one tick; the sweep's duration stretches to fit big razes. */
+    public static int hakaiSweepBlocksPerTick = 1024;
     /** Size of the area Hakai's own effect, on top of the sphere's size. */
     public static float hakaiAreaFxScale = 1.0f;
     /** Area Hakai never erases blocks of a DragonMineZ structure (Kami's Lookout, Goku's house...). */
@@ -652,6 +689,10 @@ public final class XenoServerConfig {
     public static boolean ueProjectileAura = true;
     public static boolean uePunchBreak = true;
     public static boolean hakaiMantle = true;
+    /** The mantle also stops punches and kicks pushing its wearer (2026-10-02 owner). */
+    public static boolean hakaiMantleNoKnockback = true;
+    /** Training dummies pay a skill point at 25, 100 and 250 hits (off since 2026-10-02). */
+    public static boolean trainingDummySkillPoints = false;
     public static boolean uiDodge = true;
     /** Multiplies every Ultra Instinct dodge chance (0-2). */
     public static float uiDodgeScale = 1.0f;
@@ -665,6 +706,12 @@ public final class XenoServerConfig {
     public static int hakaiRazeHeight = 48;
     /** Fade the Hakai victim's body as the channel charges. */
     public static boolean hakaiFadeEnabled = true;
+    /**
+     * One origin per target while a sweep is actively erasing it: the source that captured the crosshair point keeps
+     * it until nothing has raised that target for three ticks, so a second channel cannot teleport the dissolve line
+     * mid-sweep. Off restores the pre-0.5.23 behaviour, where every cast rewrites the point.
+     */
+    public static boolean hakaiOriginArbitration = true;
     /**
      * Lowest alpha the fade may reach. 0 lets the body disappear entirely; the 0.02 default
      * leaves a faint silhouette so the target is still readable at full charge.
@@ -849,6 +896,8 @@ public final class XenoServerConfig {
     /** Independent caps for DMZ's synchronous cubic block scans. */
     public static float kiDestructionMaxRadius = 32.0f;
     public static int kiDestructionBlocksPerTick = 4096;
+    /** Allow DMZ Ki attacks to break invisible planet shells in Sable sub-levels. */
+    public static boolean kiPlanetShellDestructionEnabled = false;
     /**
      * Hard cap on {@code KiExplosionEntity} max radius after overcharge / charge scaling.
      * {@code 0} leaves it uncapped. Block work still uses {@link #kiDestructionMaxRadius}.
@@ -1359,6 +1408,7 @@ public final class XenoServerConfig {
         d.npcCommandsIgnoreCommandBlockSetting = npcCommandsIgnoreCommandBlockSetting;
         d.combatControllerMode = normalizedCombatControllerMode();
         d.bt3CombatEnabled = bt3CombatEnabled;
+        d.npcHitRecoveryTicks = npcHitRecoveryTicks;
         d.bt3ComboEnabled = bt3ComboEnabled;
         d.bt3CinematicRushEnabled = bt3CinematicRushEnabled;
         d.bt3VanishEnabled = bt3VanishEnabled;
@@ -1405,6 +1455,9 @@ public final class XenoServerConfig {
         d.hakaiBlocksPerTick = hakaiBlocksPerTick;
         d.hakaiBlockFadeTicks = hakaiBlockFadeTicks;
         d.hakaiBlocksUnbreakable = hakaiBlocksUnbreakable;
+        d.hakaiBlockSweep = hakaiBlockSweep;
+        d.hakaiSweepSpeed = hakaiSweepSpeed;
+        d.hakaiSweepBlocksPerTick = hakaiSweepBlocksPerTick;
         d.hakaiAreaFxScale = hakaiAreaFxScale;
         d.hakaiSpareDmzStructures = hakaiSpareDmzStructures;
         d.hakaiBlockShape = hakaiBlockShape;
@@ -1414,6 +1467,8 @@ public final class XenoServerConfig {
         d.ueProjectileAura = ueProjectileAura;
         d.uePunchBreak = uePunchBreak;
         d.hakaiMantle = hakaiMantle;
+        d.hakaiMantleNoKnockback = hakaiMantleNoKnockback;
+        d.trainingDummySkillPoints = trainingDummySkillPoints;
         d.uiDodge = uiDodge;
         d.uiDodgeScale = uiDodgeScale;
         d.hakaishinNeedsHakai = hakaishinNeedsHakai;
@@ -1421,6 +1476,7 @@ public final class XenoServerConfig {
         d.hakaiSparedBlocks = hakaiSparedBlocks;
         d.hakaiRazeHeight = hakaiRazeHeight;
         d.hakaiFadeEnabled = hakaiFadeEnabled;
+        d.hakaiOriginArbitration = hakaiOriginArbitration;
         d.hakaiFadeMinAlpha = hakaiFadeMinAlpha;
         d.hakaiFadeCurve = hakaiFadeCurve;
         d.hakaiFadeRestoreTicks = hakaiFadeRestoreTicks;
@@ -1437,6 +1493,10 @@ public final class XenoServerConfig {
         d.trainingDummyEnabled = trainingDummyEnabled;
         d.parallelQuestEnabled = parallelQuestEnabled;
         d.mentorEnabled = mentorEnabled;
+        d.tournamentEnabled = tournamentEnabled;
+        d.tournamentArenaDimension = tournamentArenaDimension;
+        d.tournamentArenaPositions = tournamentArenaPositions;
+        d.tournamentOutOfBoundsLose = tournamentOutOfBoundsLose;
         d.copycatForgeEnergyEnabled = copycatForgeEnergyEnabled;
         d.copycatEnergyCapacity = copycatEnergyCapacity;
         d.copycatMaxReceiveFePerTick = copycatMaxReceiveFePerTick;
@@ -1460,6 +1520,8 @@ public final class XenoServerConfig {
         d.effekseerExplosionScale = effekseerExplosionScale;
         d.effekseerSparkingSmooth = effekseerSparkingSmooth;
         d.effekseerKiImpacts = effekseerKiImpacts;
+        d.effekseerKiAttacks = effekseerKiAttacks;
+        d.kiAttackVisualMode = kiAttackVisualMode;
         d.effekseerKiImpactScale = effekseerKiImpactScale;
         d.effekseerSlotScales = new LinkedHashMap<>(effekseerSlotScales);
         d.thrusterImpulseGuardEnabled = thrusterImpulseGuardEnabled;
@@ -1598,6 +1660,7 @@ public final class XenoServerConfig {
         d.kiFullGameplayScaling = kiFullGameplayScaling;
         d.kiDestructionMaxRadius = kiDestructionMaxRadius;
         d.kiDestructionBlocksPerTick = kiDestructionBlocksPerTick;
+        d.kiPlanetShellDestructionEnabled = kiPlanetShellDestructionEnabled;
         d.kiExplosionMaxRadius = kiExplosionMaxRadius;
         d.vanishMaxRange = vanishMaxRange;
         d.chaseMaxRange = chaseMaxRange;
@@ -1726,6 +1789,7 @@ public final class XenoServerConfig {
         npcCommandsIgnoreCommandBlockSetting = d.npcCommandsIgnoreCommandBlockSetting;
         combatControllerMode = normalizeCombatControllerMode(d.combatControllerMode);
         bt3CombatEnabled = d.bt3CombatEnabled;
+        npcHitRecoveryTicks = Math.max(0, Math.min(200, d.npcHitRecoveryTicks));
         bt3ComboEnabled = d.bt3ComboEnabled;
         bt3CinematicRushEnabled = d.bt3CinematicRushEnabled;
         bt3VanishEnabled = d.bt3VanishEnabled;
@@ -1760,10 +1824,19 @@ public final class XenoServerConfig {
         hakaiEnabled = d.hakaiEnabled;
         hakaiTargetGlow = d.hakaiTargetGlow;
         hakaiFadeEnabled = d.hakaiFadeEnabled;
+        hakaiOriginArbitration = d.hakaiOriginArbitration;
         bt3TransformImpactEnabled = d.bt3TransformImpactEnabled;
         trainingDummyEnabled = d.trainingDummyEnabled;
         parallelQuestEnabled = d.parallelQuestEnabled;
         mentorEnabled = d.mentorEnabled;
+        tournamentEnabled = d.tournamentEnabled;
+        tournamentArenaDimension = d.tournamentArenaDimension == null || d.tournamentArenaDimension.isBlank()
+                ? "minecraft:overworld"
+                : d.tournamentArenaDimension.trim();
+        tournamentArenaPositions = d.tournamentArenaPositions == null || d.tournamentArenaPositions.isBlank()
+                ? "0,64,0;8,64,0"
+                : d.tournamentArenaPositions.trim();
+        tournamentOutOfBoundsLose = d.tournamentOutOfBoundsLose;
         copycatForgeEnergyEnabled = d.copycatForgeEnergyEnabled;
         copycatEnergyCapacity = Math.max(1_000,
                 d.copycatEnergyCapacity <= 0 ? 100_000 : d.copycatEnergyCapacity);
@@ -1792,6 +1865,9 @@ public final class XenoServerConfig {
                 ? Math.max(0.05f, Math.min(50.0f, d.effekseerExplosionScale)) : 15.0f;
         effekseerSparkingSmooth = d.effekseerSparkingSmooth;
         effekseerKiImpacts = d.effekseerKiImpacts;
+        effekseerKiAttacks = d.effekseerKiAttacks;
+        kiAttackVisualMode = d.kiAttackVisualMode == null || d.kiAttackVisualMode.isBlank()
+                ? (effekseerKiAttacks ? "aaa" : "dmz") : d.kiAttackVisualMode;
         effekseerKiImpactScale = effectScale(d.effekseerKiImpactScale);
         effekseerSlotScales.clear();
         effekseerSlotScales.putAll(DEFAULT_SLOT_SCALES());
@@ -1899,6 +1975,9 @@ public final class XenoServerConfig {
         hakaiBlocksPerTick = Math.max(1, Math.min(512, d.hakaiBlocksPerTick));
         hakaiBlockFadeTicks = Math.max(0, Math.min(100, d.hakaiBlockFadeTicks));
         hakaiBlocksUnbreakable = d.hakaiBlocksUnbreakable;
+        hakaiBlockSweep = d.hakaiBlockSweep;
+        hakaiSweepSpeed = d.hakaiSweepSpeed > 0f ? Math.max(0.5f, Math.min(64f, d.hakaiSweepSpeed)) : 6.0f;
+        hakaiSweepBlocksPerTick = d.hakaiSweepBlocksPerTick > 0 ? Math.max(32, Math.min(16384, d.hakaiSweepBlocksPerTick)) : 1024;
         hakaiSpareDmzStructures = d.hakaiSpareDmzStructures;
         hakaiBlockShape = normaliseHakaiBlockShape(d.hakaiBlockShape);
         formPassives = d.formPassives;
@@ -1907,6 +1986,8 @@ public final class XenoServerConfig {
         ueProjectileAura = d.ueProjectileAura;
         uePunchBreak = d.uePunchBreak;
         hakaiMantle = d.hakaiMantle;
+        hakaiMantleNoKnockback = d.hakaiMantleNoKnockback;
+        trainingDummySkillPoints = d.trainingDummySkillPoints;
         uiDodge = d.uiDodge;
         hakaishinNeedsHakai = d.hakaishinNeedsHakai;
         hakaiSparedBlocks = d.hakaiSparedBlocks == null ? "dragonminez:otherworld_cloud" : d.hakaiSparedBlocks;
@@ -1983,6 +2064,7 @@ public final class XenoServerConfig {
         kiFullGameplayScaling = d.kiFullGameplayScaling;
         kiDestructionMaxRadius = positiveFinite(d.kiDestructionMaxRadius, 32f);
         kiDestructionBlocksPerTick = Math.max(64, d.kiDestructionBlocksPerTick);
+        kiPlanetShellDestructionEnabled = d.kiPlanetShellDestructionEnabled;
         kiExplosionMaxRadius = nonNegativeFinite(d.kiExplosionMaxRadius, 64f);
         vanishMaxRange = d.vanishMaxRange > 0 ? d.vanishMaxRange : 7.0;
         chaseMaxRange = d.chaseMaxRange < 0 ? 0.0 : d.chaseMaxRange;
@@ -3127,6 +3209,7 @@ public final class XenoServerConfig {
         public boolean npcCommandsIgnoreCommandBlockSetting = false;
         public String combatControllerMode = "legacy";
         public boolean bt3CombatEnabled = true;
+        public int npcHitRecoveryTicks = 10;
         public boolean bt3ComboEnabled = true;
         public boolean bt3CinematicRushEnabled = true;
         public boolean bt3VanishEnabled = true;
@@ -3162,6 +3245,10 @@ public final class XenoServerConfig {
         public boolean trainingDummyEnabled = true;
         public boolean parallelQuestEnabled = true;
         public boolean mentorEnabled = true;
+        public boolean tournamentEnabled = false;
+        public String tournamentArenaDimension = "minecraft:overworld";
+        public String tournamentArenaPositions = "0,64,0;8,64,0";
+        public boolean tournamentOutOfBoundsLose = false;
         public boolean copycatForgeEnergyEnabled = false;
         public int copycatEnergyCapacity = 100_000;
         public int copycatMaxReceiveFePerTick = 1_000;
@@ -3185,6 +3272,8 @@ public final class XenoServerConfig {
         public float effekseerExplosionScale = 15.0f;
         public boolean effekseerSparkingSmooth = false;
         public boolean effekseerKiImpacts = true;
+        public boolean effekseerKiAttacks = true;
+        public String kiAttackVisualMode = "aaa";
         public float effekseerKiImpactScale = 1.0f;
         public Map<String, Float> effekseerSlotScales = DEFAULT_SLOT_SCALES();
 
@@ -3292,6 +3381,9 @@ public final class XenoServerConfig {
         public int hakaiBlocksPerTick = 48;
         public int hakaiBlockFadeTicks = 20;
         public boolean hakaiBlocksUnbreakable = true;
+        public boolean hakaiBlockSweep = false;
+        public float hakaiSweepSpeed = 6.0f;
+        public int hakaiSweepBlocksPerTick = 1024;
         public float hakaiAreaFxScale = 1.0f;
         public boolean hakaiSpareDmzStructures = true;
         public String hakaiBlockShape = "sphere";
@@ -3301,6 +3393,8 @@ public final class XenoServerConfig {
         public boolean ueProjectileAura = true;
         public boolean uePunchBreak = true;
         public boolean hakaiMantle = true;
+        public boolean hakaiMantleNoKnockback = true;
+        public boolean trainingDummySkillPoints = false;
         public boolean uiDodge = true;
         public float uiDodgeScale = 1.0f;
         public boolean hakaishinNeedsHakai = false;
@@ -3308,6 +3402,7 @@ public final class XenoServerConfig {
         public String hakaiSparedDimensions = "dragonminez:otherworld,dragonminez:time_chamber,dragonminez:sacredkaiplanet";
         public int hakaiRazeHeight = 48;
         public boolean hakaiFadeEnabled = true;
+        public boolean hakaiOriginArbitration = true;
         public float hakaiFadeMinAlpha = 0.02f;
         public float hakaiFadeCurve = 1.0f;
         public int hakaiFadeRestoreTicks = 40;
@@ -3376,6 +3471,7 @@ public final class XenoServerConfig {
         public boolean kiFullGameplayScaling = false;
         public float kiDestructionMaxRadius = 32.0f;
         public int kiDestructionBlocksPerTick = 4096;
+        public boolean kiPlanetShellDestructionEnabled = false;
         public float kiExplosionMaxRadius = 64.0f;
         public double vanishMaxRange = 7.0;
         public double chaseMaxRange = 0.0;

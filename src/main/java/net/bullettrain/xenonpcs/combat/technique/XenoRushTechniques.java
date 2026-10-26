@@ -1,0 +1,126 @@
+package net.bullettrain.xenonpcs.combat.technique;
+
+import com.dragonminez.common.stats.techniques.PredefinedTechniques;
+import com.dragonminez.common.stats.techniques.StrikeAttackData;
+import com.dragonminez.common.stats.StatsCapability;
+import com.dragonminez.common.stats.StatsData;
+import com.dragonminez.common.stats.StatsProvider;
+import net.bullettrain.xenonpcs.XenoNpcsMod;
+import net.minecraft.server.level.ServerPlayer;
+import net.bullettrain.xenonpcs.command.XenoPermissions;
+import net.bullettrain.xenonpcs.combat.anim.Bt3AnimationIntent;
+
+import java.util.Locale;
+
+/**
+ * DMZ-native strike definitions for Xeno rush attacks.
+ *
+ * <p>Registration only places the data in DMZ's own predefined strike maps. Unlocking, equipping,
+ * slot selection, and casting remain owned by DragonMineZ.
+ */
+public final class XenoRushTechniques {
+    public static final String RUSH_LEFT = XenoNpcsMod.MOD_ID + ":rush_left";
+    public static final String RUSH_RIGHT = XenoNpcsMod.MOD_ID + ":rush_right";
+    public static final String RUSH_BREAKER = XenoNpcsMod.MOD_ID + ":rush_breaker";
+    public static final String RUSH_FINISHER = XenoNpcsMod.MOD_ID + ":rush_finisher";
+
+    private XenoRushTechniques() {
+    }
+
+    /** Login/data-load may unlock the four rush strikes only when auto-unlock is on or the rush skill is granted. */
+    public static boolean shouldUnlockRushKit(boolean autoUnlock, int rushSkillLevel) {
+        return autoUnlock || rushSkillLevel >= 1;
+    }
+
+    public static void register() {
+        UltimateFinisherTechnique.register();
+        register(RUSH_LEFT, "Xeno Rush Left", "combat.xeno_dmz_punch_left_v4", 1.0f, 8);
+        register(RUSH_RIGHT, "Xeno Rush Right", "combat.xeno_dmz_punch_right_v4", 1.0f, 8);
+        register(RUSH_BREAKER, "Xeno Rush Breaker", "combat.xeno_cross_left_v2", 1.25f, 12);
+        register(RUSH_FINISHER, "Xeno Rush Finisher", "combat.xeno_heavy_finish_v4", 1.6f, 20);
+    }
+
+    /**
+     * Grants the four registered rush definitions to every player.
+     *
+     * <p>These strikes are Xeno entries injected into DMZ's predefined strike registry, so no DMZ
+     * progression path can ever unlock them. Gating this on an operator permission left them
+     * permanently locked for ordinary players — including in single-player without cheats — which
+     * made rush look broken rather than unearned. {@link XenoPermissions#BT3_RUSH_UNLOCK_BYPASS}
+     * stays declared for compatibility but is no longer consulted here.
+     */
+    public static void unlockRushTechniques(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        StatsData data = StatsProvider.get(StatsCapability.INSTANCE, player).orElse(null);
+        if (data == null || data.getTechniques() == null) {
+            return;
+        }
+        var techniques = data.getTechniques();
+        UltimateFinisherTechnique.unlock(player);
+        for (String id : RUSH_IDS) {
+            StrikeAttackData strike = PredefinedTechniques.STRIKE_REGISTRY.get(id);
+            if (strike != null) {
+                techniques.unlockTechnique(strike);
+            }
+        }
+    }
+
+    private static final String[] RUSH_IDS = {
+            RUSH_LEFT, RUSH_RIGHT, RUSH_BREAKER, RUSH_FINISHER
+    };
+
+    /** True for the four Xeno-owned strike ids, so overrides never touch a DMZ or player technique. */
+    public static boolean isRushId(String id) {
+        if (id == null) return false;
+        for (String rush : RUSH_IDS) {
+            if (rush.equals(id)) return true;
+        }
+        return false;
+    }
+
+    /** Deterministic four-beat sequence used by the delayed-W rush path. */
+    public static String idForRushStep(int step) {
+        return RUSH_IDS[Math.floorMod(Math.max(1, step) - 1, RUSH_IDS.length)];
+    }
+
+    public static Bt3AnimationIntent animationForRushStep(int step) {
+        return switch (Math.floorMod(Math.max(1, step) - 1, RUSH_IDS.length)) {
+            case 0 -> Bt3AnimationIntent.JAB_LEFT;
+            case 1 -> Bt3AnimationIntent.JAB_RIGHT;
+            case 2 -> Bt3AnimationIntent.CROSS_LEFT;
+            default -> Bt3AnimationIntent.HEAVY_FINISH;
+        };
+    }
+
+    public static int slotForRushId(String id) {
+        if (RUSH_LEFT.equals(id)) return 0;
+        if (RUSH_RIGHT.equals(id)) return 1;
+        if (RUSH_BREAKER.equals(id)) return 4;
+        if (RUSH_FINISHER.equals(id)) return 5;
+        return -1;
+    }
+
+    private static void register(String id, String name, String animation, float damage, int duration) {
+        String key = id.toLowerCase(Locale.ROOT);
+        if (PredefinedTechniques.STRIKE_REGISTRY.containsKey(key)) {
+            return;
+        }
+        StrikeAttackData data = new StrikeAttackData();
+        data.setId(key);
+        data.setName(name);
+        data.setAuthor("XenoPixels");
+        data.setDamageMultiplier(damage);
+        data.setAnimationId(animation);
+        data.setDurationTicks(duration);
+        data.setBaseCost(10.0);
+        // DMZ's applyConfigDefaults overwrites castTime and cooldown from its own per-id config,
+        // so it has to run before ours rather than after. The cooldown actually used at cast time
+        // comes from getActualCooldown, which re-reads that config every call — StrikeAttackCostMixin
+        // is what makes the Xeno value stick.
+        data.applyConfigDefaults();
+        data.setCooldown(Math.max(4, duration));
+        PredefinedTechniques.STRIKE_REGISTRY.put(key, data);
+    }
+}

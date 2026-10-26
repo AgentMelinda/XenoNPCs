@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "kind": "planet",
+  "display_name": "End Probe",
+  "radius_blocks": 24,
+  "orbit": {
+    "semi_major": 256,
+    "eccentricity": 0,
+    "mean_anomaly": 0,
+    "period_seconds": 1200
+  },
+  "dimension": "minecraft:the_end",
+  "handoff_anchor_y": 80,
+  "exit_altitude": 384
+}
