@@ -113,7 +113,7 @@ jobs:
           for jar in "${jars[@]}"; do test -s "$jar"; done
           sha256sum "${jars[@]}"
           cat > release-notes.md <<'NOTES'
-Choose the jar matching your Minecraft version and loader:
+          Choose the jar matching your Minecraft version and loader:
           - Minecraft 1.20.1: Forge 47.4.10, Java 17, DragonMineZ 2.2.
           - Minecraft 1.21.1: NeoForge 21.1.248, Java 21, DragonMineZ 2.2.
 
