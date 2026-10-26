@@ -131,9 +131,6 @@ public final class FormMakerScreen extends ScaledScreen {
     public FormMakerScreen(Screen parent) {
         super(Component.literal("Form Maker"));
         this.parent = parent;
-        var target = MakerTargets.get(parent);
-        if (target != null) { race = target.draft().raceId; group = target.draft().selectedFormGroup; selectedForm = target.draft().selectedFormId; }
-        MakerTargets.inherit(this, parent);
     }
 
     @Override
@@ -149,7 +146,7 @@ public final class FormMakerScreen extends ScaledScreen {
     @Override
     protected void init() {
         super.init();
-        preview.bindScreen(this, minecraft);
+        preview.bindLocalPlayer(minecraft);
 
         MakerPreviewLayout.Columns layout = MakerPreviewLayout.compute(
                 getUiWidth(), getUiHeight(), FORM_LIST, FORM_SETTINGS);
@@ -194,8 +191,6 @@ public final class FormMakerScreen extends ScaledScreen {
 
         addSettingsWidgets();
 
-        if (MakerTargets.get(this) != null) addRenderableWidget(new AtlasButton(originX, footerY - 24,
-                Component.literal("Apply NPC"), TOOL, b -> applyToNpc()));
         int compact = AtlasButton.nativeWidth(TOOL);
         int g = 4;
         addRenderableWidget(new AtlasButton(originX, footerY,
@@ -230,8 +225,7 @@ public final class FormMakerScreen extends ScaledScreen {
             appearance.auraColor(aura);
         }
         if (group != null && !group.isBlank() && selectedForm != null && !selectedForm.isBlank()) {
-            if (document != null && document.kind() == DmzFormKind.STACK) appearance.activeStackForm(group, selectedForm);
-            else appearance.activeForm(group, selectedForm);
+            appearance.activeForm(group, selectedForm);
         }
         if (document != null) appearance.formData(document.previewData());
         preview.setAppearance(appearance);
@@ -480,21 +474,6 @@ public final class FormMakerScreen extends ScaledScreen {
         }
     }
 
-    private void applyToNpc() {
-        var target = MakerTargets.get(this);
-        if (target == null || document == null || !document.created() || selectedForm.isBlank() || saveGate.dirty() || DmzFormEditorClientState.inFlight()) {
-            status = "Save a valid form before applying it to an NPC."; statusColor = WARN; return;
-        }
-        try { target.apply(p -> {
-            p.raceId = race;
-            p.appearance.mode = net.bullettrain.xenonpcs.compat.npc.NpcDmzAppearance.Mode.FULL;
-            if (document.kind() == DmzFormKind.STACK) {
-                p.selectedStackGroup = group; p.selectedStackId = selectedForm; p.stackGroup = group; p.stackId = selectedForm;
-            } else {
-                p.selectedFormGroup = group; p.selectedFormId = selectedForm; p.formGroup = group; p.formId = selectedForm;
-            }
-        }); } catch (RuntimeException error) { status = error.getMessage(); statusColor = WARN; }
-    }
     private void saveNow() {
         if (document == null) {
             status = "Nothing to save.";

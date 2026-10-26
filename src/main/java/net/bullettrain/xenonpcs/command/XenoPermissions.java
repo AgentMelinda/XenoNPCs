@@ -77,6 +77,41 @@ public final class XenoPermissions {
             op("xenostats.limit", "Use /xenostats limit — raise or lift the DragonMineZ stat cap");
 
     // -------------------------------------------------------------------------
+    // /xenorole  (server — OP default)
+    // -------------------------------------------------------------------------
+    public static final PermissionNode<Boolean> ROLE_GET =
+            op("role.get", "Use /xenorole get — read a player's XenoPixels role");
+    public static final PermissionNode<Boolean> ROLE_SET =
+            op("role.set", "Use /xenorole set|clear — grant or clear a player's XenoPixels role");
+
+    // -------------------------------------------------------------------------
+    // /xenotourney  (join/leave/status/arenas everyone; result/start OP)
+    // -------------------------------------------------------------------------
+    public static final PermissionNode<Boolean> TOURNEY_JOIN =
+            everyone("tourney.join", "Use /xenotourney join — enter the tournament queue");
+    public static final PermissionNode<Boolean> TOURNEY_LEAVE =
+            everyone("tourney.leave", "Use /xenotourney leave — leave the tournament queue");
+    public static final PermissionNode<Boolean> TOURNEY_STATUS =
+            everyone("tourney.status", "Use /xenotourney status — view queue and active match");
+    public static final PermissionNode<Boolean> TOURNEY_ARENAS =
+            everyone("tourney.arenas", "Use /xenotourney arenas — list static arena positions");
+    public static final PermissionNode<Boolean> TOURNEY_RESULT =
+            op("tourney.result", "Use /xenotourney result|start — admin match results / start challenge");
+
+    // -------------------------------------------------------------------------
+    // /xenomaker  (Unified Maker Studio — open is client/everyone; create stays OP)
+    // -------------------------------------------------------------------------
+    /** Open hub/editors. Client-default allow so Brigadier does not hide /xenomaker. */
+    public static final PermissionNode<Boolean> MAKER_OPEN =
+            client("maker.open", "Open Unified Maker Studio (/xenomaker)");
+    public static final PermissionNode<Boolean> MAKER_RACE_CREATE =
+            op("maker.race.create", "Create a new race pack from Race Character Maker");
+    public static final PermissionNode<Boolean> RACE_EDIT =
+            op("race.edit", "Use /xenorace name|desc|list — set custom race picker literals");
+    public static final PermissionNode<Boolean> RACE_GIVE =
+            op("race.give", "Use /xenorace give — assign a race to a player");
+
+    // -------------------------------------------------------------------------
     // /xenoform  (server — OP default)
     // -------------------------------------------------------------------------
     public static final PermissionNode<Boolean> XENOFORM_STATUS =
@@ -150,12 +185,18 @@ public final class XenoPermissions {
     public static final PermissionNode<Boolean> XENOCOMBAT_STATUS =
             op("xenocombat.status", "Use /xenocombat status");
     public static final PermissionNode<Boolean> XENOCOMBAT_MODE =
-            op("xenocombat.mode", "Use /xenocombat mode legacy|bt3_manual");
+            op("xenocombat.mode", "Use /xenocombat mode legacy|bt3_manual|v2");
     public static final PermissionNode<Boolean> XENOCOMBAT_RELOAD =
             op("xenocombat.reload", "Use /xenocombat reload");
     /** Gates driving the manual BT3 controller once the server has it enabled. */
     public static final PermissionNode<Boolean> COMBAT_BT3_MANUAL_USE =
             everyone("combat.bt3manual.use", "Use the manual BT3 combat controller");
+    /** Gates driving XenoCombat v2 once the server has it enabled. */
+    public static final PermissionNode<Boolean> COMBAT_V2_USE =
+            everyone("combat.v2.use", "Use XenoCombat v2");
+    /** Gates the grab and throw under the legacy and manual controllers; v2 has its own node. */
+    public static final PermissionNode<Boolean> COMBAT_GRAB_USE =
+            everyone("combat.grab.use", "Grab and throw under the legacy and manual combat controllers");
 
     // -------------------------------------------------------------------------
     // /xenolock  (server — OP default)

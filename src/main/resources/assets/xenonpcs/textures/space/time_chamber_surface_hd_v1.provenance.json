@@ -1,0 +1,9 @@
+{
+  "created": "2026-10-15",
+  "generator": "tools/generate_space_textures.py (procedural, numpy)",
+  "seed": 20261027,
+  "use": "HD sphere map for the charted body time_chamber",
+  "projection": "Equirectangular 2:1; each pixel computed from its 3D sphere direction, seamless at the longitude edge and at the poles",
+  "upload": "2048x1024, four additional mip levels, trilinear filtering, repeat sampling",
+  "limitations": "Procedural stand-in, not surveyed or artist-made; replace by dropping a 2:1 map at the same path. White void with faint floor lines, after the Hyperbolic Time Chamber."
+}

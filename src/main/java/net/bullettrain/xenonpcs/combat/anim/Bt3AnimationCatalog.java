@@ -158,6 +158,11 @@ public final class Bt3AnimationCatalog {
 
         // Not bound to an intent, but shipped and therefore whitelisted.
         register(DmzAnimHelper.HAKAI_HOLD, DmzAnimHelper.HAKAI_FIRE);
+        register(net.bullettrain.xenonpcs.combat.v2.V2ChargeRules.PUNCH_HOLD,
+                net.bullettrain.xenonpcs.combat.v2.V2ChargeRules.PUNCH_FIRE,
+                net.bullettrain.xenonpcs.combat.v2.V2ChargeRules.KICK_HOLD,
+                net.bullettrain.xenonpcs.combat.v2.V2ChargeRules.KICK_FIRE);
+        register("combat.xeno_bt3_v3_grab_hold");
         Bt3RushResolver.all().forEach(definition -> register(definition.animation()));
     }
 

@@ -47,7 +47,6 @@ import java.util.Set;
 public class PilotSeatBlockEntity extends BlockEntity  implements AeroControlHost {
 
     /** How far the seat looks for engines to claim. */
-    private static final int ENGINE_SEARCH_RADIUS = 12;
 
     private AeroBus aeroBus = null;
     private AeroEnergyStorage aeroEnergy = null;

@@ -65,11 +65,9 @@ public abstract class StatsDataNpcHostMixin120 implements NpcStatsDataAccess {
         cir.setReturnValue(toughness != null ? toughness.getValue() : 0.0);
     }
 
-    @Redirect(method = {"getMaxDefense", "getDefense"},
-            // DMZ methods are named in its released jar, but this vanilla call is SRG-mapped.
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I",
-                    remap = true),
-            remap = false, require = 2, allow = 2)
+    @Redirect(method = {"getMaxDefense", "getDefense", "getFlatDefense", "getMaxFlatDefense"},
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I", remap = true),
+            remap = false, require = 1)
     private int xenonpcs$hostArmor(Player player) {
         LivingEntity host = this.xenonpcs$npcHost != null ? this.xenonpcs$npcHost : player;
         return host == null ? 0 : host.getArmorValue();

@@ -17,8 +17,8 @@ import java.util.Objects;
  * (or a copy of the race catalog) locally — same contract as DMZ custom race configs.
  */
 public final class RaceAssetPack {
-    public static final String PACK_FORMAT = "15";
-    public static final String PACK_ID = "xenonpcs_race_catalogs";
+    public static final String PACK_FORMAT = "34";
+    public static final String PACK_ID = "xenopixels_race_catalogs";
 
     private RaceAssetPack() {
     }

@@ -37,7 +37,7 @@ import java.util.UUID;
  * where 1.21.1 has item components. {@link #hasNbt}/{@link #removeNbt} act on the keys that are not
  * vanilla's own (1.21.1's custom-data component), and {@link #getItemNbt} is a detached save snapshot.
  */
-public final class XenoItemAdapter implements IItemStack {
+public class XenoItemAdapter implements IItemStack {
     static final int MAX_LORE_LINES = 64;
     static final int MAX_ENCHANT_LEVEL = 255;
 
@@ -181,7 +181,8 @@ public final class XenoItemAdapter implements IItemStack {
     /** Tag keys vanilla 1.20.1 keeps for what 1.21.1 stores as its own components, not custom data. */
     static final Set<String> VANILLA_KEYS = Set.of(ItemStack.TAG_DAMAGE, "Unbreakable", "CanDestroy", "CanPlaceOn",
             ItemStack.TAG_DISPLAY, ItemStack.TAG_ENCH, "StoredEnchantments", "RepairCost", "HideFlags",
-            "AttributeModifiers", "CustomModelData", "BlockEntityTag", "BlockStateTag", "Trim");
+            "AttributeModifiers", "CustomModelData", "BlockEntityTag", "BlockStateTag", "Trim",
+            "pages", "title", "author", "generation", "resolved", "filtered_pages", "filtered_title", "SkullOwner");
 
     @Override
     public boolean hasNbt() {
@@ -208,13 +209,13 @@ public final class XenoItemAdapter implements IItemStack {
 
     // ------------------------------------------------------------------ copies / comparison
 
-    @Override public IItemStack copy() { return new XenoItemAdapter(stack.copy()); }
+    @Override public IItemStack copy() { return XenoApiAdapters.wrap(stack.copy()); }
 
     /** Splits {@code stackSize} items off this stack into a new one, as vanilla {@code split}. */
     @Override
     public IItemStack split(int stackSize) {
         if (stackSize < 1) throw new IllegalArgumentException("IItemStack.split: size must be at least 1");
-        return new XenoItemAdapter(stack.split(stackSize));
+        return XenoApiAdapters.wrap(stack.split(stackSize));
     }
 
     @Override
@@ -388,7 +389,21 @@ public final class XenoItemAdapter implements IItemStack {
         throw XenoApiAdapters.unsupported("IItemStack.getMCItemStack (raw handles are not exposed)");
     }
 
-    @Override public INbt getNbt() { throw XenoApiAdapters.unsupported("IItemStack.getNbt (raw item NBT is not exposed; use getItemNbt)"); }
+    @Override public INbt getNbt() {
+        return XenoNbtAdapter.ofView(() -> {
+            CompoundTag snapshot = stack.hasTag() ? stack.getTag().copy() : new CompoundTag();
+            for (String key : VANILLA_KEYS) snapshot.remove(key);
+            return snapshot;
+        }, custom -> {
+            for (String key : custom.getAllKeys())
+                if (VANILLA_KEYS.contains(key)) throw new IllegalArgumentException("Use the item API for " + key);
+            CompoundTag replacement = stack.hasTag() ? stack.getTag().copy() : new CompoundTag();
+            for (String key : new ArrayList<>(replacement.getAllKeys()))
+                if (!VANILLA_KEYS.contains(key)) replacement.remove(key);
+            replacement.merge(custom);
+            stack.setTag(replacement.isEmpty() ? null : replacement);
+        });
+    }
     /**
      * Wears the stack by {@code damage}, as use would: unbreaking applies, and a stack that breaks
      * is used up. {@code living} is who wears it; null wears it with no one to credit.

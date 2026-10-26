@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "kind": "showcase",
+  "display_name": "Moon",
+  "parent": "xenonpcs:earth",
+  "radius_blocks": 32,
+  "position": {
+    "x": 160,
+    "y": 0,
+    "z": 0
+  },
+  "orbit": {
+    "semi_major": 160,
+    "period_seconds": 600
+  },
+  "gravity": {
+    "surface_ms2": 1.62
+  },
+  "sky_style": 1
+}

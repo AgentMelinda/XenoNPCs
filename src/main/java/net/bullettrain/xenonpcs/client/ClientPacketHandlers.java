@@ -8,7 +8,22 @@ import net.bullettrain.xenonpcs.config.XenoServerConfig;
  * servers (network classes reference it). Methods only run on physical client via DistExecutor.
  */
 public final class ClientPacketHandlers {
+    public static void handleCombatV3KiVisual(net.bullettrain.xenonpcs.network.packet.CombatV3KiVisualPacket packet) {
+        net.bullettrain.xenonpcs.client.ki.V3NativeKiVisuals.apply(packet);
+    }
     private ClientPacketHandlers() {}
+
+    public static void handleCombatV3Camera(net.bullettrain.xenonpcs.network.packet.CombatV3CameraPacket packet) {
+        net.bullettrain.xenonpcs.client.camera.V3TechniqueCamera.apply(packet);
+    }
+
+    public static void handleCombatV3Config(net.bullettrain.xenonpcs.network.packet.CombatV3ConfigPacket packet) {
+        net.bullettrain.xenonpcs.client.combat.v3.V3ClientState.apply(packet);
+    }
+
+    public static void handleCombatV3State(net.bullettrain.xenonpcs.network.packet.CombatV3StatePacket packet) {
+        net.bullettrain.xenonpcs.client.combat.v3.V3ClientState.apply(packet);
+    }
 
     public static void handleDmzHudState(boolean dmzHudEnabled) {
         DmzHudClientState.setDmzHudEnabled(dmzHudEnabled);
@@ -63,6 +78,11 @@ public final class ClientPacketHandlers {
                     entityId, dialogue, npcName);
             return;
         }
+        if (net.bullettrain.xenonpcs.client.npc.dialog.DmzNpcDialoguePresentation.available()) {
+            net.bullettrain.xenonpcs.client.npc.dialog.DmzNpcDialoguePresentation.open(
+                    entityId, dialogue, npcName);
+            return;
+        }
         net.bullettrain.xenonpcs.client.npc.XenoNpcDialogueScreen.open(
                 entityId, dialogue, npcName);
     }
@@ -111,6 +131,11 @@ public final class ClientPacketHandlers {
 
     public static void handleQuestCompletionPopup(String title, String description, String reward,
                                                   String palette, String frame) {
+        if (net.bullettrain.xenonpcs.client.npc.dialog.DmzNpcDialoguePresentation.available()) {
+            net.bullettrain.xenonpcs.client.npc.dialog.DmzNpcDialoguePresentation.completion(
+                    title, description, reward);
+            return;
+        }
         net.minecraft.client.Minecraft.getInstance().setScreen(
                 new net.bullettrain.xenonpcs.client.npc.quest.QuestCompletionScreen(
                         title, description, reward, palette, frame));

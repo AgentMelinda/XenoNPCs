@@ -41,6 +41,31 @@ public final class XenoNpcGeoModel extends GeoModel<XenoNpcEntity> {
     private static final ResourceLocation DMZ_SAGA_ANIMATION = new ResourceLocation(
             "dragonminez", "animations/entity/sagas/saga_base.animation.json");
 
+    /** Per-NPC ease across the ends of a scripted clip; weak, so an unloaded NPC's goes with it. */
+    private final java.util.Map<XenoNpcEntity, ClipPoseBlend> clipBlends = new java.util.WeakHashMap<>();
+
+    @Override
+    public void setCustomAnimations(XenoNpcEntity entity, long instanceId,
+                                    software.bernie.geckolib.core.animation.AnimationState<XenoNpcEntity> state) {
+        super.setCustomAnimations(entity, instanceId, state);
+        ClipPoseBlend blend = clipBlends.computeIfAbsent(entity, e -> new ClipPoseBlend());
+        blend.frame(entity.scriptedClipActive(), state.getAnimationTick());
+        for (var bone : getAnimationProcessor().getRegisteredBones()) {
+            float[] animated = {bone.getRotX(), bone.getRotY(), bone.getRotZ(),
+                    bone.getPosX(), bone.getPosY(), bone.getPosZ()};
+            float[] shown = blend.apply(bone.getName(), animated);
+            // Written only during an ease: a manual write marks the bone as changed for GeckoLib.
+            if (shown != animated) {
+                bone.setRotX(shown[0]);
+                bone.setRotY(shown[1]);
+                bone.setRotZ(shown[2]);
+                bone.setPosX(shown[3]);
+                bone.setPosY(shown[4]);
+                bone.setPosZ(shown[5]);
+            }
+        }
+    }
+
     @Override
     public ResourceLocation getModelResource(XenoNpcEntity entity) {
         ResourceLocation id = assetId(entity);
@@ -48,11 +73,22 @@ public final class XenoNpcGeoModel extends GeoModel<XenoNpcEntity> {
     }
 
     static ResourceLocation resolveModelResource(ResourceLocation id, Predicate<ResourceLocation> exists) {
+        ResourceLocation found = findModelResource(id, exists);
+        return found == null ? DMZ_FALLBACK_MODEL : found;
+    }
+
+    /** Returns only a matching loaded rig; the model picker must not list fallback-only skins. */
+    static ResourceLocation findModelResource(ResourceLocation id, Predicate<ResourceLocation> exists) {
         String path = id.getPath();
         ResourceLocation candidate;
         if (path.startsWith("textures/") && path.endsWith(".png")) {
             candidate = new ResourceLocation(id.getNamespace(),
                     "geo/" + path.substring("textures/".length(), path.length() - 4) + ".geo.json");
+        } else if (path.startsWith("geo/") && path.endsWith(".geo.json")) {
+            candidate = id;
+        } else if (path.endsWith(".geo.json")) {
+            candidate = new ResourceLocation(id.getNamespace(),
+                    path.startsWith("geo/") ? path : "geo/" + path);
         } else {
             candidate = new ResourceLocation(id.getNamespace(),
                     "geo/" + id.getPath() + ".geo.json");
@@ -61,6 +97,20 @@ public final class XenoNpcGeoModel extends GeoModel<XenoNpcEntity> {
         // DMZ's giant/first-person Slug PNGs are skins for the ordinary Slug geometry.
         String geoPath = candidate.getPath();
         if ("dragonminez".equals(id.getNamespace()) && geoPath.startsWith("geo/entity/sagas/")) {
+            String skin = geoPath.substring("geo/entity/sagas/".length(), geoPath.length() - ".geo.json".length());
+            String mapped = DmzSagaModelAssets.rig(skin);
+            if (mapped != null) {
+                ResourceLocation shared = new ResourceLocation("dragonminez",
+                        "geo/entity/sagas/" + mapped + ".geo.json");
+                if (exists.test(shared)) return shared;
+            }
+            // Some numbered skins have the same-name base rig rather than an explicit alias.
+            String unnumbered = skin.replaceFirst("_[0-9]+$", "");
+            if (!unnumbered.equals(skin)) {
+                ResourceLocation base = new ResourceLocation("dragonminez",
+                        "geo/entity/sagas/" + unnumbered + ".geo.json");
+                if (exists.test(base)) return base;
+            }
             for (String suffix : new String[]{"_giant.geo.json", "_fp.geo.json"}) {
                 if (geoPath.endsWith(suffix)) {
                     ResourceLocation base = new ResourceLocation(id.getNamespace(),
@@ -69,7 +119,7 @@ public final class XenoNpcGeoModel extends GeoModel<XenoNpcEntity> {
                 }
             }
         }
-        return DMZ_FALLBACK_MODEL;
+        return null;
     }
 
     @Override
@@ -88,7 +138,7 @@ public final class XenoNpcGeoModel extends GeoModel<XenoNpcEntity> {
         ResourceLocation id = assetId(entity);
         if (id.getPath().startsWith("textures/") && id.getPath().endsWith(".png")) return id;
         return new ResourceLocation(id.getNamespace(),
-                "textures/entity/" + id.getPath() + ".png");
+                (id.getPath().startsWith("entity/") ? "textures/" : "textures/entity/") + id.getPath() + ".png");
     }
 
     @Override
@@ -108,8 +158,11 @@ public final class XenoNpcGeoModel extends GeoModel<XenoNpcEntity> {
         // temporarily leave that cache empty, so append the combat file only after it exists.
         ResourceLocation combat = net.bullettrain.xenonpcs.client.combat.anim
                 .Bt3AnimationBinding.DMZ_ANIMATION_FILE;
-        return GeckoLibCache.getBakedAnimations().containsKey(combat)
-                ? new ResourceLocation[] {combat} : new ResourceLocation[0];
+        ResourceLocation techniques = net.bullettrain.xenonpcs.client.combat.anim
+                .Bt3AnimationBinding.V3_TECHNIQUE_ANIMATION_FILE;
+        return net.bullettrain.xenonpcs.client.combat.anim.Bt3AnimationBinding.withAnimationFilesIfBaked(
+                null, GeckoLibCache.getBakedAnimations().containsKey(combat),
+                GeckoLibCache.getBakedAnimations().containsKey(techniques));
     }
 
     @Override
@@ -129,6 +182,13 @@ public final class XenoNpcGeoModel extends GeoModel<XenoNpcEntity> {
                                                      Predicate<ResourceLocation> exists) {
         if (override != null && exists.test(override)) return override;
         String path = id.getPath();
+        String skinPath = path.startsWith("textures/") && path.endsWith(".png")
+                ? path.substring("textures/".length(), path.length() - 4) : path;
+        if ("dragonminez".equals(id.getNamespace()) && skinPath.startsWith("entity/sagas/saga_saibaman")) {
+            ResourceLocation saibaman = new ResourceLocation("dragonminez",
+                    "animations/entity/sagas/saga_saibaman.animation.json");
+            if (exists.test(saibaman)) return saibaman;
+        }
         ResourceLocation candidate;
         if (path.startsWith("textures/") && path.endsWith(".png")) {
             candidate = new ResourceLocation(id.getNamespace(),

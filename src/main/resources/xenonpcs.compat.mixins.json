@@ -36,7 +36,6 @@
     "compat.customnpcs.GuiNpcInterface2PreviewMixin",
     "compat.customnpcs.GuiBasicPreviewInputMixin",
     "compat.customnpcs.GuiNpcInvPreviewMixin",
-    "compat.customnpcs.GuiNpcInvPreviewInputMixin",
     "compat.customnpcs.GuiNpcInvCuriosMixin",
     "compat.customnpcs.RenderCustomNpcHairMixin",
     "compat.customnpcs.RenderCustomNpcKiPoseMixin",
@@ -62,14 +61,14 @@
     "compat.dmz.DmzPlayerModelAnimationFilesMixin",
     "compat.dmz.DmzMeleeHeadLookMixin",
     "compat.dmz.DmzMeleeHeadMolangMixin",
-    "compat.dmz.DmzHairFollowBodyMixin",
     "compat.dmz.DmzRenderHandIrisMixin",
+    "compat.dmz.DmzAuraLayersInvoker",
     "compat.dmz.DmzTaottoOverlayMixin",
-    "compat.dmz.DmzMakerFormPreviewMixin",
-    "compat.dmz.DmzRaceCatalogHairMixin"
+    "compat.dmz.DmzRaceCatalogHairMixin",
+    "compat.dmz.DmzMakerFormPreviewMixin"
   ],
   "injectors": {
-    "defaultRequire": 1
+    "defaultRequire": 0
   },
   "minVersion": "0.8"
 }

@@ -115,7 +115,6 @@ public final class FormMakerPartsScreen extends ScaledScreen {
                                 MakerPreviewController preview) {
         super(Component.literal("Form Parts"));
         this.parent = parent;
-        MakerTargets.inherit(this, parent);
         this.document = document;
         this.preview = preview == null ? new MakerPreviewController() : preview;
     }
@@ -133,7 +132,7 @@ public final class FormMakerPartsScreen extends ScaledScreen {
     @Override
     protected void init() {
         super.init();
-        preview.bindScreen(this, minecraft);
+        preview.bindLocalPlayer(minecraft);
 
         bannerW = XenoAtlasSprites.get(BANNER).width();
         bannerH = XenoAtlasSprites.get(BANNER).height();

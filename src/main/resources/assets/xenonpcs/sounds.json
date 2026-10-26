@@ -28,5 +28,61 @@
         "stream": false
       }
     ]
+  },
+  "music.dbz_001": {
+    "sounds": [
+      {
+        "name": "xenonpcs:music/dbz_001",
+        "stream": true
+      }
+    ]
+  },
+  "music.dbz_003": {
+    "sounds": [
+      {
+        "name": "xenonpcs:music/dbz_003",
+        "stream": true
+      }
+    ]
+  },
+  "music.dbz_007": {
+    "sounds": [
+      {
+        "name": "xenonpcs:music/dbz_007",
+        "stream": true
+      }
+    ]
+  },
+  "music.dbz_011": {
+    "sounds": [
+      {
+        "name": "xenonpcs:music/dbz_011",
+        "stream": true
+      }
+    ]
+  },
+  "music.dbz_019": {
+    "sounds": [
+      {
+        "name": "xenonpcs:music/dbz_019",
+        "stream": true
+      }
+    ]
+  },
+  "music.dbz_025": {
+    "sounds": [
+      {
+        "name": "xenonpcs:music/dbz_025",
+        "stream": true
+      }
+    ]
+  },
+  "music.dbz_037": {
+    "sounds": [
+      {
+        "name": "xenonpcs:music/dbz_037",
+        "stream": true
+      }
+    ]
   }
 }

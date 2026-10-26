@@ -46,9 +46,9 @@ public final class RaceAssetPackClient {
             return;
         }
         event.addRepositorySource(consumer -> {
-            Pack pack = Pack.readMetaAndCreate(RaceAssetPack.PACK_ID,
-                    Component.literal("XenoNPCs Race Catalogs"), true,
-                    (id) -> new PathPackResources(id, root, true),
+            Pack pack = Pack.readMetaAndCreate(
+                    RaceAssetPack.PACK_ID, Component.literal("XenoPixels Race Catalogs"), true,
+                    id -> new PathPackResources(id, root, false),
                     PackType.CLIENT_RESOURCES, Pack.Position.TOP, PackSource.BUILT_IN);
             if (pack != null) {
                 consumer.accept(pack);

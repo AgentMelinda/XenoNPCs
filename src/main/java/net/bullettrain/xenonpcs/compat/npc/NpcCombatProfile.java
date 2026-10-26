@@ -130,6 +130,9 @@ public final class NpcCombatProfile {
     private static final String TAG_DISPLAY_OVERLAY = "DisplayOverlay";
     private static final String TAG_DISPLAY_OVERLAY_GLOW = "DisplayOverlayGlow";
     private static final String TAG_DISPLAY_LAYERS = "DisplayOuterLayers";
+    private static final String TAG_DISPLAY_SHOW_NAME = "DisplayShowName";
+    private static final String TAG_HIDE_DEAD_BODY = "HideDeadBody";
+    private static final String TAG_BOSS_BAR_MODE = "BossBarMode";
     private static final String TAG_FIRE_IMMUNE = "ImmuneToFire";
     private static final String TAG_BURNS_IN_SUN = "BurnsInSun";
     private static final String TAG_CAN_DROWN = "CanDrown";
@@ -200,6 +203,8 @@ public final class NpcCombatProfile {
     private static final String TAG_AI_MUST_SEE_TARGET = "AiMustSeeTarget";
     private static final String TAG_AI_ATTACK_INVISIBLE = "AiAttackInvisible";
     private static final String TAG_AI_MOUNT_CONTROL = "AiMountControl";
+    private static final String TAG_IMPORTED_MOVE_SPEED = "ImportedMoveSpeed";
+    private static final String TAG_AI_CAN_SPRINT = "AiCanSprint";
     /** Canonical action keys for chance/modifier maps (not the master combatBrain switch). */
     public static final String[] BRAIN_ACTION_KEYS = {
             "strike", "charge", "flyingFist", "heavyHit", "boneCrusher", "kiai", "randomKi",
@@ -446,7 +451,7 @@ public final class NpcCombatProfile {
     /** Every DMZ skill this NPC has, by lower-case id. See {@link NpcSkillSet}. */
     public final NpcSkillSet skills = new NpcSkillSet();
     /** Keep the last attacker locked as this NPC's target while DMZ Ki Sense is enabled. */
-    public boolean kiSenseLockOnRetaliator;
+    public boolean kiSenseLockOnRetaliator = true;
     /**
      * Multiplier over CustomNPCs' own stored aggro range. Defaults to 2 because CNPC's aggro
      * range doubles as the <em>retention</em> range, so the stock value makes an NPC give up on
@@ -619,6 +624,19 @@ public final class NpcCombatProfile {
     public boolean displayOverlayGlow;
     /** Whether the skin's outer layer (hat, jacket, sleeves, trousers) is drawn. */
     public boolean displayOuterLayers = true;
+    /** 0 always, 1 hidden, 2 while attacking; zero preserves old profiles. */
+    public int displayShowName;
+    public boolean hideDeadBody;
+    /** 1 always, 2 while attacking; the existing bossBar flag still enables the bar. */
+    public int bossBarMode = 1;
+
+    public boolean showName(boolean attacking) {
+        return displayShowName == 0 || displayShowName == 2 && attacking;
+    }
+
+    public boolean showBossBar(boolean attacking) {
+        return bossBar && (bossBarMode != 2 || attacking);
+    }
 
     // --- Behaviour flags -------------------------------------------------
     // The MyNPCs reference offers these on its Stats and Display tabs. Each maps onto a real
@@ -750,6 +768,12 @@ public final class NpcCombatProfile {
 
     /** Whether a player riding this NPC may steer it. */
     public boolean aiMountControl;
+
+    /** Source walking speed (0..100, divided by 20 for the base attribute); -1 keeps native behavior. */
+    public int importedMoveSpeed = -1;
+
+    /** Source permission to sprint; absent on older profiles means the existing sprint behavior. */
+    public boolean aiCanSprint = true;
 
     /**
      * The route this NPC walks, or an empty path.
@@ -1266,6 +1290,7 @@ public final class NpcCombatProfile {
     }
 
     public NpcCombatProfile() {
+        skills.set(NpcSkillSet.KI_SENSE, true, 1);
         java.util.Arrays.fill(itemGiverItems,
                 net.bullettrain.xenonpcs.npc.inventory.NpcSlotStack.EMPTY);
         itemGiverLines.add("Have these items {player}");
@@ -1674,7 +1699,13 @@ public final class NpcCombatProfile {
         if (tag.contains(TAG_SKILLS, Tag.TAG_LIST)) {
             profile.skills.load(tag.getList(TAG_SKILLS, Tag.TAG_COMPOUND));
         }
-        profile.kiSenseLockOnRetaliator = tag.getBoolean(TAG_KI_SENSE_LOCK_ON);
+        // Profiles that predate these opt-ins inherit the current XenoNPC defaults. An explicit
+        // inactive skill entry or false retaliation flag still wins and remains authorable.
+        if (!profile.skills.entries().containsKey(NpcSkillSet.KI_SENSE)) {
+            profile.skills.set(NpcSkillSet.KI_SENSE, true, 1);
+        }
+        profile.kiSenseLockOnRetaliator = !tag.contains(TAG_KI_SENSE_LOCK_ON)
+                || tag.getBoolean(TAG_KI_SENSE_LOCK_ON);
         // Schema 9 generalized the single fly toggle into a full skill map. Older profiles
         // carry their fly state across so a configured flying NPC keeps flying.
         if (schema < SKILL_MAP_SCHEMA && profile.flySkillOn) {
@@ -1734,6 +1765,9 @@ public final class NpcCombatProfile {
         profile.displayOverlay = tag.getString(TAG_DISPLAY_OVERLAY);
         profile.displayOverlayGlow = tag.getBoolean(TAG_DISPLAY_OVERLAY_GLOW);
         profile.displayOuterLayers = !tag.contains(TAG_DISPLAY_LAYERS) || tag.getBoolean(TAG_DISPLAY_LAYERS);
+        profile.displayShowName = Math.max(0, Math.min(2, tag.getInt(TAG_DISPLAY_SHOW_NAME)));
+        profile.hideDeadBody = tag.getBoolean(TAG_HIDE_DEAD_BODY);
+        profile.bossBarMode = tag.getInt(TAG_BOSS_BAR_MODE) == 2 ? 2 : 1;
         profile.fireImmune = tag.getBoolean(TAG_FIRE_IMMUNE);
         profile.burnsInSun = tag.getBoolean(TAG_BURNS_IN_SUN);
         // Absent keys must keep the shipped default rather than reading as false, or every NPC
@@ -1987,6 +2021,9 @@ public final class NpcCombatProfile {
         tag.putString(TAG_DISPLAY_OVERLAY, safe(displayOverlay));
         tag.putBoolean(TAG_DISPLAY_OVERLAY_GLOW, displayOverlayGlow);
         tag.putBoolean(TAG_DISPLAY_LAYERS, displayOuterLayers);
+        tag.putInt(TAG_DISPLAY_SHOW_NAME, Math.max(0, Math.min(2, displayShowName)));
+        tag.putBoolean(TAG_HIDE_DEAD_BODY, hideDeadBody);
+        tag.putInt(TAG_BOSS_BAR_MODE, bossBarMode == 2 ? 2 : 1);
         tag.putBoolean(TAG_FIRE_IMMUNE, fireImmune);
         tag.putBoolean(TAG_BURNS_IN_SUN, burnsInSun);
         tag.putBoolean(TAG_CAN_DROWN, canDrown);
@@ -2469,11 +2506,15 @@ public final class NpcCombatProfile {
         tag.putString(TAG_NIGHT_TEXTURE, safe(nightTexture));
         tag.putString(TAG_SKIN_PLAYER, safe(skinPlayer));
         tag.putInt(TAG_MODEL_TINT, modelTint & 0xFFFFFF);
+        tag.putBoolean(TAG_MODEL_GLOWING, modelGlowing);
         tag.putInt(TAG_BASE_SIZE, baseSize);
         tag.putString(TAG_DISPLAY_CAPE, safe(displayCape));
         tag.putString(TAG_DISPLAY_OVERLAY, safe(displayOverlay));
         tag.putBoolean(TAG_DISPLAY_OVERLAY_GLOW, displayOverlayGlow);
         tag.putBoolean(TAG_DISPLAY_LAYERS, displayOuterLayers);
+        tag.putInt(TAG_DISPLAY_SHOW_NAME, Math.max(0, Math.min(2, displayShowName)));
+        tag.putBoolean(TAG_HIDE_DEAD_BODY, hideDeadBody);
+        tag.putInt(TAG_BOSS_BAR_MODE, bossBarMode == 2 ? 2 : 1);
         tag.putString(TAG_AURA_COLOR_HEX, canonicalizeOptionalColor(auraColorHex));
         tag.putString(TAG_SELECTED_FORM_GROUP, safe(selectedFormGroup));
         tag.putString(TAG_SELECTED_FORM, safe(selectedFormId));
@@ -2540,11 +2581,15 @@ public final class NpcCombatProfile {
         if (tag.contains(TAG_NIGHT_TEXTURE)) nightTexture = tag.getString(TAG_NIGHT_TEXTURE);
         if (tag.contains(TAG_SKIN_PLAYER)) skinPlayer = tag.getString(TAG_SKIN_PLAYER);
         if (tag.contains(TAG_MODEL_TINT)) modelTint = tag.getInt(TAG_MODEL_TINT) & 0xFFFFFF;
+        if (tag.contains(TAG_MODEL_GLOWING)) modelGlowing = tag.getBoolean(TAG_MODEL_GLOWING);
         if (tag.contains(TAG_BASE_SIZE)) baseSize = Math.max(0, Math.min(30, tag.getInt(TAG_BASE_SIZE)));
         if (tag.contains(TAG_DISPLAY_CAPE)) displayCape = tag.getString(TAG_DISPLAY_CAPE);
         if (tag.contains(TAG_DISPLAY_OVERLAY)) displayOverlay = tag.getString(TAG_DISPLAY_OVERLAY);
         if (tag.contains(TAG_DISPLAY_OVERLAY_GLOW)) displayOverlayGlow = tag.getBoolean(TAG_DISPLAY_OVERLAY_GLOW);
         if (tag.contains(TAG_DISPLAY_LAYERS)) displayOuterLayers = tag.getBoolean(TAG_DISPLAY_LAYERS);
+        if (tag.contains(TAG_DISPLAY_SHOW_NAME)) displayShowName = Math.max(0, Math.min(2, tag.getInt(TAG_DISPLAY_SHOW_NAME)));
+        if (tag.contains(TAG_HIDE_DEAD_BODY)) hideDeadBody = tag.getBoolean(TAG_HIDE_DEAD_BODY);
+        if (tag.contains(TAG_BOSS_BAR_MODE)) bossBarMode = tag.getInt(TAG_BOSS_BAR_MODE) == 2 ? 2 : 1;
         setAuraColor(tag.getString(TAG_AURA_COLOR_HEX));
         selectedFormGroup = tag.getString(TAG_SELECTED_FORM_GROUP);
         selectedFormId = tag.getString(TAG_SELECTED_FORM);
@@ -3020,6 +3065,8 @@ public final class NpcCombatProfile {
         tag.putBoolean(TAG_AI_MUST_SEE_TARGET, aiMustSeeTarget);
         tag.putBoolean(TAG_AI_ATTACK_INVISIBLE, aiAttackInvisible);
         tag.putBoolean(TAG_AI_MOUNT_CONTROL, aiMountControl);
+        if (importedMoveSpeed >= 0) tag.putInt(TAG_IMPORTED_MOVE_SPEED, Math.min(100, importedMoveSpeed));
+        if (!aiCanSprint) tag.putBoolean(TAG_AI_CAN_SPRINT, false);
         tag.put(TAG_BRAIN_CHANCES, chances);
         tag.put(TAG_BRAIN_MODIFIERS, modifiers);
     }
@@ -3078,6 +3125,9 @@ public final class NpcCombatProfile {
         aiMustSeeTarget = flagOrDefault(tag, TAG_AI_MUST_SEE_TARGET, true);
         aiAttackInvisible = tag.getBoolean(TAG_AI_ATTACK_INVISIBLE);
         aiMountControl = tag.getBoolean(TAG_AI_MOUNT_CONTROL);
+        importedMoveSpeed = tag.contains(TAG_IMPORTED_MOVE_SPEED, Tag.TAG_ANY_NUMERIC)
+                ? Math.max(-1, Math.min(100, tag.getInt(TAG_IMPORTED_MOVE_SPEED))) : -1;
+        aiCanSprint = flagOrDefault(tag, TAG_AI_CAN_SPRINT, true);
         brainVersion = migrateLegacyV7(brainVersion, tag);
         brainStrike = flagOrDefault(tag, TAG_BRAIN_STRIKE, true);
         brainCharge = flagOrDefault(tag, TAG_BRAIN_CHARGE, true);

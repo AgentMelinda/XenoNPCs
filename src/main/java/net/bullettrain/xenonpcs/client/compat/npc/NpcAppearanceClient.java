@@ -83,6 +83,23 @@ public final class NpcAppearanceClient {
             visual.applyVisualOptions(visualOptions);
             NpcTransformHairClient.onAppearance(id, formGroup, form,
                     visual.stackGroup, visual.stackId);
+            // Glowing flag + tinted outline (AuraRimGlow → getTeamColor mixin). Vanilla glow alone
+            // is always white; modelTint supplies the green/colored outline the editor promises.
+            var level = net.minecraft.client.Minecraft.getInstance().level;
+            if (level != null) {
+                for (Entity entity : level.entitiesForRendering()) {
+                    if (id.equals(entity.getUUID())) {
+                        entity.setGlowingTag(visual.modelGlowing);
+                        if (visual.modelGlowing) {
+                            net.bullettrain.xenonpcs.client.aura.AuraRimGlow.set(
+                                    entity.getId(), visual.modelTint & 0xFFFFFF);
+                        } else {
+                            net.bullettrain.xenonpcs.client.aura.AuraRimGlow.clear(entity.getId());
+                        }
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -123,6 +140,7 @@ public final class NpcAppearanceClient {
     public static void clear() {
         STATES.clear();
         NpcFullDmzRenderer.clearCache();
+        net.bullettrain.xenonpcs.client.aura.AuraRimGlow.clearAll();
     }
 
     private static String safe(String value) { return value == null ? "" : value; }

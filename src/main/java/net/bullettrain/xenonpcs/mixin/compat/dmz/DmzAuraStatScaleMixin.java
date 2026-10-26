@@ -16,15 +16,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * {@link StatsData}, which carries both things this needs: battle power, and whether they are
  * charging.
  *
- * <p>The injection requires a match so dependency drift is visible during release validation.
+ * <p>{@code require = 0} so a DragonMineZ update that renames or reshapes this simply leaves the
+ * stock sizing in place instead of stopping the mod from loading.
  */
 @Mixin(targets = "com.dragonminez.client.render.effects.AuraRenderer", remap = false)
 public abstract class DmzAuraStatScaleMixin {
 
     @Inject(
-            method = "getAuraScale(Lcom/dragonminez/common/stats/StatsData;[F)[F",
-            at = @At("RETURN"), cancellable = true, require = 1)
-    private static void xenopixels$scaleWithPower(StatsData stats, float[] modelScale,
+            method = "getAuraScale(Lnet/minecraft/world/entity/player/Player;Lcom/dragonminez/common/stats/StatsData;)[F",
+            at = @At("RETURN"), cancellable = true, require = 0)
+    private static void xenopixels$scaleWithPower(net.minecraft.world.entity.player.Player player, StatsData stats,
                                                   CallbackInfoReturnable<float[]> cir) {
         float[] scaled = XenoAuraScaling.apply(cir.getReturnValue(), stats);
         if (scaled != cir.getReturnValue()) {

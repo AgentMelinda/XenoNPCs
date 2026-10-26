@@ -53,9 +53,13 @@ public final class PartyManager {
 
     public static String invite(ServerPlayer from, ServerPlayer target) { return ""; }
 
+    static String inviteResultMessage(InviteRequestResult result, String targetName) { return ""; }
+
     static boolean applyCreationDefaults(PartySavedData.PartyInstance party, boolean created, boolean defaultPvp) { return false; }
 
     public static String accept(ServerPlayer player, boolean confirmDifficulty) { return ""; }
+
+    static String acceptResultMessage(InviteAcceptResult result) { return ""; }
 
     public static String decline(ServerPlayer player) { return ""; }
 

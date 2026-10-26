@@ -56,7 +56,6 @@ public class XenoPilotSeatEntity extends Entity {
     /** Ticks with no rider before the seat cleans itself up. */
     private static final int EMPTY_GRACE_TICKS = 20;
     /** How far from the seat block a flight controller may be and still be flyable from it. */
-    private static final int CONTROLLER_SEARCH_RADIUS = 8;
 
     private @Nullable BlockPos seatBlock;
     private @Nullable BlockPos controllerPos;

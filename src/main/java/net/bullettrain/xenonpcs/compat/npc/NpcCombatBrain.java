@@ -137,7 +137,23 @@ public final class NpcCombatBrain {
                 || NpcChargeMoves.isCharging(npc)
                 || NpcHakai.isChanneling(npc)
                 || COMBOS.containsKey(npc.getUUID())
-                || NpcKiAttackDispatcher.isOwnerClashing(npc);
+                || NpcKiAttackDispatcher.isOwnerClashing(npc)
+                || NpcKiAttackDispatcher.ownsLiveProjectile(npc);
+    }
+
+    /** After knockback grace ends: face the current threat again so aggression resumes without another hit. */
+    public static void resumeAfterHit(LivingEntity npc) {
+        if (npc == null || !(npc instanceof net.minecraft.world.entity.Mob mob)) return;
+        LivingEntity threat = mob.getTarget();
+        if (threat == null || !threat.isAlive() || threat == npc) return;
+        mob.getLookControl().setLookAt(threat, 180f, 180f);
+        double dx = threat.getX() - npc.getX();
+        double dz = threat.getZ() - npc.getZ();
+        if (dx * dx + dz * dz < 1.0E-6) return;
+        float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0);
+        npc.setYRot(yaw);
+        npc.yBodyRot = yaw;
+        npc.yHeadRot = yaw;
     }
 
     /**
@@ -158,11 +174,29 @@ public final class NpcCombatBrain {
         XenoAnimApi.stopClip(npc);
     }
 
+    /** Interrupt offense after a hit without landing or overwriting the received impulse. */
+    static void interruptForHit(LivingEntity npc) {
+        NpcChargeMoves.cancel(npc);
+        NpcHakai.cancel(npc);
+        NpcKiAim.cancel(npc);
+        COMBOS.remove(npc.getUUID());
+        MELEE_WHIFFS.remove(npc.getUUID());
+    }
+
     /**
      * Search-fly. Safe to call every server tick. Short ki-hold is not busy for this.
      */
     public static void steer(LivingEntity npc, NpcCombatProfile profile, LivingEntity victim) {
         if (npc == null || profile == null || !profile.combatBrain) {
+            return;
+        }
+        if (net.bullettrain.xenonpcs.combat.v3.technique.V3TechniqueRuntime.isControlledVictim(npc.getUUID())
+                || net.bullettrain.xenonpcs.combat.v3.technique.V3PostAttackFreeze.isFrozen(npc)) return;
+        // Just knocked back: let the push play out before steering again (NpcKnockbackGrace).
+        if (NpcKnockbackGrace.active(npc)) return;
+        // Ki projectile still in the world: stand still until it despawns.
+        if (NpcKiAttackDispatcher.ownsLiveProjectile(npc)) {
+            if (npc instanceof net.minecraft.world.entity.Mob mob) mob.getNavigation().stop();
             return;
         }
         if (!mayStartCharge(profile) && NpcChargeMoves.isCharging(npc)) {
@@ -248,6 +282,9 @@ public final class NpcCombatBrain {
         if (npc == null || profile == null || !profile.combatBrain) {
             return;
         }
+        if (net.bullettrain.xenonpcs.combat.v3.technique.V3TechniqueRuntime.isControlledVictim(npc.getUUID())
+                || net.bullettrain.xenonpcs.combat.v3.technique.V3PostAttackFreeze.isFrozen(npc)) return;
+        if (NpcKnockbackGrace.active(npc)) return;
         if (!mayStartFlyingFist(profile)) {
             COMBOS.remove(npc.getUUID());
             return;
@@ -309,6 +346,9 @@ public final class NpcCombatBrain {
         if (npc == null || profile == null || !profile.combatBrain) {
             return;
         }
+        if (net.bullettrain.xenonpcs.combat.v3.technique.V3TechniqueRuntime.isControlledVictim(npc.getUUID())
+                || net.bullettrain.xenonpcs.combat.v3.technique.V3PostAttackFreeze.isFrozen(npc)) return;
+        if (NpcKnockbackGrace.active(npc)) return;
         if (victim == null || !victim.isAlive() || victim == npc) {
             if (isActing(npc) || COMBOS.containsKey(npc.getUUID())
                     || NpcKiAim.lockedTarget(npc) != null) {
@@ -785,6 +825,7 @@ public final class NpcCombatBrain {
     }
 
     private static boolean tryKi(LivingEntity npc, NpcCombatProfile profile, LivingEntity victim) {
+        if (npc.distanceToSqr(victim) < 16.0) return false;
         double horiz = NpcBrainKiRotation.horizontal(victim.getX() - npc.getX(),
                 victim.getZ() - npc.getZ());
         double dy = victim.getY() - npc.getY();

@@ -28,7 +28,6 @@ public final class MakerStubScreen extends ScaledScreen {
     public MakerStubScreen(Screen parent, String title, String heading, String detail) {
         super(Component.literal(title == null ? "Maker" : title));
         this.parent = parent;
-        MakerTargets.inherit(this, parent);
         this.heading = heading == null ? "Coming soon" : heading;
         this.detail = detail == null ? "" : detail;
     }

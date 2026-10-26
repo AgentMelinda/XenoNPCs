@@ -38,12 +38,15 @@ import net.minecraftforge.registries.DeferredRegister;
  * never be asked for:
  *
  * <ul>
- *   <li>{@code getDefense()} / {@code getMaxDefense()} — worn armour value</li>
- *   <li>{@code getHealthRegenPerSecond()} / {@code getEnergyRegenPerSecond()} — armour enchantments</li>
+ *   <li>{@code getHealthRegenPerSecond()} / {@code getEnergyRegenPerSecond()} - armour enchantments</li>
  *   <li>the gravity and Hyperbolic Time Chamber family: {@code getGravity*}, {@code getTp*},
- *       {@code getLoadDrainMultiplier()}</li>
+ *       {@code getSyncedTrainingZone()}</li>
  *   <li>{@code getPlayer()}</li>
  * </ul>
+ *
+ * <p>Worn armour is the exception: {@code getDefense} and its three variants read it straight off
+ * the null player, so {@code StatsDataNpcHostMixin} redirects that one call onto the NPC's own
+ * entity. See {@link #safeForNpc}.
  *
  * <p>{@link #safeForNpc} names that list in code so the boundary is checkable rather than a comment
  * someone has to remember. The alternative the plan sketched — a world {@code FakePlayer}, or
@@ -77,9 +80,16 @@ public final class NpcDmzStats {
     /**
      * Methods of {@link StatsData} that need a real player and must not be called on an NPC blob.
      *
-     * <p>Exposed so tests can pin the list against the decompiled source: if a DMZ update adds a
-     * guard, or removes one, the list is wrong in a way nothing else would notice until an NPC
-     * threw a {@link NullPointerException} in combat.
+     * <p>Exposed so tests can pin the list against the pinned jar: if a DMZ update adds a guard, or
+     * removes one, the list is wrong in a way nothing else would notice until an NPC threw a
+     * {@link NullPointerException} in combat.
+     *
+     * <p>The armour reads are deliberately absent. {@code getDefense}, {@code getMaxDefense},
+     * {@code getFlatDefense} and {@code getMaxFlatDefense} used to be refused here because DMZ's own
+     * bodies call {@code Player.getArmorValue()} on the null player; {@code StatsDataNpcHostMixin}
+     * redirects that read onto the bound host, so an NPC now answers them with its own armour.
+     * {@code NpcStatsHostGameTests#aMobHostCanCarryDefenseToo} checks that in a real server rather
+     * than reasoning about it, and {@code NpcDmzStatsTest} keeps this list and that redirect in step.
      */
     /**
      * 1.20.1: a Forge capability where 1.21.1 has a data attachment. The capability is the holder;
@@ -137,11 +147,11 @@ public final class NpcDmzStats {
 
     public static boolean safeForNpc(String methodName) {
         return switch (methodName) {
-            case "getDefense", "getMaxDefense", "getHealthRegenPerSecond", "getEnergyRegenPerSecond",
+            case "getHealthRegenPerSecond", "getEnergyRegenPerSecond",
                     "getGravityEnvironmentalMultiplier", "getGravityPenalizationGravity",
-                    "getGravityStatMultiplier", "getGravityTotalWeight", "getLoadDrainMultiplier",
+                    "getGravityStatMultiplier", "getGravityTotalWeight", "getSyncedTrainingZone",
                     "getTpGravityMultiplier", "getTpHTCMultiplier", "getTpIdealWeight",
-                    "getTpWeightBellMultiplier", "getPlayer" -> false;
+                    "getTpOtherworldMultiplier", "getTpWeightBellMultiplier", "getPlayer" -> false;
             default -> true;
         };
     }
@@ -156,7 +166,10 @@ public final class NpcDmzStats {
     public static StatsData stats(Entity entity) {
         if (!eligible(entity)) return null;
         Holder holder = holder(entity);
-        return holder == null || holder.value == null ? null : holder.value.data;
+        if (holder == null || holder.value == null) return null;
+        StatsData data = holder.value.data;
+        if (entity instanceof LivingEntity living) bindHost(living, data);
+        return data;
     }
 
     /** Player-parity DMZ melee output, with the profile formula reserved for unbound NPCs. */
@@ -231,11 +244,18 @@ public final class NpcDmzStats {
      * is in it.
      *
      * <p>Rebinding on every fetch is deliberate: an entity is a different object after a reload, and
-     * a blob holding the old one would write attributes onto a corpse.
+     * a blob holding the old one would write attributes onto a corpse. When that handover happens the
+     * stats are re-pushed onto the new host, because nothing else does: the reload restores the blob
+     * and the saved stat fingerprint from the same entity NBT, so the next
+     * {@code NpcCounterpartSync.apply} sees an unchanged fingerprint and returns before it reaches
+     * {@code syncFromProfile}. The NPC's blob then reads 300 while {@code MainAttributes.STRENGTH.get()}
+     * reads 0, and everything that asks the attribute - DMZ's formulas included - fights at zero.
      */
     private static void bindHost(LivingEntity npc, StatsData data) {
         if (npc == null || data == null) return;
+        boolean newHost = false;
         if (data instanceof NpcStatsDataAccess access) {
+            newHost = access.xenopixels$getNpcHost() != npc;
             access.xenopixels$setNpcHost(npc);
             access.xenopixels$markLoaded();
         }

@@ -1,0 +1,866 @@
+{
+  "source": "ai\\evidence\\space-perf-s4-2026-10-13\\gen_chart50.py",
+  "source_sha256": "8357bf88abcb2416ac44add48882b65a2111b7d01075724fb14a1dfcf831be74",
+  "anchor": [
+    1000,
+    0,
+    0
+  ],
+  "synthetic_bodies": [
+    {
+      "id": "xenopixelsmod_perf:p01",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 01",
+        "radius_blocks": 200,
+        "position": {
+          "x": 898.957,
+          "y": -61.01,
+          "z": 92.564
+        },
+        "gravity": {
+          "surface_ms2": 6
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p02",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 02",
+        "radius_blocks": 100,
+        "position": {
+          "x": 1085.515,
+          "y": -207.912,
+          "z": -974.402
+        },
+        "gravity": {
+          "surface_ms2": 3
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p03",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 03",
+        "radius_blocks": 120,
+        "position": {
+          "x": 3433.755,
+          "y": 0,
+          "z": 3174.403
+        },
+        "gravity": {
+          "surface_ms2": 4
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p04",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 04",
+        "radius_blocks": 100,
+        "position": {
+          "x": -4682.851,
+          "y": 1226.679,
+          "z": -1005.216
+        },
+        "gravity": {
+          "surface_ms2": 2.5
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p05",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 05",
+        "radius_blocks": 60,
+        "position": {
+          "x": 7166.471,
+          "y": 3253.893,
+          "z": -3922.604
+        },
+        "gravity": {
+          "surface_ms2": 1.5
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p06",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 06",
+        "radius_blocks": 80,
+        "position": {
+          "x": -1520.292,
+          "y": 7053.423,
+          "z": 9375.359
+        },
+        "gravity": {
+          "surface_ms2": 2
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p07",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 07",
+        "radius_blocks": 100,
+        "position": {
+          "x": -4966.106,
+          "y": -9404.564,
+          "z": -11487.374
+        },
+        "gravity": {
+          "surface_ms2": 3
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p08",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 08",
+        "radius_blocks": 90,
+        "position": {
+          "x": 18162.254,
+          "y": -8134.733,
+          "z": 6267.628
+        },
+        "gravity": {
+          "surface_ms2": 2
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p09",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 09",
+        "radius_blocks": 150,
+        "position": {
+          "x": -20699.513,
+          "y": -4989.881,
+          "z": 8957.244
+        },
+        "gravity": {
+          "surface_ms2": 5
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p10",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 10",
+        "radius_blocks": 70,
+        "position": {
+          "x": 12867.688,
+          "y": 0,
+          "z": -25360.56
+        },
+        "gravity": {
+          "surface_ms2": 1
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p11",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 11",
+        "radius_blocks": 110,
+        "position": {
+          "x": 10367.801,
+          "y": 6653.174,
+          "z": 29866.027
+        },
+        "gravity": {
+          "surface_ms2": 3.5
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p12",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 12",
+        "radius_blocks": 200,
+        "position": {
+          "x": -27454.752,
+          "y": 14642.519,
+          "z": -16490.11
+        },
+        "gravity": {
+          "surface_ms2": 8
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p13",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 13",
+        "radius_blocks": 100,
+        "position": {
+          "x": 31815.745,
+          "y": 22923.625,
+          "z": -6774.755
+        },
+        "gravity": {
+          "surface_ms2": 2
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p14",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 14",
+        "radius_blocks": 200,
+        "position": {
+          "x": -3652.895,
+          "y": -5877.853,
+          "z": 6618.264
+        },
+        "gravity": {
+          "surface_ms2": 7
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p15",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 15",
+        "radius_blocks": 300,
+        "position": {
+          "x": -1113.206,
+          "y": -7321.26,
+          "z": -16307.468
+        },
+        "gravity": {
+          "surface_ms2": 9
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p16",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 16",
+        "radius_blocks": 400,
+        "position": {
+          "x": 20446.429,
+          "y": -5405.704,
+          "z": 16389.471
+        },
+        "gravity": {
+          "surface_ms2": 12
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p17",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 17",
+        "radius_blocks": 130,
+        "position": {
+          "x": -32970.966,
+          "y": 0,
+          "z": 1404.806
+        },
+        "gravity": {
+          "surface_ms2": 4
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p18",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 18",
+        "radius_blocks": 100,
+        "position": {
+          "x": 27693.582,
+          "y": 8004.6,
+          "z": -26563.679
+        },
+        "gravity": {
+          "surface_ms2": 2.5
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p19",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 19",
+        "radius_blocks": 100,
+        "position": {
+          "x": -898.909,
+          "y": 18303.149,
+          "z": 41065.665
+        },
+        "gravity": {
+          "surface_ms2": 3
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p20",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 20",
+        "radius_blocks": 90,
+        "position": {
+          "x": -24917.229,
+          "y": 29389.263,
+          "z": -31057.503
+        },
+        "gravity": {
+          "surface_ms2": 2
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p21",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 21",
+        "radius_blocks": 120,
+        "position": {
+          "x": 45098.56,
+          "y": -32328.189,
+          "z": 5933.399
+        },
+        "gravity": {
+          "surface_ms2": 4
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p22",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 22",
+        "radius_blocks": 80,
+        "position": {
+          "x": -43993.484,
+          "y": -24404.199,
+          "z": 31305.294
+        },
+        "gravity": {
+          "surface_ms2": 1.5
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p23",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 23",
+        "radius_blocks": 150,
+        "position": {
+          "x": 14954.536,
+          "y": -13514.26,
+          "z": -62029.313
+        },
+        "gravity": {
+          "surface_ms2": 5
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p24",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 24",
+        "radius_blocks": 100,
+        "position": {
+          "x": 35802.661,
+          "y": 0,
+          "z": 60735.284
+        },
+        "gravity": {
+          "surface_ms2": 3
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p25",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 25",
+        "radius_blocks": 110,
+        "position": {
+          "x": -71686.184,
+          "y": 16217.112,
+          "z": -23188.875
+        },
+        "gravity": {
+          "surface_ms2": 3.5
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p26",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 26",
+        "radius_blocks": 95,
+        "position": {
+          "x": 71491.22,
+          "y": 34572.615,
+          "z": -32568.731
+        },
+        "gravity": {
+          "surface_ms2": 2.5
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p27",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 27",
+        "radius_blocks": 105,
+        "position": {
+          "x": -27734.358,
+          "y": 54076.243,
+          "z": 68659.279
+        },
+        "gravity": {
+          "surface_ms2": 3
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p28",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 28",
+        "radius_blocks": 100,
+        "position": {
+          "x": -25833.737,
+          "y": -57602.955,
+          "z": -74604.626
+        },
+        "gravity": {
+          "surface_ms2": 2
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p29",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 29",
+        "radius_blocks": 100,
+        "position": {
+          "x": 98039.295,
+          "y": -48808.397,
+          "z": 51001.134
+        },
+        "gravity": {
+          "surface_ms2": 3
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p30",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 30",
+        "radius_blocks": 200,
+        "position": {
+          "x": -140875.909,
+          "y": -31186.754,
+          "z": 37398.034
+        },
+        "gravity": {
+          "surface_ms2": 6
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p31",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 31",
+        "radius_blocks": 150,
+        "position": {
+          "x": 109167.548,
+          "y": 0,
+          "z": -168225.389
+        },
+        "gravity": {
+          "surface_ms2": 5
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p32",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 32",
+        "radius_blocks": 300,
+        "position": {
+          "x": 44075.473,
+          "y": 54057.04,
+          "z": 250643.851
+        },
+        "gravity": {
+          "surface_ms2": 9
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p33",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 33",
+        "radius_blocks": 100,
+        "position": {
+          "x": -237349.169,
+          "y": 134223.092,
+          "z": -184590.994
+        },
+        "gravity": {
+          "surface_ms2": 3
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p34",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 34",
+        "radius_blocks": 250,
+        "position": {
+          "x": 331564.446,
+          "y": 240991.953,
+          "z": -27386.589
+        },
+        "gravity": {
+          "surface_ms2": 8
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p35",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 35",
+        "radius_blocks": 180,
+        "position": {
+          "x": -273693.366,
+          "y": -293892.626,
+          "z": 296935.48
+        },
+        "gravity": {
+          "surface_ms2": 6
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p36",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 36",
+        "radius_blocks": 400,
+        "position": {
+          "x": 3763.047,
+          "y": -252176.719,
+          "z": -566391.444
+        },
+        "gravity": {
+          "surface_ms2": 12
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p37",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 37",
+        "radius_blocks": 120,
+        "position": {
+          "x": 493902.148,
+          "y": -155933.768,
+          "z": 543352.678
+        },
+        "gravity": {
+          "surface_ms2": 4
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p38",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 38",
+        "radius_blocks": 350,
+        "position": {
+          "x": -895159.431,
+          "y": 0,
+          "z": -83055.855
+        },
+        "gravity": {
+          "surface_ms2": 10
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p39",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 39",
+        "radius_blocks": 200,
+        "position": {
+          "x": 858067.977,
+          "y": 228702.86,
+          "z": -650484.038
+        },
+        "gravity": {
+          "surface_ms2": 7
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p40",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 40",
+        "radius_blocks": 150,
+        "position": {
+          "x": -211562.531,
+          "y": 528757.636,
+          "z": 1168431.655
+        },
+        "gravity": {
+          "surface_ms2": 5
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p41",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 41",
+        "radius_blocks": 500,
+        "position": {
+          "x": -645330.465,
+          "y": 881677.878,
+          "z": -1027083.759
+        },
+        "gravity": {
+          "surface_ms2": 15
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p42",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 42",
+        "radius_blocks": 100,
+        "position": {
+          "x": 1327418.292,
+          "y": -999234.929,
+          "z": 363516.262
+        },
+        "gravity": {
+          "surface_ms2": 3
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p43",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 43",
+        "radius_blocks": 220,
+        "position": {
+          "x": -1502622.428,
+          "y": -752462.79,
+          "z": 771634.204
+        },
+        "gravity": {
+          "surface_ms2": 8
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p44",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 44",
+        "radius_blocks": 300,
+        "position": {
+          "x": 681041.114,
+          "y": -415823.382,
+          "z": -1834294.142
+        },
+        "gravity": {
+          "surface_ms2": 9
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    },
+    {
+      "id": "xenopixelsmod_perf:p45",
+      "definition": {
+        "schema_version": 1,
+        "kind": "planet",
+        "display_name": "Perf Body 45",
+        "radius_blocks": 400,
+        "position": {
+          "x": 905902.371,
+          "y": 0,
+          "z": 2222870.149
+        },
+        "gravity": {
+          "surface_ms2": 12
+        },
+        "orbital_motion": false,
+        "erasable": false
+      }
+    }
+  ]
+}

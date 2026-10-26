@@ -2,8 +2,10 @@ package net.bullettrain.xenonpcs.network;
 
 import net.bullettrain.xenonpcs.XenoNpcsMod;
 import net.bullettrain.xenonpcs.network.packet.SyncFactionsPacket;
+import net.bullettrain.xenonpcs.network.packet.AfterimageGhostPacket;
 import net.bullettrain.xenonpcs.network.packet.GuidanceHoldPacket;
 import net.bullettrain.xenonpcs.network.packet.CombatFxPacket;
+import net.bullettrain.xenonpcs.network.packet.ChaseFlightStatePacket;
 import net.bullettrain.xenonpcs.network.packet.PartySyncPacket;
 import net.bullettrain.xenonpcs.network.packet.PartyPingPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -20,6 +22,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 public class ModNetwork {
     /**
      * Bump when packet set or wire format changes.
+     * <p>108: appended caster-only V3 camera timelines with session/cast/target identity.
      *
      * <p>29: appended {@code SeatToggleBindPacket}, the seated pilot's chair-bind toggle key.
      * <p>28: {@code AeroStatePacket} carries the air-brake flag, so the flight HUD can show a
@@ -138,13 +141,26 @@ public class ModNetwork {
      * DMZ screens now receive the NPC's full server profile - and NpcProfileSavePacket appends an
      * optional baseline so only changed keys are applied (stale client copies no longer revert
      * script edits). The Nearby NPCs wand screen packets follow in this same protocol.
+     * 103 (2026-10-06): no packet added. The two v2 packets changed since 102:
+     * {@code CombatV2StatePacket} appends the id of whoever opened the counter window and its
+     * branch-mask byte now carries branch labels; {@code V2Input.VANISH} and
+     * {@code V2State.STRIKE} were appended; and the target id in {@code CombatV2InputPacket} now
+     * means the sender's DragonMineZ lock-on target, without which the input is refused.
+     * 102 (2026-10-05): appended {@code CombatV2InputPacket} (C2S) and {@code CombatV2StatePacket}
+     * (S2C) for the {@code v2} combat controller. No existing packet changed.
+     * 101: appended {@code SecondAuraStatePacket}, a player's own second-aura switch as seen by
+     * everyone tracking them.
      * 97: XenoNpcSpeechPacket appends a per-line palette and bubble shape; Open/BindXenoNpcScript
      * carry the NPC's script container (tabs, loaded scripts, language, enabled, console) instead
      * of one script id. No packet was added or reordered.
      * 96: scripting tool open/bind packets. 95: NPC script editor packets. 94: natural spawn sync
      * appended. 93: Xeno NPC bank packet supports physical Zeni cash actions. 92: editor save result.
      */
-    private static final String PROTOCOL = "100";
+    // 104: appended server-owned UltimateFinisher cinematic state.
+    // 105 appends server-timed v2 charge inputs and the CHARGE state; packet ids stay stable.
+    // 106 appends the Dragon Dash continuation window and target to the existing state packet.
+    // 110 appends the 2026-10-08 V3 tuning tail to CombatV3ConfigPacket; packet ids are unchanged.
+    private static final String PROTOCOL = "113";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
             .named(new ResourceLocation(XenoNpcsMod.MOD_ID, "main"))
@@ -159,6 +175,25 @@ public class ModNetwork {
     public static void register() {
         if (registered) return;
         registered = true;
+
+        // --- Server → Client ---
+        CHANNEL.messageBuilder(SyncServerConfigPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(SyncServerConfigPacket::decode)
+                .encoder(SyncServerConfigPacket::encode)
+                .consumerMainThread(SyncServerConfigPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(SyncDmzHudStatePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(SyncDmzHudStatePacket::decode)
+                .encoder(SyncDmzHudStatePacket::encode)
+                .consumerMainThread(SyncDmzHudStatePacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(AfterimageGhostPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(AfterimageGhostPacket::new)
+                .encoder(AfterimageGhostPacket::encode)
+                .consumerMainThread(AfterimageGhostPacket::handle)
+                .add();
 
         CHANNEL.messageBuilder(Bt3CombatPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .decoder(Bt3CombatPacket::decode)
@@ -243,11 +278,24 @@ public class ModNetwork {
                 .consumerMainThread(net.bullettrain.xenonpcs.network.packet.DmzLockOnPacket::handle)
                 .add();
 
+        CHANNEL.messageBuilder(net.bullettrain.xenonpcs.network.packet.Bt3AnimIntentPacket.class, id++,
+                        NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(net.bullettrain.xenonpcs.network.packet.Bt3AnimIntentPacket::decode)
+                .encoder(net.bullettrain.xenonpcs.network.packet.Bt3AnimIntentPacket::encode)
+                .consumerMainThread(net.bullettrain.xenonpcs.network.packet.Bt3AnimIntentPacket::handle)
+                .add();
+
         CHANNEL.messageBuilder(net.bullettrain.xenonpcs.network.packet.Bt3RushStatePacket.class, id++,
                         NetworkDirection.PLAY_TO_CLIENT)
                 .decoder(net.bullettrain.xenonpcs.network.packet.Bt3RushStatePacket::new)
                 .encoder(net.bullettrain.xenonpcs.network.packet.Bt3RushStatePacket::encode)
                 .consumerMainThread(net.bullettrain.xenonpcs.network.packet.Bt3RushStatePacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(ChaseFlightStatePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(ChaseFlightStatePacket::new)
+                .encoder(ChaseFlightStatePacket::encode)
+                .consumerMainThread(ChaseFlightStatePacket::handle)
                 .add();
 
         CHANNEL.messageBuilder(
@@ -523,6 +571,55 @@ public class ModNetwork {
                 .decoder(net.bullettrain.xenonpcs.network.packet.XenoNpcNearbyPackets.Action::new)
                 .encoder(net.bullettrain.xenonpcs.network.packet.XenoNpcNearbyPackets.Action::encode)
                 .consumerMainThread(net.bullettrain.xenonpcs.network.packet.XenoNpcNearbyPackets.Action::handle)
+                .add();
+
+        // XenoCombat v2 (protocol 102). Appended, never inserted, like everything above.
+        CHANNEL.messageBuilder(net.bullettrain.xenonpcs.network.packet.CombatV2InputPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .decoder(net.bullettrain.xenonpcs.network.packet.CombatV2InputPacket::new)
+                .encoder(net.bullettrain.xenonpcs.network.packet.CombatV2InputPacket::encode)
+                .consumerMainThread(net.bullettrain.xenonpcs.network.packet.CombatV2InputPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(net.bullettrain.xenonpcs.network.packet.CombatV2StatePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(net.bullettrain.xenonpcs.network.packet.CombatV2StatePacket::new)
+                .encoder(net.bullettrain.xenonpcs.network.packet.CombatV2StatePacket::encode)
+                .consumerMainThread(net.bullettrain.xenonpcs.network.packet.CombatV2StatePacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(net.bullettrain.xenonpcs.network.packet.UltimateFinisherCameraPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(net.bullettrain.xenonpcs.network.packet.UltimateFinisherCameraPacket::new)
+                .encoder(net.bullettrain.xenonpcs.network.packet.UltimateFinisherCameraPacket::encode)
+                .consumerMainThread(net.bullettrain.xenonpcs.network.packet.UltimateFinisherCameraPacket::handle)
+                .add();
+
+        // Protocol 107 (2026-10-07): native V3 intents and server-owned state/config, appended.
+        CHANNEL.messageBuilder(net.bullettrain.xenonpcs.network.packet.CombatV3InputPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .decoder(net.bullettrain.xenonpcs.network.packet.CombatV3InputPacket::new)
+                .encoder(net.bullettrain.xenonpcs.network.packet.CombatV3InputPacket::encode)
+                .consumerMainThread(net.bullettrain.xenonpcs.network.packet.CombatV3InputPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(net.bullettrain.xenonpcs.network.packet.CombatV3StatePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(net.bullettrain.xenonpcs.network.packet.CombatV3StatePacket::new)
+                .encoder(net.bullettrain.xenonpcs.network.packet.CombatV3StatePacket::encode)
+                .consumerMainThread(net.bullettrain.xenonpcs.network.packet.CombatV3StatePacket::handle)
+                .add();
+        CHANNEL.messageBuilder(net.bullettrain.xenonpcs.network.packet.CombatV3ConfigPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(net.bullettrain.xenonpcs.network.packet.CombatV3ConfigPacket::new)
+                .encoder(net.bullettrain.xenonpcs.network.packet.CombatV3ConfigPacket::encode)
+                .consumerMainThread(net.bullettrain.xenonpcs.network.packet.CombatV3ConfigPacket::handle)
+                .add();
+
+        // Protocol 108: authored V3 camera timelines; preserve every existing sequential id.
+        CHANNEL.messageBuilder(net.bullettrain.xenonpcs.network.packet.CombatV3CameraPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(net.bullettrain.xenonpcs.network.packet.CombatV3CameraPacket::new)
+                .encoder(net.bullettrain.xenonpcs.network.packet.CombatV3CameraPacket::encode)
+                .consumerMainThread(net.bullettrain.xenonpcs.network.packet.CombatV3CameraPacket::handle)
+                .add();
+
+        // Protocol 109: native DMZ render proxies, appended after the camera packet.
+        CHANNEL.messageBuilder(net.bullettrain.xenonpcs.network.packet.CombatV3KiVisualPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(net.bullettrain.xenonpcs.network.packet.CombatV3KiVisualPacket::new)
+                .encoder(net.bullettrain.xenonpcs.network.packet.CombatV3KiVisualPacket::encode)
+                .consumerMainThread(net.bullettrain.xenonpcs.network.packet.CombatV3KiVisualPacket::handle)
                 .add();
 
         XenoNpcsMod.LOGGER.info("ModNetwork: registered {} packet types (protocol {})", id, PROTOCOL);

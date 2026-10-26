@@ -50,7 +50,6 @@ public final class XenoMakerHubScreen extends ScaledScreen {
     public XenoMakerHubScreen(Screen parent) {
         super(Component.literal("Xeno Maker Studio"));
         this.parent = parent;
-        MakerTargets.inherit(this, parent);
     }
 
     @Override
@@ -67,7 +66,7 @@ public final class XenoMakerHubScreen extends ScaledScreen {
     @Override
     protected void init() {
         super.init();
-        preview.bindScreen(this, minecraft);
+        preview.bindLocalPlayer(minecraft);
         preview.setGlow(MakerPreviewController.GlowTarget.RACE_CARD, "hub");
 
         int[] fitted = XenoAtlasSprites.fittedSize(FRAME, getUiWidth() - 8, getUiHeight() - 8);
@@ -104,6 +103,8 @@ public final class XenoMakerHubScreen extends ScaledScreen {
         addRenderableWidget(navButton(navX, y, "Hair Editor", b -> openHair()));
         y += btnH + NAV_GAP;
         addRenderableWidget(navButton(navX, y, "Taotto", b -> openTaotto()));
+        y += btnH + NAV_GAP;
+        addRenderableWidget(navButton(navX, y, "Ki Profiles", b -> openKiProfiles()));
         y += btnH + NAV_GAP + 8;
         addRenderableWidget(navButton(navX, y, "Close", b -> onClose()));
 
@@ -118,26 +119,62 @@ public final class XenoMakerHubScreen extends ScaledScreen {
     }
 
     private void openRace() {
+        if (!MakerAccess.canOpenCosmeticMaker()) {
+            if (minecraft != null && minecraft.player != null) {
+                minecraft.player.displayClientMessage(MakerAccess.denyCosmetic(), false);
+            }
+            return;
+        }
         if (minecraft != null) {
             minecraft.setScreen(new RaceCharacterMakerScreen(this));
         }
     }
 
     private void openForms() {
+        if (!MakerAccess.canOpenFormMaker()) {
+            if (minecraft != null && minecraft.player != null) {
+                minecraft.player.displayClientMessage(MakerAccess.denyForm(), false);
+            }
+            return;
+        }
         if (minecraft != null) {
             minecraft.setScreen(new FormMakerScreen(this));
         }
     }
 
     private void openHair() {
+        if (!MakerAccess.canOpenCosmeticMaker()) {
+            if (minecraft != null && minecraft.player != null) {
+                minecraft.player.displayClientMessage(MakerAccess.denyCosmetic(), false);
+            }
+            return;
+        }
         if (minecraft != null) {
             minecraft.setScreen(new HairMakerScreen(this));
         }
     }
 
     private void openTaotto() {
+        if (!MakerAccess.canOpenCosmeticMaker()) {
+            if (minecraft != null && minecraft.player != null) {
+                minecraft.player.displayClientMessage(MakerAccess.denyCosmetic(), false);
+            }
+            return;
+        }
         if (minecraft != null) {
             minecraft.setScreen(new TaottoMakerScreen(this));
+        }
+    }
+
+    private void openKiProfiles() {
+        if (!MakerAccess.canOpenCosmeticMaker()) {
+            if (minecraft != null && minecraft.player != null) {
+                minecraft.player.displayClientMessage(MakerAccess.denyCosmetic(), false);
+            }
+            return;
+        }
+        if (minecraft != null) {
+            minecraft.setScreen(new KiProfileMakerScreen(this));
         }
     }
 
@@ -160,7 +197,7 @@ public final class XenoMakerHubScreen extends ScaledScreen {
             super.render(graphics, (int) toUiX(mouseX), (int) toUiY(mouseY), partialTick);
 
             // Title sits above the well. The green box is the 3D model only.
-            graphics.drawString(font, MakerTargets.label(this), previewX, previewY - 12, GOLD_TEXT, false);
+            graphics.drawString(font, "Your character", previewX, previewY - 12, GOLD_TEXT, false);
             XenoAtlasSprites.setTheme(INNER);
             preview.render(graphics, previewX, previewY, previewW, previewH, partialTick);
 

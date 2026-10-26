@@ -1,0 +1,11 @@
+{
+  "created": "2026-10-13",
+  "source": "Original AI-generated atlas using the built-in image generation tool",
+  "purpose": "Earth, Moon and fictional Namek visual proxies in the optional orbit test world",
+  "layout": "Three square cells in one row: Earth, Moon, Namek; transparent padding",
+  "authored_width": 2172,
+  "authored_height": 724,
+  "runtime_upload": "2048x1024 RGBA with four additional mip levels; cached, about 10.7 MiB",
+  "limitations": "Stylized artwork, not a scientific map; fixed hemisphere images, not rotatable surface maps",
+  "generation_prompt_summary": "Detailed circular orthographic globes, continents and clouds, lunar craters, green alien planet, upper-left sunlight, transparent background, no text or stars"
+}

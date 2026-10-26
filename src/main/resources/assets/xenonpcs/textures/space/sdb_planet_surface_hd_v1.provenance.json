@@ -1,0 +1,9 @@
+{
+  "created": "2026-10-17",
+  "generator": "Built-in image_gen",
+  "source": "C:/Users/Admin/.codex/generated_images/01a1338d-23f1-77b0-ad86-1491c0e3d593/exec-40352cfe-f3a2-46e6-87e7-1f62c241fc23.png",
+  "use": "Shared equirectangular albedo for the persistent physical Super Dragon Ball Sable bodies",
+  "lighting": "Even albedo intended for PlanetSurfaceTexture; no atmosphere or moving-light shading baked in",
+  "upload": "2048x1024, four additional mip levels, trilinear filtering, repeat sampling",
+  "limitations": "One shared concept map is used for all seven slots; it does not yet encode each ball's exact star count. UV seam, poles, and appearance on the actual Sable body require fresh-client visual review."
+}

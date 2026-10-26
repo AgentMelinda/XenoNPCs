@@ -2,6 +2,7 @@ package net.bullettrain.xenonpcs.combat;
 
 import net.bullettrain.xenonpcs.config.XenoServerConfig;
 import net.bullettrain.xenonpcs.compat.npc.NpcCombatProtection;
+import net.bullettrain.xenonpcs.compat.npc.NpcKnockbackGrace;
 import net.bullettrain.xenonpcs.event.DmzMasterProtection;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
@@ -37,6 +38,9 @@ public final class CombatKnockback {
      */
     public static boolean canKnockBack(Entity victim) {
         if (victim == null) return false;
+        // The Hakaishin mantle erases the hit; without this the launch arc still went through,
+        // because these moves set the velocity directly instead of dealing knockback.
+        if (net.bullettrain.xenonpcs.combat.passive.FormPassiveEvents.mantleHoldsGround(victim)) return false;
         if (!NpcCombatProtection.isKnockable(victim)) return false;
         if (!XenoServerConfig.protectMastersFromCombatKnockback) return true;
         return !DmzMasterProtection.isDmzMaster(victim);
@@ -44,16 +48,26 @@ public final class CombatKnockback {
 
     /** Replaces the victim's velocity outright, as the launchers and slams do. */
     public static void set(Entity victim, Vec3 velocity) {
+        set(victim, velocity, null);
+    }
+
+    /** Like {@link #set(Entity, Vec3)} and records face-away yaw when {@code attacker} is known. */
+    public static void set(Entity victim, Vec3 velocity, Entity attacker) {
         if (!canKnockBack(victim)) return;
         victim.setDeltaMovement(velocity);
-        mark(victim);
+        mark(victim, attacker);
     }
 
     /** Adds to the victim's velocity, as the lighter contact hits do. */
     public static void add(Entity victim, Vec3 velocity) {
+        add(victim, velocity, null);
+    }
+
+    /** Like {@link #add(Entity, Vec3)} with an optional attacker for recovery facing. */
+    public static void add(Entity victim, Vec3 velocity, Entity attacker) {
         if (!canKnockBack(victim)) return;
         victim.setDeltaMovement(victim.getDeltaMovement().add(velocity));
-        mark(victim);
+        mark(victim, attacker);
     }
 
     /**
@@ -62,8 +76,10 @@ public final class CombatKnockback {
      * <p>{@code hurtMarked} is what makes the server send the new velocity at all; without it a
      * launch is invisible until the next regular position sync.
      */
-    private static void mark(Entity victim) {
+    private static void mark(Entity victim, Entity attacker) {
         victim.hurtMarked = true;
         victim.hasImpulse = true;
+        // An NPC under the combat brain would have this velocity overwritten next tick.
+        NpcKnockbackGrace.mark(victim, attacker);
     }
 }

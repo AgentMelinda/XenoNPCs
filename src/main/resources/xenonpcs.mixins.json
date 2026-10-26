@@ -16,7 +16,9 @@
     "client.DmzStudioPoseMixin",
     "client.DmzStudioClipFinishMixin",
     "client.DmzResourceSyncPartialLoadMixin",
-    "client.DmzScriptAnimSpeedMixin"
+    "client.DmzScriptAnimSpeedMixin",
+    "client.MinecraftAuraRimGlowMixin",
+    "client.EntityAuraRimGlowColorMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -70,13 +70,14 @@ public final class TaottoMakerScreen extends ScaledScreen {
     private EditBox colorBox;
 
     public TaottoMakerScreen(Screen parent) {
-        this(parent, MakerTargets.initialTattoo(parent));
+        this(parent, TaottoClientOverlays.document(
+                net.minecraft.client.Minecraft.getInstance().player == null ? null
+                        : net.minecraft.client.Minecraft.getInstance().player.getUUID()));
     }
 
     public TaottoMakerScreen(Screen parent, TaottoDocument document) {
         super(Component.literal("Taotto"));
         this.parent = parent;
-        MakerTargets.inherit(this, parent);
         this.document = document == null ? TaottoDocument.blank() : document;
     }
 
@@ -93,8 +94,7 @@ public final class TaottoMakerScreen extends ScaledScreen {
     @Override
     protected void init() {
         super.init();
-        preview.bindScreen(this, minecraft);
-        preview.tattooPreview(document);
+        preview.bindLocalPlayer(minecraft);
 
         bannerW = XenoAtlasSprites.get(BANNER).width();
         bannerH = XenoAtlasSprites.get(BANNER).height();
@@ -211,16 +211,7 @@ public final class TaottoMakerScreen extends ScaledScreen {
 
     private void applyNow() {
         try {
-            var target = MakerTargets.get(this);
-            if (target == null) TaottoNetwork.apply(document);
-            else {
-                var profile = target.draft();
-                if (profile.appearance.mode != net.bullettrain.xenonpcs.compat.npc.NpcDmzAppearance.Mode.FULL
-                        && !profile.modelKind.equals(net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile.MODEL_VANILLA)) {
-                    status = "Tattoo overlays require a humanoid skin or Full DMZ appearance."; statusColor = WARN; return;
-                }
-                target.apply(p -> p.appearance.taotto = document.copy());
-            }
+            TaottoNetwork.apply(document);
             status = "Applied Taotto overlay on " + document.part().label()
                     + " · scale " + formatScale() + ".";
             statusColor = OK;

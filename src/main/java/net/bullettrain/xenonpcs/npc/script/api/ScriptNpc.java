@@ -92,6 +92,34 @@ public final class ScriptNpc extends ScriptEntity {
 
     // ---------------------------------------------------------------- identity / body
 
+    /** Native shortcuts for the appearance and effect controls shown in the Functions panel. */
+    public boolean setAuraScale(float scale) { return NativeXenoScriptApi.INSTANCE.setAuraScale(this, scale); }
+    public float getAuraScale() {
+        return net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile.readCached(npc).auraScale;
+    }
+    public boolean setAura(boolean on) { return NativeXenoScriptApi.INSTANCE.setAura(this, on); }
+    private net.bullettrain.xenonpcs.npc.script.api.xeno.XenoNpcAdapter adapter() {
+        if (npc == null) throw new IllegalStateException("NPC appearance functions require a live NPC");
+        return new net.bullettrain.xenonpcs.npc.script.api.xeno.XenoNpcAdapter(npc);
+    }
+    /** Typed native API, preserving this wrapper's legacy return contracts. */
+    public xenoapi.npcs.api.entity.ICustomNpc<?> getAPI() { return adapter(); }
+    public xenoapi.npcs.api.entity.data.INPCDisplay getDisplay() { return adapter().getDisplay(); }
+    public xenoapi.npcs.api.entity.data.INPCStats getStats() { return adapter().getStats(); }
+    public xenoapi.npcs.api.entity.data.INPCAi getAi() { return adapter().getAi(); }
+    public xenoapi.npcs.api.entity.data.INPCAdvanced getAdvanced() { return adapter().getAdvanced(); }
+    public xenoapi.npcs.api.entity.data.INPCInventory getInventory() { return adapter().getInventory(); }
+    public xenoapi.npcs.api.entity.data.INPCRole getRole() { return adapter().getRole(); }
+    public xenoapi.npcs.api.entity.data.INPCJob getJob() { return adapter().getJob(); }
+    public int getSize() { return getDisplay().getSize(); }
+    public void setSize(int size) { getDisplay().setSize(size); }
+    public boolean playSound(String sound, float volume, float pitch) {
+        return NativeXenoScriptApi.INSTANCE.playSound(this, sound, volume, pitch);
+    }
+    public boolean playAnimation(String animation) { return NativeXenoScriptApi.INSTANCE.playAnimation(this, animation); }
+    public boolean playAnimation(String animation, float speed) { return NativeXenoScriptApi.INSTANCE.playAnimation(this, animation, speed); }
+
+
     @Override
     public String getName() {
         return npc.npcData().displayName();
@@ -102,7 +130,19 @@ public final class ScriptNpc extends ScriptEntity {
     }
 
     public void setHealth(float health) {
-        npc.setHealth(Math.max(0.0f, Math.min(npc.getMaxHealth(), health)));
+        new net.bullettrain.xenonpcs.npc.script.api.xeno.XenoLivingAdapter<>(npc).setHealth(health);
+    }
+
+    /** Changes the live maximum health attribute with the native API's validation. */
+    public void setMaxHealth(float health) {
+        new net.bullettrain.xenonpcs.npc.script.api.xeno.XenoLivingAdapter<>(npc).setMaxHealth(health);
+    }
+
+    public boolean isKilled() { return !npc.isAlive() || npc.isRemoved(); }
+
+    /** Removes this instance; configured death/respawn scheduling remains with the NPC entity. */
+    public void despawn() {
+        new net.bullettrain.xenonpcs.npc.script.api.xeno.XenoNpcAdapter(npc).despawn();
     }
 
     // ---------------------------------------------------------------- combat

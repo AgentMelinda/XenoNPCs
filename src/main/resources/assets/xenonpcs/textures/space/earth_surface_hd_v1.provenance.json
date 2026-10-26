@@ -1,0 +1,9 @@
+{
+  "created": "2026-10-13",
+  "generator": "Built-in image_gen",
+  "source": "C:/Users/Admin/.codex/generated_images/01a1338d-23f1-77b0-ad86-1491c0e3d593/exec-e6ea7460-9e46-45f8-b2a9-b660e69663c4.png",
+  "use": "Opaque full-longitude equirectangular albedo map for physical Sable planet prototype",
+  "lighting": "Even albedo; prototype currently uses fullbright rendering, no atmosphere or moving sun shading",
+  "upload": "2048x1024, four additional mip levels, trilinear filtering, repeat sampling",
+  "limitations": "Generated geography is illustrative; texture seam and pole continuity need runtime inspection. Small sphere collider remains voxel approximation."
+}

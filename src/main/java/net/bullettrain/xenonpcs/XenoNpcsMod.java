@@ -38,6 +38,7 @@ public class XenoNpcsMod {
         XenoCapabilities.register(modEventBus);
         net.bullettrain.xenonpcs.compat.npc.NpcDmzStats.register(modEventBus);
         ModNetwork.register();
+        net.bullettrain.xenonpcs.combat.HakaiSweepSync.register();
         net.bullettrain.xenonpcs.network.taotto.TaottoNetwork.register();
         net.bullettrain.xenonpcs.network.maker.MakerNetwork.register();
         net.bullettrain.xenonpcs.network.race.RaceLabelNetwork.register();

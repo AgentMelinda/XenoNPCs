@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.8 — 2026-10-26 (Minecraft 1.20.1 and 1.21.1)
+
+- Update DragonMineZ integration to pinned 2.2 builds for each Minecraft version.
+- Improve V9 pursuit, NPC stats binding, imported movement and aura controls.
+- Add target-identified, server-timed body Hakai synchronization and native DMZ dialogue/quest bridging.
+- Expand legacy dialogue, quest, model, inventory, scripts and player-progress conversion.
+- Local unit and packaging validation passed for both exports. Live visual checks and full legacy converter parity remain pending.
+
 ## 0.0.5 (Minecraft 1.20.1, 2026-10-03)
 
 - Correct Forge DMZ aura and ki weapon render targets and CustomNPCs script callback signatures.

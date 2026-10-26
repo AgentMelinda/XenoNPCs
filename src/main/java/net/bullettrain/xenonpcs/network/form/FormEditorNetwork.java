@@ -225,15 +225,9 @@ public final class FormEditorNetwork {
 
         private static void purchase(ServerPlayer player, TrainerPurchasePacket packet) {
             if (player == null || !(player.level().getEntity(packet.entityId) instanceof LivingEntity trainer)
-                    || !NpcCounterpartSync.isCustomNpc(trainer)
                     || player.distanceToSqr(trainer) > 8.0 * 8.0) return;
-            net.bullettrain.xenonpcs.dmz.form.DmzFormMetadata selected = null;
-            for (var metadata : DmzFormMetadataRegistry.trainerOfferings(trainer.getUUID())) {
-                if (packet.formType.equalsIgnoreCase(metadata.formType)) {
-                    selected = metadata;
-                    break;
-                }
-            }
+            net.bullettrain.xenonpcs.dmz.form.DmzFormMetadata selected =
+                    resolveTrainerOffering(trainer, packet.formType);
             if (selected == null) return;
             var metadata = selected;
             StatsProvider.get(StatsCapability.INSTANCE, player).ifPresent(data -> {
@@ -252,6 +246,29 @@ public final class FormEditorNetwork {
                 NetworkHandler.sendToTrackingEntityAndSelf(new ProgressionSyncS2C(player), player);
                 player.sendSystemMessage(net.minecraft.network.chat.Component.literal(decision.message()));
             });
+        }
+
+        /**
+         * CustomNPC trainers use registry UUID offerings; angel players use
+         * {@link net.bullettrain.xenonpcs.features.playerrole.AngelTrainerGate}
+         * (gods group only). Debit/apply stays in {@link #purchase}.
+         */
+        private static net.bullettrain.xenonpcs.dmz.form.DmzFormMetadata resolveTrainerOffering(
+                LivingEntity trainer, String formType) {
+            if (formType == null || formType.isBlank()) return null;
+            if (NpcCounterpartSync.isCustomNpc(trainer)) {
+                for (var metadata : DmzFormMetadataRegistry.trainerOfferings(trainer.getUUID())) {
+                    if (formType.equalsIgnoreCase(metadata.formType)) return metadata;
+                }
+                return null;
+            }
+            if (trainer instanceof ServerPlayer angel
+                    && net.bullettrain.xenonpcs.features.playerrole.AngelTrainerGate
+                    .isAngelTrainer(angel)) {
+                return net.bullettrain.xenonpcs.features.playerrole.AngelTrainerGate
+                        .resolveOffering(formType);
+            }
+            return null;
         }
     }
 
