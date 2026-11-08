@@ -11,7 +11,6 @@ import net.bullettrain.xenonpcs.XenoNpcsMod;
 import net.bullettrain.xenonpcs.client.DmzClientStats;
 import net.bullettrain.xenonpcs.client.XenoServerClientState;
 import net.bullettrain.xenonpcs.client.config.XenoClientConfig;
-import net.bullettrain.xenonpcs.client.pad.XenoPadInput;
 import net.bullettrain.xenonpcs.combat.DmzAnimHelper;
 import net.bullettrain.xenonpcs.client.combat.DmzAnimHelperClient;
 import net.bullettrain.xenonpcs.config.XenoServerConfig;
@@ -584,7 +583,6 @@ public final class Bt3CombatClient {
 
         @SubscribeEvent
         public static void onClientTick(ClientTickEvent.Post event) {
-            XenoPadInput.tick();
             Minecraft mc = Minecraft.getInstance();
 
             if (inputLevel != mc.level) {
@@ -808,10 +806,6 @@ public final class Bt3CombatClient {
             LivingEntity locked = LockOnEvent.getLockedTarget();
             if (locked != null && !locked.isAlive()) locked = null;
 
-            int padVanishSide = XenoPadInput.consumeVanishSide();
-            if (locked != null && padVanishSide != 0) {
-                tryMove(mc, locked, Bt3CombatPacket.Action.VANISH, padVanishSide);
-            }
 
             long now = System.currentTimeMillis();
             // Vanilla move keys only — never dual combat KeyMappings on WASD
@@ -1315,13 +1309,6 @@ public final class Bt3CombatClient {
     }
 
     private static boolean physicallyDown(KeyMapping mapping) {
-        // A gamepad press moves no physical key, so the pad is an additional source here, never a
-        // replacement: the device read below is untouched and keyboard and pad work at once. This
-        // one method is the choke point for the whole class - heldNow, guidanceKeyDown and
-        // chordDown all come through here - which is why the pad only has to be wired in once.
-        // Screen-gated to match Controlify's own key emulation, which stands down while a screen
-        // is open; the keyboard path keeps leaving that judgement to its callers, as before.
-        if (Minecraft.getInstance().screen == null && XenoPadInput.held(mapping)) return true;
         try {
             return KeyBinds.isPhysicallyDown(mapping);
         } catch (Throwable t) {

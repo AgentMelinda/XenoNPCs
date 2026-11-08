@@ -773,7 +773,7 @@ public final class XenoServerConfig {
     /**
      * Register Hakai, Zanzoken and Shi Shin No Ken as DragonMineZ technique slot entries.
      *
-     * <p>Off by default. They are reached from their own keys and gamepad chords, which work; the
+     * <p>Off by default. They are reached from their own keys; the
      * slot route is kept for a later look rather than removed, but it does not clutter DMZ's
      * technique list or intercept strikes unless it is deliberately switched on.
      */

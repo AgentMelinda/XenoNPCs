@@ -8,8 +8,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /**
- * The moves whose direct input — a key of their own, or a gamepad chord — is being replaced by a
- * route through Controlify's radial menu or a DragonMineZ technique slot.
+ * The moves whose direct key is complemented by a route through DragonMineZ technique slots.
  *
  * <p>Each one keeps its old input; this is the switch that decides whether that input still acts.
  * The point is that moving a move to a better home never has to mean deleting the way people

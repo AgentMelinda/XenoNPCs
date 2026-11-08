@@ -8,7 +8,7 @@ on:
       tag:
         description: Existing release tag to build
         required: true
-        default: v0.10.0
+        default: v0.10.1
         type: string
 
 permissions:
@@ -31,11 +31,13 @@ jobs:
         include:
           - minecraft: '1.21.1'
             java: '21'
+            mod_version: '0.10.1'
             ref: ''
           - minecraft: '1.20.1'
             java: '17'
+            mod_version: '0.1.1'
             # Pin the Forge export so re-running a release never builds a moving branch.
-            ref: '6e8a1860857a52c18a9f59fec9b323470787e7b9'
+            ref: 'af2994344caa9eab764d522a26b93dbb42963426'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,10 +55,11 @@ jobs:
       - name: Build and test
         env:
           MC_VERSION: ${{ matrix.minecraft }}
+          MOD_VERSION: ${{ matrix.mod_version }}
         run: |
           set -euo pipefail
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9.-]+)?$ ]] || { echo "invalid release tag" >&2; exit 1; }
-          VERSION="${RELEASE_TAG#v}"
+          VERSION="$MOD_VERSION"
           chmod +x gradlew
           if [ "$MC_VERSION" = '1.21.1' ]; then
             mkdir -p libs
@@ -71,9 +74,10 @@ jobs:
       - name: Select the runtime jar
         env:
           MC_VERSION: ${{ matrix.minecraft }}
+          MOD_VERSION: ${{ matrix.mod_version }}
         run: |
           set -euo pipefail
-          VERSION="${RELEASE_TAG#v}"
+          VERSION="$MOD_VERSION"
           if [ "$MC_VERSION" = '1.21.1' ]; then
             jar="build/libs/xenonpcs-${VERSION}.jar"
           else
@@ -111,7 +115,7 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${RELEASE_TAG#v}"
-          jars=("release-assets/xenonpcs-${VERSION}-1.20.1.jar" "release-assets/xenonpcs-${VERSION}-1.21.1.jar")
+          jars=("release-assets/xenonpcs-0.1.1-1.20.1.jar" "release-assets/xenonpcs-0.10.1-1.21.1.jar")
           for jar in "${jars[@]}"; do test -s "$jar"; done
           sha256sum "${jars[@]}"
           cat > release-notes.md <<'NOTES'

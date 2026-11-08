@@ -3,7 +3,6 @@ package net.bullettrain.xenonpcs.client.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.bullettrain.xenonpcs.XenoNpcsMod;
-import net.bullettrain.xenonpcs.client.pad.PadMode;
 import net.neoforged.fml.loading.FMLPaths;
 
 import java.io.IOException;
@@ -25,8 +24,7 @@ public final class XenoClientConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path PATH = FMLPaths.CONFIGDIR.get().resolve("xenonpcs-client.json");
     /** Version 3 restores Guard while its dedicated key keeps right-click placement vanilla.
-     * Version 8 adds the space sky mode; version 12 adds ambient fallen-star density; version 13
-     * adds the opt-in outbound space camera coast. */
+     * Version 3 restores Guard while its dedicated key keeps right-click placement vanilla. */
     private static final int CURRENT_CONFIG_VERSION = 14;
 
     // --- UI ---
@@ -114,32 +112,10 @@ public final class XenoClientConfig {
      */
     public static boolean bt3ChaseWGesture = false;
 
-    /**
-     * Whether gamepad input is consulted at all. On by default, but it only does anything when
-     * Controlify is installed and a controller is connected.
-     *
-     * <p>Worth a switch of its own because pad support adds a second input source to readers that
-     * previously had one, and being able to take it away without uninstalling Controlify is the
-     * fastest way to tell whether the pad is behind some odd combat behaviour.
-     */
-    public static boolean padEnabled = true;
-    /**
-     * Read BT3's melee, dash, guard, charge and lock straight off the pad instead of through the
-     * registered bindings. Off by default: the raw reads carry no chord gate, so holding the left
-     * trigger and pressing X reports a plain melee press as well as the Ultimate it meant. Kept so
-     * the two input paths can be compared in play.
-     */
-    public static boolean padRawPolling = false;
+
 
     /**
-     * Feed DragonMineZ flight the left stick's analogue impulses instead of emulating WASD, so a
-     * half-pushed stick flies at half speed. Off by default: the emulated-key path is the one that
-     * matches keyboard flight exactly, and this one rewrites DMZ's own input handling.
-     */
-    public static boolean padAnalogueFlight = false;
-
-    /**
-     * Whether each move's own key or gamepad chord still fires it, alongside any newer route --
+     * Whether each move's own key still fires it, alongside any newer route --
      * a DragonMineZ technique slot, a combo terminator, or a resource state.
      *
      * <p>All ship <b>on</b>, deliberately. Switching one off makes the newer route the only way to
@@ -218,28 +194,7 @@ public final class XenoClientConfig {
     /** The tallest the HD aura is stretched by the ki aura curve, 1-10. /xenoaura maxheight. */
     public static float auraMaxHeight = 10.0f;
 
-    /**
-     * Use the rewritten Controlify integration in {@code client.pad2} instead of {@code client.pad}.
-     *
-     * <p><b>Read once, during Controlify's pre-init, and a restart is required to change which
-     * package is live.</b> Controlify loads its saved bind configuration immediately after pre-init,
-     * so a binding declared any later has nothing to restore from - the same reason
-     * {@code XenoControlifyEntrypoint} declares everything there.
-     *
-     * <p>On by default. The old package is kept intact and reachable by turning this off, because
-     * a controller-only regression can only be found with a controller in hand.
-     */
-    public static boolean padRewrite = true;
 
-    /**
-     * Extra radial entries, beyond the eight Controlify itself holds.
-     *
-     * <p>Binding ids in the order they should appear after Controlify's own. Empty means "use
-     * {@code PadRadialSlots.DEFAULT_EXTRAS}", which is not the same as a player having deliberately
-     * cleared the list - an explicitly emptied list is stored as a single blank entry so the two
-     * can be told apart.
-     */
-    public static java.util.List<String> padRadialExtras = java.util.List.of();
 
     /**
      * XenoCombat v2 keybind cleanup: the first time the v2 controller is active, unbind every key
@@ -259,7 +214,6 @@ public final class XenoClientConfig {
     public static int shaderReloadKey = 0;
 
     /** Controller gameplay layer; BT3 is the first-install default and the last choice is saved. */
-    public static PadMode padMode = PadMode.BT3;
     public static boolean bt3BackstepClient = true;
     public static boolean bt3ChargeAttackClient = true;
     public static boolean bt3DragonDashClient = true;
@@ -449,50 +403,13 @@ public final class XenoClientConfig {
     /** Fraction of the pilot's current velocity inherited by the visual projectile model. */
     public static float leadAssistShooterVelocityInheritance = 1.0f;
 
-    // ---- Space visuals ----
-    /**
-     * Which sky this client draws in a space dimension: {@code void} (black fading to a little purple,
-     * one cube, no star buffer — the default and the cheapest), {@code stars} (the cached star field on
-     * top of that cube), or {@code off} (draw nothing here and let vanilla's end-style void have the
-     * frame). {@code /xenoset sky}, resolved by {@link net.bullettrain.xenonpcs.client.space.SpaceSkyMode}.
-     *
-     * <p>Client-local like every other key here: the server has no opinion about what you can see
-     * comfortably, and a player on a weak GPU should be able to trade the star field for frames
-     * without asking anyone else to restart anything.
-     */
-    public static String spaceSkyMode = "stars";
-    /** Chance (0..100) per 30-second Voidsea sky window to show one deterministic shooting star; 0 disables it. */
-    public static int spaceFallenStarDensity = 25;
-
-    /** Draw low-cost chart planet projections when no replicated Sable body is available. */
-    public static String spacePlanetMode = "bodies";
-    public static boolean spacePlanetProjections = true;
-    /**
-     * Far projections sample each body's own HD map instead of the shared three-globe style strip.
-     * Off keeps the legacy strip until the per-body path has been seen working in game.
-     */
-    /** Per-body reduced maps keep far planets identifiable; the shared Earth/Moon/Namek atlas remains selectable. */
-    public static boolean spacePlanetProjectionMaps = true;
-
     /** Client-side Hakai presentation: classic fade, legacy top-down sweep, or crosshair-origin impact spread. */
     public static String hakaiEraseStyle = "impact";
 
-    /** Draw bounded, deterministic small planets from afar (SmallPlanetFarRenderer). */
-    public static boolean smallPlanetLod = true;
 
     /** Debug: log every Hakai sweep packet and per-frame sweep value (not saved; {@code /xenoset hakai debug}). */
     public static boolean hakaiSweepDebug = false;
 
-    /**
-     * Hides the "Downloading terrain" screen on every entry into or exit from a planet dimension, not
-     * only on Voidsea crossings. Off restores the host-only behaviour, where direct planet-to-planet
-     * travel and ordinary portals into a planet keep the vanilla screen. Read when the screen opens, so
-     * it applies on the next crossing without a restart.
-     */
-    public static boolean spaceHidePlanetLoadScreen = true;
-
-    /** Experimental outbound Voidsea camera coast; off keeps the proven captured-frame curtain. */
-    public static boolean spaceCameraCoast = false;
 
     private XenoClientConfig() {}
 
@@ -526,15 +443,12 @@ public final class XenoClientConfig {
             // still explicitly select it afterward with /xenoset hakai sweep.
             boolean migrateHakaiImpactDefault = HakaiEraseStylePolicy.shouldUpgradeDefaultToImpact(
                     data.configVersion, HakaiEraseStylePolicy.IMPACT_DEFAULT_VERSION, data.hakaiEraseStyle);
-            boolean migratePlanetProjectionMapDefault = PlanetProjectionMapPolicy
-                    .shouldUpgradeToPerBodyDefault(data.configVersion, CURRENT_CONFIG_VERSION);
             apply(data);
             if (migrateDmzDialogueDefault) {
                 dialogueDmzNativeTextures = true;
                 dmzQuestToastNative = true;
             }
             if (migrateHakaiImpactDefault) hakaiEraseStyle = "impact";
-            if (migratePlanetProjectionMapDefault) spacePlanetProjectionMaps = true;
             if (migrateDirectBinds) {
                 bt3DirectHakai = true;
                 bt3DirectZanzoken = true;
@@ -598,9 +512,6 @@ public final class XenoClientConfig {
         d.cloneDmzAppearance = cloneDmzAppearance;
         d.bt3ChaseSpaceGesture = bt3ChaseSpaceGesture;
         d.bt3ChaseWGesture = bt3ChaseWGesture;
-        d.padEnabled = padEnabled;
-        d.padRawPolling = padRawPolling;
-        d.padAnalogueFlight = padAnalogueFlight;
         d.bt3DirectHakai = bt3DirectHakai;
         d.bt3DirectZanzoken = bt3DirectZanzoken;
         d.bt3DirectMultiform = bt3DirectMultiform;
@@ -629,15 +540,12 @@ public final class XenoClientConfig {
         d.auraOverParticles = auraOverParticles;
         d.auraFirstPerson = auraFirstPerson;
         d.auraMaxHeight = auraMaxHeight;
-        d.padRewrite = padRewrite;
-        d.padRadialExtras = padRadialExtras.isEmpty() ? null : java.util.List.copyOf(padRadialExtras);
         d.keybindAutoClean = keybindAutoClean;
         d.keybindAutoCleanDone = keybindAutoCleanDone;
         d.keybindKeepPrefixes = keybindKeepPrefixes.isEmpty() ? null : java.util.List.copyOf(keybindKeepPrefixes);
         d.v2KeyLayout = v2KeyLayout;
         d.keybindRepair = keybindRepair;
         d.shaderReloadKey = shaderReloadKey;
-        d.padMode = padMode.name();
         d.bt3BackstepClient = bt3BackstepClient;
         d.bt3ChargeAttackClient = bt3ChargeAttackClient;
         d.bt3DragonDashClient = bt3DragonDashClient;
@@ -705,15 +613,7 @@ public final class XenoClientConfig {
         d.leadAssistShooterVelocityInheritance = leadAssistShooterVelocityInheritance;
         d.flightThrottleScrollStep = flightThrottleScrollStep;
         d.flightThrottleKeyRatePerSec = flightThrottleKeyRatePerSec;
-        d.spaceSkyMode = spaceSkyMode;
-        d.spaceFallenStarDensity = spaceFallenStarDensity;
-        d.spacePlanetMode = spacePlanetMode;
-        d.spacePlanetProjections = spacePlanetProjections;
-        d.spacePlanetProjectionMaps = spacePlanetProjectionMaps;
         d.hakaiEraseStyle = hakaiEraseStyle;
-        d.smallPlanetLod = smallPlanetLod;
-        d.spaceHidePlanetLoadScreen = spaceHidePlanetLoadScreen;
-        d.spaceCameraCoast = spaceCameraCoast;
         return d;
     }
 
@@ -745,9 +645,6 @@ public final class XenoClientConfig {
         cloneDmzAppearance = d.cloneDmzAppearance;
         bt3ChaseSpaceGesture = d.bt3ChaseSpaceGesture;
         bt3ChaseWGesture = d.bt3ChaseWGesture;
-        padEnabled = d.padEnabled == null || d.padEnabled;
-        padRawPolling = d.padRawPolling != null && d.padRawPolling;
-        padAnalogueFlight = d.padAnalogueFlight != null && d.padAnalogueFlight;
         bt3DirectHakai = d.bt3DirectHakai == null || d.bt3DirectHakai;
         bt3DirectZanzoken = d.bt3DirectZanzoken == null || d.bt3DirectZanzoken;
         bt3DirectMultiform = d.bt3DirectMultiform == null || d.bt3DirectMultiform;
@@ -784,7 +681,6 @@ public final class XenoClientConfig {
         // size saved under either earlier key (auraSize, auraScale) was set against a wrong scale.
         auraSize = d.auraSizeDmz == null || !Float.isFinite(d.auraSizeDmz) ? 1.0f
                 : Math.max(0.2f, Math.min(5f, d.auraSizeDmz));
-        padRewrite = d.padRewrite == null || d.padRewrite;
         // Absent means never configured, which takes the defaults. Bounded on read as well as on
         // write: this is a hand-editable JSON file, and a list of a thousand ids would otherwise
         // become a thousand radial slots nobody asked for.
@@ -796,12 +692,6 @@ public final class XenoClientConfig {
         keybindKeepPrefixes = d.keybindKeepPrefixes == null ? java.util.List.of()
                 : java.util.List.copyOf(d.keybindKeepPrefixes.stream()
                         .filter(v -> v != null && !v.isBlank()).limit(64).toList());
-        padRadialExtras = d.padRadialExtras == null ? java.util.List.of()
-                : java.util.List.copyOf(d.padRadialExtras.stream()
-                        .filter(java.util.Objects::nonNull)
-                        .limit(net.bullettrain.xenonpcs.client.pad2.PadRadialSlots.MAX_SLOTS)
-                        .toList());
-        padMode = PadMode.parse(d.padMode);
         bt3BackstepClient = d.bt3BackstepClient;
         bt3ChargeAttackClient = d.bt3ChargeAttackClient;
         bt3DragonDashClient = d.bt3DragonDashClient;
@@ -887,22 +777,11 @@ public final class XenoClientConfig {
                 : Math.max(0.01f, Math.min(0.5f, d.flightThrottleScrollStep));
         flightThrottleKeyRatePerSec = d.flightThrottleKeyRatePerSec == null ? 0.6f
                 : Math.max(0.05f, Math.min(4.0f, d.flightThrottleKeyRatePerSec));
-        // Resolved through the enum rather than trusted: this file is hand-editable, and the sky has
-        // to pick one of three modes whether the stored value is "stars", "STARS ", or nonsense.
-        spaceSkyMode = net.bullettrain.xenonpcs.client.space.SpaceSkyMode.byName(d.spaceSkyMode).id;
-        spaceFallenStarDensity = d.spaceFallenStarDensity == null ? 25 : Math.max(0, Math.min(100, d.spaceFallenStarDensity));
-        spacePlanetMode = net.bullettrain.xenonpcs.client.space.SpacePlanetMode.byName(d.spacePlanetMode).id;
-        spacePlanetProjections = d.spacePlanetProjections == null || d.spacePlanetProjections;
-        // Missing setting means the new identity-correct mode. Preserve an explicit atlas opt-out in saved files.
-        spacePlanetProjectionMaps = d.spacePlanetProjectionMaps == null || d.spacePlanetProjectionMaps;
         hakaiEraseStyle = switch (d.hakaiEraseStyle == null ? "" : d.hakaiEraseStyle.toLowerCase(java.util.Locale.ROOT)) {
             case "classic" -> "classic";
             case "impact" -> "impact";
             default -> "sweep";
         };
-        smallPlanetLod = d.smallPlanetLod == null || d.smallPlanetLod;
-        spaceHidePlanetLoadScreen = d.spaceHidePlanetLoadScreen == null || d.spaceHidePlanetLoadScreen;
-        spaceCameraCoast = Boolean.TRUE.equals(d.spaceCameraCoast);
     }
 
     public static class Data {
@@ -933,9 +812,6 @@ public final class XenoClientConfig {
         public boolean cloneDmzAppearance = true;
         public boolean bt3ChaseSpaceGesture = false;
         public boolean bt3ChaseWGesture = false;
-        public Boolean padEnabled;
-        public Boolean padRawPolling;
-        public Boolean padAnalogueFlight;
         public Boolean bt3DirectHakai;
         public Boolean bt3DirectZanzoken;
         public Boolean bt3DirectMultiform;
@@ -964,15 +840,12 @@ public final class XenoClientConfig {
         public Boolean auraOverParticles;
         public Boolean auraFirstPerson;
         public Float auraMaxHeight;
-        public Boolean padRewrite;
-        public java.util.List<String> padRadialExtras;
         public Boolean keybindAutoClean;
         public Boolean keybindAutoCleanDone;
         public java.util.List<String> keybindKeepPrefixes;
         public Integer v2KeyLayout;
         public Integer keybindRepair;
         public Integer shaderReloadKey;
-        public String padMode;
         public boolean bt3BackstepClient = true;
         public boolean bt3ChargeAttackClient = true;
         public boolean bt3DragonDashClient = true;
@@ -1040,14 +913,6 @@ public final class XenoClientConfig {
         public Float leadAssistShooterVelocityInheritance;
         public Float flightThrottleScrollStep;
         public Float flightThrottleKeyRatePerSec;
-        public String spaceSkyMode;
-        public Integer spaceFallenStarDensity;
-        public String spacePlanetMode;
-        public Boolean spacePlanetProjections;
-        public Boolean spacePlanetProjectionMaps;
         public String hakaiEraseStyle;
-        public Boolean smallPlanetLod;
-        public Boolean spaceHidePlanetLoadScreen;
-        public Boolean spaceCameraCoast;
     }
 }

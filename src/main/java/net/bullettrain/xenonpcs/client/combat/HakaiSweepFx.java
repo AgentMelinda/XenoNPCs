@@ -8,7 +8,7 @@ import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.bullettrain.xenonpcs.client.config.XenoClientConfig;
-import net.bullettrain.xenonpcs.client.space.IrisShaderState;
+import net.bullettrain.xenonpcs.client.render.IrisShaderState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.GameRenderer;

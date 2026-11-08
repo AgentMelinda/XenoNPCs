@@ -281,26 +281,20 @@ public final class HdAuraClient {
      */
     private static float[] kiAuraStretch(AbstractClientPlayer source, StatsData stats) {
         float[] dims;
-        float npcFactor = net.bullettrain.xenonpcs.client.compat.npc.NpcFullDmzRenderer.auraFactor(stats);
-        if (!Float.isFinite(npcFactor) || npcFactor <= 0.0f) npcFactor = 1.0f;
         try {
             dims = HdAuraPlan.relativeToRest(DmzAuraLayersInvoker.xenopixels$auraScale(source, stats));
             if (!net.bullettrain.xenonpcs.client.config.XenoAuraConfig.enabled) return dims;
-            // getModelScale already includes the NPC factor. Cap power/charge growth first,
-            // then restore the owner's chosen size so the player cap cannot flatten large NPCs.
-            dims = new float[] {dims[0] / npcFactor, dims[1] / npcFactor};
         } catch (RuntimeException | LinkageError e) {
             // DragonMineZ's sizing could not be asked: the curve alone, without the model scale.
             float[] scaled = XenoAuraScaling.apply(new float[] {1.0f, 1.0f, 1.0f}, stats);
             dims = scaled == null || scaled.length < 2 ? new float[] {1.0f, 1.0f}
                     : new float[] {scaled[0], scaled[1]};
         }
-        if (!net.bullettrain.xenonpcs.client.config.XenoAuraConfig.enabled)
-            return new float[] {dims[0] * npcFactor, dims[1] * npcFactor};
-        return HdAuraPlan.capNpcStretch(dims[0], dims[1], XenoClientConfig.auraMaxHeight, npcFactor);
+        if (!net.bullettrain.xenonpcs.client.config.XenoAuraConfig.enabled) return dims;
+        return HdAuraPlan.capNpcStretch(dims[0], dims[1], XenoClientConfig.auraMaxHeight, 1.0f);
     }
 
-    /** An NPC: use its actual display/profile scale and explicit aura scale exactly once. */
+    /** An NPC: use DragonMineZ's native aura dimensions without NPC-only scale multipliers. */
     private static void emit(ClientLevel level, Entity entity, List<HdAuraPlan.Layer> plan, Set<Integer> extras) {
         float scale = net.bullettrain.xenonpcs.client.compat.npc.NpcAuraClient.auraRenderScale(
                 (net.minecraft.world.entity.LivingEntity) entity);

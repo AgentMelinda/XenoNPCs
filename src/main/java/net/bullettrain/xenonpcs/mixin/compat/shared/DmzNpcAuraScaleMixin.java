@@ -47,15 +47,6 @@ public abstract class DmzNpcAuraScaleMixin {
     }
 
     @ModifyReturnValue(
-            method = "getModelScale(Lcom/dragonminez/common/stats/StatsData;)[F",
-            at = @At("RETURN"), require = 1)
-    private static float[] xenopixels$scaleNpcAura(float[] original, StatsData stats) {
-        float factor = NpcFullDmzRenderer.auraFactor(stats);
-        if (factor == 1.0f || original == null || original.length < 3) return original;
-        return new float[]{original[0] * factor, original[1] * factor, original[2] * factor};
-    }
-
-    @ModifyReturnValue(
             method = "getAuraLayers(Lnet/minecraft/world/entity/player/Player;" +
                     "Lcom/dragonminez/common/stats/StatsData;FZ)Ljava/util/List;",
             at = @At("RETURN"), require = 1)
@@ -66,11 +57,16 @@ public abstract class DmzNpcAuraScaleMixin {
         List<AuraLayer> layers = new ArrayList<>(resolved.layers().size());
         for (NpcAuraResolver.Layer layer : resolved.layers()) {
             int rgb = layer.rgb();
-            layers.add(new AuraLayer(layer.type(), layer.index(), new float[]{
+            AuraLayer nativeLayer = new AuraLayer(layer.type(), layer.index(), new float[]{
                     ((rgb >>> 16) & 0xFF) / 255.0f,
                     ((rgb >>> 8) & 0xFF) / 255.0f,
                     (rgb & 0xFF) / 255.0f
-            }));
+            });
+            if (layer.threeD()) nativeLayer.style = com.dragonminez.client.render.effects.AuraStyle.resolve(
+                    layer.threeDStyle() == null
+                            ? com.dragonminez.common.config.FormConfig.Aura3DStyle.DEFAULT
+                            : layer.threeDStyle(), nativeLayer.color);
+            layers.add(nativeLayer);
         }
         return layers;
     }
