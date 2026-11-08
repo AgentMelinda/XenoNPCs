@@ -110,7 +110,8 @@ final class XenoNpcSavePolicy {
             "NpcMeleeProps", "NpcRangedProps", "NpcProjectileProps", "NpcResistanceProps",
             "AuraOn", "AuraColorHex", "SelectedFormGroup", "SelectedForm",
             "SelectedStackFormGroup", "SelectedStackForm", "AuraRocks", "AuraSparking",
-            "AuraLightning", "AuraGroundRing", "AggroMultiplier", "AimAccuracy",
+            "AuraLightning", "AuraGroundRing", "BaseAuraStyle", "FormAuraStyles",
+            "StackAuraStyles", "AggroMultiplier", "AimAccuracy",
             "KiWeaponOn", "KiWeaponType", "FormPower", "BaseSize", "KiChargePercent",
             "AuraScale", "HairEnabled", "HairCode", "HairCodeChunks", "HairColor", "HairStyleId",
             "DmzAppearance", "ModelKind", "ModelId", "ModelAnimation", "ModelTexture", "ModelTint",
@@ -247,6 +248,16 @@ final class XenoNpcSavePolicy {
         for (String key : tag.getAllKeys()) {
             if (!EDITABLE_KEYS.contains(key)) {
                 return Validation.reject("field is not editor-owned: " + key);
+            }
+            if (key.equals("BaseAuraStyle")) {
+                Validation style = validateAuraStyle(tag, key);
+                if (!style.accepted()) return style;
+                continue;
+            }
+            if (key.equals("FormAuraStyles") || key.equals("StackAuraStyles")) {
+                Validation styles = validateAuraStyleMap(tag, key);
+                if (!styles.accepted()) return styles;
+                continue;
             }
             if (key.equals("ImportedMoveSpeed")) {
                 if (!tag.contains(key, Tag.TAG_INT) || tag.getInt(key) < -1 || tag.getInt(key) > 100)
@@ -419,6 +430,66 @@ final class XenoNpcSavePolicy {
             Tag received = tag.get(key);
             if (expected == null || received == null || expected.getId() != received.getId()) {
                 return Validation.reject("wrong tag type for " + key);
+            }
+        }
+        return Validation.accept();
+    }
+
+    private static Validation validateAuraStyleMap(CompoundTag tag, String key) {
+        if (!tag.contains(key, Tag.TAG_LIST)) return Validation.reject("wrong tag type for " + key);
+        ListTag styles = tag.getList(key, Tag.TAG_COMPOUND);
+        if (styles.size() > 128) return Validation.reject("too many entries in " + key);
+        for (int i = 0; i < styles.size(); i++) {
+            CompoundTag entry = styles.getCompound(i);
+            if (entry.size() != 3 || !entry.contains("Group", Tag.TAG_STRING)
+                    || !entry.contains("Form", Tag.TAG_STRING)
+                    || !entry.contains("Style", Tag.TAG_COMPOUND)) {
+                return Validation.reject("invalid entry in " + key);
+            }
+            String group = entry.getString("Group");
+            String form = entry.getString("Form");
+            if (group.isBlank() || form.isBlank() || group.length() > 64 || form.length() > 64
+                    || group.indexOf('\0') >= 0 || form.indexOf('\0') >= 0) {
+                return Validation.reject("invalid aura style key in " + key);
+            }
+            Validation style = validateAuraStyle(entry, "Style");
+            if (!style.accepted()) return style;
+        }
+        return Validation.accept();
+    }
+
+    private static Validation validateAuraStyle(CompoundTag tag, String key) {
+        if (!tag.contains(key, Tag.TAG_COMPOUND)) return Validation.reject("wrong tag type for " + key);
+        CompoundTag style = tag.getCompound(key);
+        if (style.size() > 14) return Validation.reject("invalid " + key);
+        for (String field : style.getAllKeys()) {
+            if (field.equals("Smooth") || field.equals("ThreeD")) {
+                if (!style.contains(field, Tag.TAG_STRING)
+                        || !Set.of("INHERIT", "ON", "OFF").contains(style.getString(field))) {
+                    return Validation.reject("invalid aura " + field + " setting");
+                }
+            } else if (field.equals("Enabled") || field.equals("ExtraConfigured")
+                    || field.equals("ExtraEnabled") || field.equals("LightningConfigured")
+                    || field.equals("LightningEnabled")) {
+                if (!style.contains(field, Tag.TAG_BYTE)) return Validation.reject("wrong tag type for aura " + field);
+            } else if (field.equals("PrimaryLayer") || field.equals("ExtraLayer")) {
+                if (!style.contains(field, Tag.TAG_INT)
+                        || style.getInt(field) < -1 || style.getInt(field) > 6) {
+                    return Validation.reject("invalid aura " + field);
+                }
+            } else if (field.equals("PrimaryColor") || field.equals("ExtraColor")
+                    || field.equals("LightningColor")) {
+                if (!style.contains(field, Tag.TAG_STRING)) return Validation.reject("wrong tag type for aura " + field);
+                String value = style.getString(field);
+                if (!value.isEmpty() && NpcCombatProfile.parseHexColor(value).isEmpty()) {
+                    return Validation.reject("invalid aura " + field);
+                }
+            } else if (field.equals("PrimaryType") || field.equals("ExtraType")) {
+                if (!style.contains(field, Tag.TAG_STRING) || style.getString(field).length() > 64) {
+                    return Validation.reject("invalid aura " + field);
+                }
+            } else {
+                return Validation.reject("unknown aura style field: " + field);
             }
         }
         return Validation.accept();

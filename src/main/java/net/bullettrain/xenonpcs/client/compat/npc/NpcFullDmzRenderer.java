@@ -38,11 +38,9 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -52,9 +50,6 @@ public final class NpcFullDmzRenderer {
     private static final Map<UUID, ProxyPlayer> WORLD_PROXIES = new ConcurrentHashMap<>();
     private static final Map<UUID, ProxyPlayer> PREVIEW_PROXIES = new ConcurrentHashMap<>();
     private static final AtomicInteger NEXT_PREVIEW_ID = new AtomicInteger(-1_000_000);
-    /** Extra model scale read by the NPC-only AuraRenderer mixin. Weak keys cannot retain proxies. */
-    private static final Map<StatsData, Float> AURA_FACTORS =
-            Collections.synchronizedMap(new WeakHashMap<>());
     /** Resolved NPC overrides consumed by DMZ's deferred native aura renderer. */
     private static final Map<UUID, NpcAuraResolver.Resolved> NATIVE_AURAS = new ConcurrentHashMap<>();
     /** Active only while a synthetic NPC proxy is inside DMZ's renderer. */
@@ -193,7 +188,6 @@ public final class NpcFullDmzRenderer {
         TransformSnapshot transform = syncTransformHold(stats, owner, state, partialTick);
         FormConfig.FormData activeForm = resolveActiveForm(state);
         FormConfig.FormData activeStack = resolveActiveStackForm(visual);
-        AURA_FACTORS.put(stats, worldAuraFactor(owner, state));
 
         DMZPlayerRenderer renderer = DMZRendererCache.getTPRenderer(proxy);
         if (renderer == null) return false;
@@ -258,7 +252,6 @@ public final class NpcFullDmzRenderer {
         syncKiWeapon(stats, visual);
         syncFlySkill(stats, visual, visual.flySkillOn);
         NATIVE_AURAS.put(proxy.getUUID(), NpcAuraResolver.resolve(visual));
-        AURA_FACTORS.put(stats, state.auraScale());
 
         float oldBody = proxy.yBodyRot;
         float oldBodyO = proxy.yBodyRotO;
@@ -378,13 +371,6 @@ public final class NpcFullDmzRenderer {
         stats.getSkills().setSkillActive(id, active);
     }
 
-    /** Called only by the AuraRenderer mixin; ordinary DMZ players have no registered factor. */
-    public static float auraFactor(StatsData stats) {
-        if (stats == null) return 1.0f;
-        Float factor = AURA_FACTORS.get(stats);
-        return factor == null || !Float.isFinite(factor) ? 1.0f : Math.max(0.05f, factor);
-    }
-
     /** Saved layer/effect choices for the synthetic player processed by AuraRenderer. */
     public static NpcAuraResolver.Resolved nativeAura(UUID playerId) {
         return playerId == null ? null : NATIVE_AURAS.get(playerId);
@@ -458,14 +444,6 @@ public final class NpcFullDmzRenderer {
         return Math.max(0.0f, Math.min(1.0f, context.transitionProgress()));
     }
 
-    private static float worldAuraFactor(LivingEntity owner, NpcAppearanceClient.State state) {
-        // AuraRenderer already includes DMZ's resolved race/form model scaling. Only add
-        // CustomNPC Display size and the explicit NPC aura-scale setting here.
-        // Shared helper: a native Xeno NPC has no CustomNPCs display, so getSize answers 0 and
-        // the old max(0.05, 0/5) shrank the aura to a twentieth of its size.
-        return NpcDisplayApply.sizeScale(owner) * state.auraScale();
-    }
-
     private static TransformSnapshot syncTransformHold(StatsData stats, LivingEntity owner,
                                                        NpcAppearanceClient.State state,
                                                        float partialTick) {
@@ -492,7 +470,6 @@ public final class NpcFullDmzRenderer {
         WORLD_PROXIES.clear();
         for (UUID id : java.util.List.copyOf(COPY_PROXIES.keySet())) forgetCopy(id);
         PREVIEW_PROXIES.clear();
-        AURA_FACTORS.clear();
         NATIVE_AURAS.clear();
         LAST_PROXY_IDENTITY.clear();
         RENDER_CONTEXT.remove();
@@ -639,7 +616,7 @@ public final class NpcFullDmzRenderer {
      * the owner.
      *
      * <p>Deliberately sets no {@link #RENDER_CONTEXT} and writes no entry to {@link #NATIVE_AURAS}
-     * or {@link #AURA_FACTORS}: those override appearance for NPCs that have no real data, and a
+     * those override appearance for NPCs that have no real data, and a
      * copy has real data, so the native player path should apply.
      *
      * @return true when the copy was drawn; false means the caller should fall back

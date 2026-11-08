@@ -71,7 +71,7 @@ public final class NpcAuraClient {
      * {@code getAuraScale}'s 1.05 base (AuraRenderer :360) and then by the 2.2 draw multiplier
      * (:745), uniformly on all three axes. Our {@code scale} already carries the same quantity
      * DMZ's model scale carries for a FULL NPC -- CNPC display size times the profile's aura
-     * scale, see {@code NpcFullDmzRenderer.worldAuraFactor}.
+     * scale.
      */
     private static final float DMZ_AURA_BASE = 2.2f * DMZ_AURA_SCALE;
     /** Y offset DMZ applies after scaling, so it is in scaled units (AuraRenderer :794). */
@@ -272,7 +272,7 @@ public final class NpcAuraClient {
             }
             Vec3 feet = visualFeet(mc, entity, partial);
             float sizeMul = cnpcSizeMul(entity);
-            float scale = state.scale() * sizeMul;
+            float scale = 1.0f;
             float height = 1.8f * scale;
             float width = 0.6f * scale;
             Vec3 mid = feet.add(0.0, height * 0.5, 0.0);

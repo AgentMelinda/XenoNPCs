@@ -92,7 +92,7 @@ public final class NpcCurios {
      * Whether Curios is installed.
      *
      * <p>Cached, because it cannot change while the game is running and this is asked once per
-     * screen open. Null-safe on {@code ModList} for the same reason {@code XenoPadInput} is: it is
+     * screen open. Null-safe on {@code ModList} because it is
      * not populated in a unit test.
      */
     public static boolean installed() {

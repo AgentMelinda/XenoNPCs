@@ -1,4 +1,4 @@
-package net.bullettrain.xenonpcs.client.space;
+package net.bullettrain.xenonpcs.client.render;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;

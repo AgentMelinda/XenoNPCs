@@ -71,9 +71,6 @@ public class ConditionalMixinPlugin implements IMixinConfigPlugin {
         if (mixinClassName.contains(".compat.createpropulsion.")) {
             return isModLoaded("createpropulsion");
         }
-        if (mixinClassName.contains(".compat.controlify.")) {
-            return isModLoaded("controlify");
-        }
         if (mixinClassName.contains(".compat.cosmonautics.")) {
             // dev.egg.* belongs to both rocketnautics and dimensional_sable, so class presence cannot tell the
             // two mods apart: installing dimensional_sable would otherwise activate the warp-rewriting mixins
@@ -168,9 +165,6 @@ public class ConditionalMixinPlugin implements IMixinConfigPlugin {
         if ("createpropulsion".equals(modId)) {
             return isClassPresent(
                     "dev.propulsionteam.propulsionsimulated.particles.plasma.PlasmaParticle");
-        }
-        if ("controlify".equals(modId)) {
-            return isClassPresent("dev.isxander.controlify.api.ControlifyApi");
         }
         if ("rocketnautics".equals(modId)) {
             // dev.egg.SubLevelTemplate is the wrong probe: dimensional_sable ships that class too. This one

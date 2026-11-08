@@ -14,6 +14,7 @@ import software.bernie.geckolib.core.animation.AnimationProcessor;
 import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.core.animation.AnimationState;
 import software.bernie.geckolib.core.animatable.GeoAnimatable;
+import software.bernie.geckolib.core.animatable.model.CoreGeoBone;
 import software.bernie.geckolib.cache.object.GeoBone;
 
 /**
@@ -28,26 +29,26 @@ public abstract class DmzMeleeHeadLookMixin {
     // registered occurrence, rather than fragile instruction ordinals.
     @Redirect(
             method = "setCustomAnimations(Lnet/minecraft/client/player/AbstractClientPlayer;JLsoftware/bernie/geckolib/core/animation/AnimationState;)V",
-            at = @At(value = "INVOKE", target = "Lsoftware/bernie/geckolib/cache/object/GeoBone;setRotX(F)V"),
+            at = @At(value = "INVOKE", target = "Lsoftware/bernie/geckolib/core/animatable/model/CoreGeoBone;setRotX(F)V"),
             require = 1
     )
-    private void xenopixels$preserveAuthoredX(GeoBone bone, float rotation, AbstractClientPlayer player,
+    private void xenopixels$preserveAuthoredX(CoreGeoBone bone, float rotation, AbstractClientPlayer player,
                                             long instanceId, AnimationState<?> state) {
         if (!xenopixels$ownsAuthoredBone(player, bone)) bone.setRotX(rotation);
     }
 
     @Redirect(
             method = "setCustomAnimations(Lnet/minecraft/client/player/AbstractClientPlayer;JLsoftware/bernie/geckolib/core/animation/AnimationState;)V",
-            at = @At(value = "INVOKE", target = "Lsoftware/bernie/geckolib/cache/object/GeoBone;setRotY(F)V"),
+            at = @At(value = "INVOKE", target = "Lsoftware/bernie/geckolib/core/animatable/model/CoreGeoBone;setRotY(F)V"),
             require = 1
     )
-    private void xenopixels$preserveAuthoredY(GeoBone bone, float rotation, AbstractClientPlayer player,
+    private void xenopixels$preserveAuthoredY(CoreGeoBone bone, float rotation, AbstractClientPlayer player,
                                             long instanceId, AnimationState<?> state) {
         if (!xenopixels$ownsAuthoredBone(player, bone)) bone.setRotY(rotation);
     }
 
     @Unique
-    private static boolean xenopixels$ownsAuthoredBone(AbstractClientPlayer player, GeoBone bone) {
+    private static boolean xenopixels$ownsAuthoredBone(AbstractClientPlayer player, CoreGeoBone bone) {
         if (!(player instanceof GeoAnimatable animation)) return false;
         // DMZ's getCurrentPlayingAnimation() reads the movement "controller";
         // POSE/MeleeAnimationS2C plays on "attack_controller" instead (2.1.3).

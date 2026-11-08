@@ -1,6 +1,5 @@
 package net.bullettrain.xenonpcs.client.combat.anim;
 
-import net.bullettrain.xenonpcs.client.pad.XenoPadInput;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
@@ -73,6 +72,5 @@ public final class Bt3KeyframeHandlers {
         }
         String instruction = event.getKeyframeData().getInstructions();
         boolean heavy = instruction != null && instruction.contains("finish");
-        XenoPadInput.rumbleImpact(heavy ? 0.85f : 0.34f, heavy ? 7 : 3);
     }
 }
