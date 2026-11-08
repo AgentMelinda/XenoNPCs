@@ -27,6 +27,7 @@ public final class QuestToastOverlay {
 
     private static volatile String title = "";
     private static volatile long shownAt;
+    private static volatile boolean nativeDmzToast;
 
     private QuestToastOverlay() {
     }
@@ -35,6 +36,15 @@ public final class QuestToastOverlay {
     public static void show(String questTitle) {
         title = questTitle == null ? "" : questTitle;
         shownAt = System.currentTimeMillis();
+        nativeDmzToast = net.bullettrain.xenonpcs.client.config.XenoClientConfig.dmzQuestToastNative;
+        if (nativeDmzToast) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft != null && minecraft.getToasts() != null) {
+                minecraft.getToasts().addToast(new com.dragonminez.client.gui.quest.StoryToast(
+                        Component.literal("New Quest"), Component.literal(title),
+                        com.dragonminez.client.gui.quest.StoryToast.Tone.SUCCESS));
+            } else nativeDmzToast = false;
+        }
     }
 
     /** What the toast last announced. Empty once it has been reset. */
@@ -51,11 +61,12 @@ public final class QuestToastOverlay {
     public static void reset() {
         title = "";
         shownAt = 0L;
+        nativeDmzToast = false;
     }
 
     public static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         String shown = title;
-        if (shown.isEmpty() || System.currentTimeMillis() - shownAt > LIFETIME_MS) {
+        if (nativeDmzToast || shown.isEmpty() || System.currentTimeMillis() - shownAt > LIFETIME_MS) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
@@ -63,7 +74,7 @@ public final class QuestToastOverlay {
         int y = MARGIN;
 
         XenoAtlasSprites.blit(graphics, "xeno_quest_toast",
-                XenoAtlasSprites.Theme.BLUE, x, y);
+                XenoAtlasSprites.theme(), x, y);
 
         graphics.drawString(minecraft.font, Component.literal("New Quest"),
                 x + 8, y + 7, 0xFFFFC928, false);

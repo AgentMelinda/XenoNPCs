@@ -46,22 +46,6 @@ public abstract class DmzNpcAuraScaleMixin {
         throw new AssertionError();
     }
 
-    @ModifyReturnValue(method = "useAura3D(Lnet/minecraft/world/entity/player/Player;)Z", at = @At("RETURN"), require = 1)
-    private static boolean xenopixels$npcThreeD(boolean original, Player player) {
-        NpcAuraResolver.Resolved resolved = NpcFullDmzRenderer.nativeAura(player.getUUID());
-        return resolved == null ? original : resolved.layers().stream().anyMatch(NpcAuraResolver.Layer::threeD);
-    }
-
-    @ModifyExpressionValue(method = "executeAuraShaderDraw",
-            at = @At(value = "FIELD", target = "Lcom/dragonminez/client/render/effects/AuraRenderer$CachedAuraData;use3D:Z"), require = 1)
-    private static boolean xenopixels$npcLayerThreeD(boolean original, Player player,
-            @org.spongepowered.asm.mixin.injection.Coerce Object data, AuraLayer layer) {
-        NpcAuraResolver.Resolved resolved = NpcFullDmzRenderer.nativeAura(player.getUUID());
-        if (resolved == null) return original;
-        return resolved.layers().stream().filter(candidate -> candidate.index() == layer.layerId)
-                .findFirst().map(NpcAuraResolver.Layer::threeD).orElse(false);
-    }
-
     @ModifyReturnValue(
             method = "getModelScale(Lcom/dragonminez/common/stats/StatsData;)[F",
             at = @At("RETURN"), require = 1)
@@ -82,14 +66,11 @@ public abstract class DmzNpcAuraScaleMixin {
         List<AuraLayer> layers = new ArrayList<>(resolved.layers().size());
         for (NpcAuraResolver.Layer layer : resolved.layers()) {
             int rgb = layer.rgb();
-            AuraLayer nativeLayer = new AuraLayer(layer.type(), layer.index(), new float[]{
+            layers.add(new AuraLayer(layer.type(), layer.index(), new float[]{
                     ((rgb >>> 16) & 0xFF) / 255.0f,
                     ((rgb >>> 8) & 0xFF) / 255.0f,
                     (rgb & 0xFF) / 255.0f
-            });
-            if (layer.threeD()) nativeLayer.style = com.dragonminez.client.render.effects.AuraStyle.resolve(
-                    com.dragonminez.common.config.FormConfig.Aura3DStyle.DEFAULT, nativeLayer.color);
-            layers.add(nativeLayer);
+            }));
         }
         return layers;
     }

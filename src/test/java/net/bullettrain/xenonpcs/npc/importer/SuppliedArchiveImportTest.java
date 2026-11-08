@@ -145,11 +145,11 @@ class SuppliedArchiveImportTest {
         for (NpcImportReport.Failure failure : repeat.failures()) {
             assertTrue(failure.toString().contains("already exists"), failure.toString());
         }
-        // Both clone trees are present in these archives, so the skip has to be visible.
-        assertTrue(imported.notes().stream().anyMatch(note -> note.contains("clone root left alone")
-                        && note.contains("mynpcs")), imported.notes().toString());
-        assertTrue(imported.notes().stream().anyMatch(note -> note.contains("clone root left alone")
-                        && note.contains("customnpcs")), imported.notes().toString());
+        // Clone templates are imported alongside quests/dialogues, and both source roots survive.
+        var cloneEntries = store.list(XenoNpcStoreCategory.CLONES);
+        assertFalse(cloneEntries.isEmpty(), "the supplied clone roots were not imported");
+        assertTrue(cloneEntries.stream().anyMatch(entry -> entry.tag().getString("SourceMod").equals("mynpcs")));
+        assertTrue(cloneEntries.stream().anyMatch(entry -> entry.tag().getString("SourceMod").equals("customnpcs")));
         // The two archives define the same five factions and their Aggressive differs (mynpcs attacks
         // Neutral, customnpcs attacks nobody), so the refused copy has to say which root lost - the
         // server now runs the other one's tuning.

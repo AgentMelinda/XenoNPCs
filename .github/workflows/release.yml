@@ -8,7 +8,7 @@ on:
       tag:
         description: Existing release tag to build
         required: true
-        default: v0.0.8
+        default: v0.10.0
         type: string
 
 permissions:
@@ -35,7 +35,7 @@ jobs:
           - minecraft: '1.20.1'
             java: '17'
             # Pin the Forge export so re-running a release never builds a moving branch.
-            ref: '3cb130b0b3470b71d8d1844441601b92f316a4f0'
+            ref: '6e8a1860857a52c18a9f59fec9b323470787e7b9'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,8 +59,10 @@ jobs:
           VERSION="${RELEASE_TAG#v}"
           chmod +x gradlew
           if [ "$MC_VERSION" = '1.21.1' ]; then
+            mkdir -p libs
+            curl --fail --location --retry 3 --output libs/dragonminez-2.2.1.jar https://github.com/AgentMelinda/dragonminez-1.21.1/releases/download/1.21.1-v2.2.1-halo-fixes.2/dragonminez-2.2.1.jar
             want=$(sed -n 's/^dragonminez_sha256=//p' gradle.properties | tr -d '\r')
-            echo "$want  libs/dragonminez-2.2.jar" | sha256sum -c -
+            echo "$want  libs/dragonminez-2.2.1.jar" | sha256sum -c -
             ./gradlew build --no-daemon -PofflineMcMeta -Pmod_version="$VERSION"
           else
             ./gradlew build --no-daemon -Pmod_version="$VERSION"
@@ -114,16 +116,29 @@ jobs:
           sha256sum "${jars[@]}"
           cat > release-notes.md <<'NOTES'
           Choose the jar matching your Minecraft version and loader:
-          - Minecraft 1.20.1: Forge 47.4.10, Java 17, DragonMineZ 2.2.
-          - Minecraft 1.21.1: NeoForge 21.1.248, Java 21, DragonMineZ 2.2.
+          - Minecraft 1.20.1: Forge 47.4.10, Java 17.
+          - Minecraft 1.21.1: NeoForge 21.1.248, Java 21.
 
-          GeckoLib is required. Do not install standalone XenoNPCs alongside XenoPixels.
+          DragonMineZ 2.2 is required on 1.21.1; the pinned 1.20.1 export retains its DragonMineZ dependency. GeckoLib is required on both. Do not install XenoNPCs alongside XenoPixels.
 
-          DMZ 2.2 integration, improved V9 pursuit and NPC stats, aura controls, target-aware
-          server-timed Hakai sweeps, native DMZ dialogue/quest bridging and expanded legacy conversion.
+          Changes in this release:
+          - Added the DMZ AI brain selector and difficulty control to the NPC editor.
+          - Added DMZ-native dialogue presentation and fixed NPC portrait rendering; removed the extra portrait card frame.
+          - Ported NPC editor, appearance, combat and importer fixes across both Minecraft versions.
+          - 1.20.1: NPC punches advance their swing animation, and bundled MixinExtras accepts 0.4.1 or newer.
 
-          Both builds run unit tests. Forge's deferred runtime tests are listed in EXPORT_REPORT.md.
-          Live visual checks and complete legacy converter parity remain pending.
+          Note: DragonMineZ cancels a hit outright when the target's defense is far above the attacker's damage (combat.json cancelDamageEventIfMitigationTooHigh / cancelDamageMitigationThreshold). An NPC whose STR is low against your DEF will swing without hurting you; this is DragonMineZ's rule, applied to players the same way.
+
+          Changes in 0.0.3, still included:
+          - 1.20.1: dialogue answer bubbles hide the clouds and nameplate behind them, like the speaker bubble.
+
+          Changes in 0.0.2, still included:
+          - NPC melee damage lands on players (both versions); 1.20.1 NPC DragonMineZ stats are stored on the NPC, so battle power and damage are no longer zero.
+          - New NPCs start with DragonMineZ's base stats; NPCs still at all-zero stats are repaired once.
+          - NPCs walking home after a chase disengage until they arrive; a "kill target hunts player" quest never turns its own quest giver on the player.
+          - 1.20.1 speech and dialogue bubbles draw above NPCs; NPC arm swing and greeting wave clips; GUI Scale, colour picker and XenoSkill reward changes.
+
+          Both builds run their unit tests before publishing. Forge's 34 runtime-only tests are listed in EXPORT_REPORT.md and remain excluded from plain JUnit. MyNPCs compatibility is omitted from the 1.20.1 export.
           NOTES
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "${jars[@]}" --clobber

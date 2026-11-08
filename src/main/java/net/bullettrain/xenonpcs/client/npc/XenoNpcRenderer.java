@@ -117,6 +117,8 @@ public final class XenoNpcRenderer extends MobRenderer<XenoNpcEntity,
     /** Name with the title under it, lifted clear of the head. */
     private void drawNameplate(XenoNpcEntity entity, PoseStack pose, MultiBufferSource buffers, int light,
                                float partialTick) {
+        if (net.bullettrain.xenonpcs.client.npc.dialog.DmzNativeDialoguePresentation
+                .suppressesWorldNameplate(entity.getId())) return;
         NpcCombatProfile profile = net.bullettrain.xenonpcs.client.compat.npc.NpcAppearanceClient.renderProfile(entity);
         if (profile.displayShowName == 1 || profile.displayShowName == 2 && !entity.isCustomNameVisible()) return;
         if (!shouldShowName(entity)) return;

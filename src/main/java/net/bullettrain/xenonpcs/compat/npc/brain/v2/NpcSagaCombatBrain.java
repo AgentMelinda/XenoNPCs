@@ -110,7 +110,6 @@ public final class NpcSagaCombatBrain {
         if (npc == null) {
             return;
         }
-        net.bullettrain.xenonpcs.compat.npc.NpcNativePursuit.reset(npc);
         NpcChargeMoves.cancel(npc);
         NpcCombatMoves.guard(npc, false);
         NpcSagaCombos.forget(npc.getUUID());
@@ -192,16 +191,6 @@ public final class NpcSagaCombatBrain {
     public static void steer(LivingEntity npc, NpcCombatProfile profile, LivingEntity victim) {
         if (npc == null || profile == null) {
             return;
-        }
-        // Reset transient ground intent before any flight, freeze, or interrupted-action return.
-        if (net.bullettrain.xenonpcs.compat.npc.NpcNativePursuit.owns(npc, profile)) {
-            if (victim != null && !NpcFlightPolicy.targetGrounded(victim)) {
-                net.bullettrain.xenonpcs.compat.npc.NpcNativePursuit.reset(npc);
-            } else {
-                net.bullettrain.xenonpcs.compat.npc.NpcNativePursuit.tick(npc, profile, victim);
-            }
-        } else {
-            net.bullettrain.xenonpcs.compat.npc.NpcNativePursuit.reset(npc);
         }
         // Just knocked back: let the push play out before steering again (net.bullettrain.xenonpcs.compat.npc.NpcKnockbackGrace).
         if (net.bullettrain.xenonpcs.compat.npc.NpcKnockbackGrace.active(npc)) return;
@@ -307,7 +296,15 @@ public final class NpcSagaCombatBrain {
         if (next != null && serverTick < next) {
             return;
         }
-        NEXT_DECISION.put(npc.getUUID(), serverTick + DECISION_INTERVAL);
+        int interval = profile.brainVersion == net.bullettrain.xenonpcs.compat.npc.NpcCombatBrainVersion.V8
+                ? switch (Math.max(1, Math.min(4, profile.dmzAiDifficulty))) {
+                    case 1 -> 12;
+                    case 2 -> 6;
+                    case 3 -> 4;
+                    default -> 2;
+                }
+                : DECISION_INTERVAL;
+        NEXT_DECISION.put(npc.getUUID(), serverTick + interval);
         NpcSagaCombatContext ctx = NpcSagaCombatContext.snapshot(npc, victim, profile);
         ctx.comboReady = ctx.comboReady && !NpcSagaCombos.active(npc.getUUID());
         Intent intent = decide(ctx, p -> npc.getRandom().nextFloat() < p);
@@ -367,10 +364,6 @@ public final class NpcSagaCombatBrain {
             return;
         }
         if (mode == Locomotion.DASH) {
-            if (net.bullettrain.xenonpcs.compat.npc.NpcNativePursuit.owns(npc, profile)) {
-                net.bullettrain.xenonpcs.compat.npc.NpcNativePursuit.dash(npc, profile, victim);
-                return;
-            }
             if (NpcCombatMoves.chase(npc, victim)) {
                 return;
             }
@@ -441,7 +434,6 @@ public final class NpcSagaCombatBrain {
         if (npc == null) {
             return;
         }
-        net.bullettrain.xenonpcs.compat.npc.NpcNativePursuit.reset(npc);
         NpcSagaCombos.forget(npc.getUUID());
         net.bullettrain.xenonpcs.compat.npc.NpcCombatBrain.disengage(npc);
     }

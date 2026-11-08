@@ -62,8 +62,7 @@ public record XenoDialogue(String start, Map<String, Node> nodes) {
          * datapack has no way to guarantee that.
          */
         TRANSPORT,
-        /** Open native DragonMineZ quests for the DMZ NPC id in {@code quest}.
-         * Existing QUEST options always remain owned by Xeno. Appended to preserve ordinals. */
+        /** Open DragonMineZ's native quest dialogue, addressed by its DMZ NPC id. */
         DMZ_QUEST
     }
 
@@ -95,17 +94,20 @@ public record XenoDialogue(String start, Map<String, Node> nodes) {
                        String sourceRef) {
         public Node {
             palette = palette == null ? "" : palette.trim();
-            availability = availability == null ? net.bullettrain.xenonpcs.features.progression.QuestAvailability.NONE : availability;
-            sourceRef = sourceRef == null ? "" : sourceRef;
+            availability = availability == null
+                    ? net.bullettrain.xenonpcs.features.progression.QuestAvailability.NONE : availability;
+            sourceRef = sourceRef == null ? "" : sourceRef.trim();
         }
 
         public Node(String text, List<Option> options, String palette) {
-            this(text, options, palette, null, "");
+            this(text, options, palette,
+                    net.bullettrain.xenonpcs.features.progression.QuestAvailability.NONE, "");
         }
 
         /** A node with no palette of its own, which is what every older dialogue is. */
         public Node(String text, List<Option> options) {
-            this(text, options, "");
+            this(text, options, "",
+                    net.bullettrain.xenonpcs.features.progression.QuestAvailability.NONE, "");
         }
     }
 
@@ -153,9 +155,10 @@ public record XenoDialogue(String start, Map<String, Node> nodes) {
             }
         }
         String palette = obj.has("palette") ? obj.get("palette").getAsString() : "";
-        return new Node(text, List.copyOf(options), palette,
-                net.bullettrain.xenonpcs.features.progression.QuestAvailability.fromJson(obj.get("availability")),
-                obj.has("source_ref") ? obj.get("source_ref").getAsString() : "");
+        var availability = net.bullettrain.xenonpcs.features.progression.QuestAvailability
+                .fromJson(obj.get("availability"));
+        String sourceRef = obj.has("sourceRef") ? obj.get("sourceRef").getAsString() : "";
+        return new Node(text, List.copyOf(options), palette, availability, sourceRef);
     }
 
     private static Option optionFromJson(JsonElement element) {

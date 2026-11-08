@@ -225,7 +225,7 @@ public final class DialogueBubbleRenderer {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) {
             return;
         }
-        DialogueBubbleSession session = DialogueBubbleSession.active();
+        DialogueBubbleSession session = DialogueBubbleSession.activeForBubbles();
         Minecraft mc = Minecraft.getInstance();
         if (session == null || mc.level == null) {
             hits = List.of();
@@ -278,7 +278,7 @@ public final class DialogueBubbleRenderer {
      */
     public static void renderInEntityPass(LivingEntity npc, PoseStack entityPose, float partialTick) {
         if (!inEntityPass(npc)) return;
-        DialogueBubbleSession session = DialogueBubbleSession.active();
+        DialogueBubbleSession session = DialogueBubbleSession.activeForBubbles();
         Minecraft mc = Minecraft.getInstance();
         if (session == null || mc.level == null || session.entityId() != npc.getId() || !npc.isAlive()) {
             return;

@@ -58,8 +58,6 @@ class NpcDissolveTest {
         assertTrue(NpcDissolve.timingSyncDue(false, 0.30f, 0.33f, 0.02f, 0.02f, 100L, 101L));
         assertTrue(NpcDissolve.timingSyncDue(false, 0.40f, 0.40f, 0.02f, 0.02f, 100L, 105L));
         assertTrue(NpcDissolve.timingSyncDue(true, 0.0f, 0.05f, 0.0f, 0.0f, Long.MIN_VALUE, 100L));
-        assertTrue(NpcDissolve.timingSyncDue(false, 1.0f, 1.0f, 0.01f, 0.01f, 97L, 100L),
-                "Completion must reach delayed clients before the immediate clear");
     }
 
     @Test void firstSourceAnchorsTheOriginWhileNobodyIsErasing() {

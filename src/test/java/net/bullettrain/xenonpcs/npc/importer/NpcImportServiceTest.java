@@ -103,12 +103,9 @@ class NpcImportServiceTest {
         assertTrue(report.failures().stream().anyMatch(failure -> failure.reason().contains("does not match filename slot")));
     }
 
-    /**
-     * Clones are skipped on purpose, but a skip nobody reports is indistinguishable from a skip that
-     * never happened - and the clone root is exactly the second location an operator would check.
-     */
+    /** Clone templates from the game directory are migrated into the native clone store. */
     @Test
-    void cloneRootsAreNamedAsSkipped() throws Exception {
+    void cloneRootsAreImported() throws Exception {
         Path world = temp.resolve("world");
         Files.createDirectories(world.resolve("mynpcs/dialogs/town"));
         Files.writeString(world.resolve("mynpcs/dialogs/town/1.json"), "{DialogText:\"Hi\",Options:[]}");
@@ -120,9 +117,8 @@ class NpcImportServiceTest {
         store.loadAll();
         NpcImportReport report = NpcImportService.importAll(world, temp, store, false);
 
-        assertEquals(1, report.imported());
-        assertTrue(report.notes().stream().anyMatch(note -> note.contains("clone root left alone")
-                        && note.contains(temp.resolve("mynpcs/clones").toString())),
-                report.notes().toString());
+        assertEquals(2, report.imported());
+        assertNotNull(store.get(XenoNpcStoreCategory.CLONES,
+                net.bullettrain.xenonpcs.npc.store.XenoNpcClones.group(1), "11"));
     }
 }

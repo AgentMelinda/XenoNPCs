@@ -73,10 +73,26 @@ public final class ClientPacketHandlers {
         if (dialogue == null) {
             return;
         }
-        if (net.bullettrain.xenonpcs.client.config.XenoClientConfig.dialogueBubbles) {
-            net.bullettrain.xenonpcs.client.npc.dialog.DialogueBubbleScreen.open(
-                    entityId, dialogue, npcName);
-            return;
+        switch (net.bullettrain.xenonpcs.client.npc.dialog.NeonDialogueMode.current()) {
+            case DMZ -> {
+                if (net.bullettrain.xenonpcs.client.npc.dialog.DmzNativeDialoguePresentation.available()) {
+                    net.bullettrain.xenonpcs.client.npc.dialog.DmzNativeDialoguePresentation.open(
+                            entityId, dialogue, npcName);
+                    return;
+                }
+            }
+            case NEON -> {
+                net.bullettrain.xenonpcs.client.npc.dialog.NeonDialogueScreen.open(
+                        entityId, dialogue, npcName);
+                return;
+            }
+            case BUBBLES -> {
+                net.bullettrain.xenonpcs.client.npc.dialog.DialogueBubbleScreen.open(
+                        entityId, dialogue, npcName);
+                return;
+            }
+            case CLASSIC -> {
+            }
         }
         if (net.bullettrain.xenonpcs.client.npc.dialog.DmzNpcDialoguePresentation.available()) {
             net.bullettrain.xenonpcs.client.npc.dialog.DmzNpcDialoguePresentation.open(

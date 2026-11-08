@@ -364,6 +364,12 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
             showNotice("Save or discard the global dialog before closing");
             return;
         }
+        // A rejected NPC save leaves only a local draft. Closing after that failure discards it;
+        // do not auto-submit the same rejected payload again from the close path.
+        if (autoSaveStopped) {
+            super.onClose();
+            return;
+        }
         if (npcSavePending) {
             // Close as soon as the save in flight is confirmed.
             closeAfterSave = true;
@@ -4995,6 +5001,14 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
                 // "Brain" is the on/off boolean; the version is its own key, and sending the wrong
                 // one would have saved nothing.
                 "BrainVersion"));
+        if (profile.brainVersion == NpcCombatBrainVersion.V8) {
+            List<String> dmzLevels = List.of("Easy", "Normal", "Hard", "Expert");
+            r.add(cycle("DMZ AI level", dmzLevels,
+                    Math.max(0, Math.min(3, profile.dmzAiDifficulty - 1)), index -> {
+                        profile.setDmzAiDifficulty(Math.floorMod(index, dmzLevels.size()) + 1);
+                    }, "DmzAiDifficulty"));
+            r.add(new EditorRow.Text("", "Higher levels make the DMZ brain react faster.", MUTED));
+        }
         r.add(new EditorRow.Text("", brainVersionHint(), MUTED));
 
         // The reference Brain tab's header row: Aim, Aggro, Special CD.
@@ -5599,6 +5613,13 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Escape must remain available while a network save is in flight. The already-sent
+        // request cannot be recalled; onClose waits for its authoritative result and closes on
+        // either acceptance or rejection.
+        if (keyCode == 256) {
+            onClose();
+            return true;
+        }
         if (colorPicker.keyPressed(keyCode, scanCode, modifiers)) return true;
         return npcSavePending || super.keyPressed(keyCode, scanCode, modifiers);
     }
@@ -5632,7 +5653,7 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
         if (npcSavePending) {
             return;
         }
-        if (!autoSave.pending() || autoSaveStopped) {
+        if (!autoSave.pending()) {
             super.onClose();
             return;
         }
@@ -5720,9 +5741,15 @@ public final class XenoNpcEditorScreen extends ScaledScreen implements ClientNpc
             sentKeys = Set.of();
             sentDataKeys = Set.of();
             autoSave.failed(editorTicks);
-            closeAfterSave = false;
+            // Stop automatic retries after any server rejection. If the player requested close
+            // while this request was pending, the server has confirmed it was not applied, so
+            // close now and discard the restored local draft.
+            autoSaveStopped = true;
+            if (closeAfterSave) {
+                super.onClose();
+                return true;
+            }
             if (net.bullettrain.xenonpcs.network.packet.NpcProfileSaveResultPacket.STALE.equals(reason)) {
-                autoSaveStopped = true;
                 showNotice("This NPC was changed elsewhere; close and reopen the editor to keep editing");
             } else {
                 showNotice(reason == null || reason.isBlank()

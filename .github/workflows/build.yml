@@ -24,11 +24,13 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Use the committed dependency and fail if it is missing or differs from the pin.
-      - name: Verify DragonMineZ 2.2
+      # Fetch the exact upstream asset and verify it against the Gradle dependency pin.
+      - name: Fetch DragonMineZ 2.2.1
         run: |
+          mkdir -p libs
           want=$(sed -n 's/^dragonminez_sha256=//p' gradle.properties | tr -d '\r')
-          echo "$want  libs/dragonminez-2.2.jar" | sha256sum -c -
+          curl --fail --location --retry 3 --output libs/dragonminez-2.2.1.jar https://github.com/AgentMelinda/dragonminez-1.21.1/releases/download/1.21.1-v2.2.1-halo-fixes.2/dragonminez-2.2.1.jar
+          echo "$want  libs/dragonminez-2.2.1.jar" | sha256sum -c -
 
       - name: Build and test
         run: ./gradlew build --no-daemon -PofflineMcMeta

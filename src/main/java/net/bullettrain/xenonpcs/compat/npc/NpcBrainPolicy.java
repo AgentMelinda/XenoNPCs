@@ -5,12 +5,12 @@ import java.util.List;
 /**
  * Which combat brains an NPC may run - XenoNPCs overlay: only V9.
  *
- * <p>XenoPixels offers every brain version; the public XenoNPCs release offers the V9 brain alone
- * (the DragonMineZ saga tree with its per-action switches). Every stored or requested version reads
- * as V9, the version cycle stays on V9, and the editor shows no version picker.
+ * <p>The public editor exposes the pure DragonMineZ saga brain (V8) and the configurable V9
+ * variant. Other stored versions retain the historical V9 fallback.
  */
 public final class NpcBrainPolicy {
-    private static final List<NpcCombatBrainVersion> CHOICES = List.of(NpcCombatBrainVersion.V9);
+    private static final List<NpcCombatBrainVersion> CHOICES =
+            List.of(NpcCombatBrainVersion.V8, NpcCombatBrainVersion.V9);
 
     private NpcBrainPolicy() {
     }
@@ -20,6 +20,7 @@ public final class NpcBrainPolicy {
     }
 
     public static NpcCombatBrainVersion resolve(NpcCombatBrainVersion requested) {
-        return NpcCombatBrainVersion.V9;
+        return requested == NpcCombatBrainVersion.V8 || requested == NpcCombatBrainVersion.V9
+                ? requested : NpcCombatBrainVersion.V9;
     }
 }

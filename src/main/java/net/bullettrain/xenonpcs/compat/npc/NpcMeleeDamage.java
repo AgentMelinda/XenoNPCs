@@ -315,8 +315,11 @@ public final class NpcMeleeDamage {
             double defense = NpcStatMath.defense(defender.resistance,
                     NpcFormLookup.multiplier(defender, "DEF"), defender.releaseMultiplier());
             var combat = ConfigManager.getCombatConfig();
-            double scale = Math.max(12.0, (defender.resistance + 20.0)
-                    * combat.getDefenseReductionScale());
+            // Keep the addon-owned NPC mitigation curve on the documented 2.2.x API.
+            // DragonMineZ 2.2.1 exposes its own adaptive and softcap controls, but no
+            // getDefenseReductionScale() accessor; this curve uses the NPC's resistance
+            // baseline directly and the DMZ-configured maximum reduction below.
+            double scale = Math.max(12.0, defender.resistance + 20.0);
             double mitigated = NpcStatMath.mitigate(event.getNewDamage(), defense, scale,
                     combat.getBaseDamageReductionCap());
             // A guarding NPC takes the same kind of flat reduction a guarding player does.

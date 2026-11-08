@@ -1,5 +1,5 @@
 // XenoNPCs - generated from XenoPixels by tools/xenonpcs/export_xenonpcs.py (the build is the
-// hand-written part). Requires DragonMineZ 2.2: put dragonminez-2.2.jar in libs/ or pass
+// hand-written part). Requires DragonMineZ 2.2.1 Halo fixes: put dragonminez-2.2.1.jar in libs/ or pass
 // -PdmzJar=path. GeckoLib comes from its maven; CustomNPCs / My NPCs / Curios are optional.
 plugins {
     id 'java'
@@ -149,9 +149,11 @@ dependencies {
     compileOnly "curse.maven:my-npcs-1569534:8686540"
     compileOnly "curse.maven:customnpcs-unofficial-1052708:8414335"
     compileOnly "curse.maven:cnpc-gecko-addon-970162:7272203"
-    // NPC scripting runs on Nashorn; bundled so servers need nothing extra.
-    implementation "org.openjdk.nashorn:nashorn-core:${nashorn_version}"
-    jarJar("org.openjdk.nashorn:nashorn-core:${nashorn_version}")
+    // NeoForge 21.1 already supplies Nashorn 15.4. Keep it available for development
+    // runs, but do not bundle a second org.openjdk.nashorn module: DMZ's MariaDB module
+    // reads Nashorn and the duplicate module makes ModLauncher fail module resolution.
+    compileOnly "org.openjdk.nashorn:nashorn-core:${nashorn_version}"
+    testImplementation "org.openjdk.nashorn:nashorn-core:${nashorn_version}"
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

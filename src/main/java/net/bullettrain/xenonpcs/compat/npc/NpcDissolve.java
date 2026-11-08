@@ -38,8 +38,6 @@ public final class NpcDissolve {
      * channel's own final clear (progress near 1) passes at once.
      */
     private static final class Owner {
-        java.util.UUID target;
-        long startedTick, revision;
         float last; long riseTick; boolean pendingClear;
         // Sweep timing (HakaiSweepTiming): previous accepted value/tick, and the line last sent to clients.
         float prev = -1f; long prevTick = Long.MIN_VALUE;
@@ -56,19 +54,6 @@ public final class NpcDissolve {
     /** Runtime entity ids are level-local; including the dimension prevents two simultaneous targets cross-wiring. */
     private record OwnerKey(net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension, int entityId) {}
     private static final java.util.Map<OwnerKey, Owner> OWNERS = new java.util.HashMap<>();
-    private static long nextRevision;
-
-    private static Owner ownerFor(LivingEntity target) {
-        OwnerKey key = ownerKey(target);
-        Owner owner = OWNERS.get(key);
-        if (owner == null || !target.getUUID().equals(owner.target)) {
-            owner = new Owner();
-            owner.target = target.getUUID();
-            owner.startedTick = target.level().getGameTime();
-            OWNERS.put(key, owner);
-        }
-        return owner;
-    }
     private static final long LIVE_TICKS = 3;
     /** Re-anchor the client clock periodically so dedicated-server tick drift cannot accumulate into a visible jump. */
     private static final int TIMING_REFRESH_TICKS = 5;
@@ -131,7 +116,7 @@ public final class NpcDissolve {
     /** Capture the origin for a fresh cast of {@code kind} by {@code source}. */
     public static void setImpactOrigin(LivingEntity target, Vec3 worldImpact, java.util.UUID source, SweepKind kind) {
         if (target == null || worldImpact == null || !(target.level() instanceof ServerLevel level)) return;
-        Owner owner = ownerFor(target);
+        Owner owner = OWNERS.computeIfAbsent(ownerKey(target), id -> new Owner());
         boolean sameSource = sameSweepSource(owner.originSource, owner.originKind, source, kind);
         if (!originCaptureAllowedWithArbitration(net.bullettrain.xenonpcs.config.XenoServerConfig.hakaiOriginArbitration,
                 owner.impactCaptured, sameSource, owner.riseTick, level.getGameTime())) return;
@@ -146,7 +131,7 @@ public final class NpcDissolve {
      */
     public static void setImpactOrigin(LivingEntity target, Vec3 worldImpact) {
         if (target == null || worldImpact == null || !(target.level() instanceof ServerLevel level)) return;
-        Owner owner = ownerFor(target);
+        Owner owner = OWNERS.computeIfAbsent(ownerKey(target), id -> new Owner());
         if (!originCaptureAllowedWithArbitration(net.bullettrain.xenonpcs.config.XenoServerConfig.hakaiOriginArbitration,
                 owner.impactCaptured, false, owner.riseTick, level.getGameTime())) return;
         capture(owner, target, worldImpact);
@@ -170,7 +155,7 @@ public final class NpcDissolve {
         if (target == null) return;
         if (target.level() instanceof ServerLevel level) {
             long now = level.getGameTime();
-            Owner owner = ownerFor(target);
+            Owner owner = OWNERS.computeIfAbsent(ownerKey(target), id -> new Owner());
             if (!owner.impactCaptured && worldImpact != null) setImpactOrigin(target, worldImpact);
             boolean rising = eraseProgress >= owner.last - 0.001f;
             if (!rising && now - owner.riseTick <= LIVE_TICKS) return; // a live channel owns this target
@@ -203,10 +188,6 @@ public final class NpcDissolve {
         if (target == null) return;
         if (target.level() instanceof ServerLevel level) {
             Owner owner = OWNERS.get(ownerKey(target));
-            if (owner != null && !target.getUUID().equals(owner.target)) {
-                OWNERS.remove(ownerKey(target), owner);
-                owner = null;
-            }
             if (owner != null && level.getGameTime() - owner.riseTick <= LIVE_TICKS && owner.last < 0.95f) {
                 owner.pendingClear = true; // another channel is still erasing it; clear once that one stops
                 return;
@@ -226,9 +207,7 @@ public final class NpcDissolve {
     static boolean timingSyncDue(boolean fresh, float predicted, float progress, float rate, float sentRate,
                                  long sentTick, long now) {
         boolean rateChanged = Math.abs(rate - sentRate) > 0.002f && rate != 0f;
-        // The client may still be easing a delayed correction. Send the authoritative endpoint
-        // before clear/removal even when the server's last line already predicts completion.
-        return fresh || progress >= 1f || Math.abs(predicted - progress) > 0.01f || rateChanged
+        return fresh || Math.abs(predicted - progress) > 0.01f || rateChanged
                 || now - sentTick >= TIMING_REFRESH_TICKS;
     }
 
@@ -246,20 +225,18 @@ public final class NpcDissolve {
         owner.prevTick = now;
         if (due) {
             owner.sentProgress = progress; owner.sentRate = rate; owner.sentTick = now;
-            owner.revision = ++nextRevision;
             net.bullettrain.xenonpcs.api.network.AddonNetwork.sendToTrackingAndSelf(target,
-                    snapshot(target, owner, progress, rate, now));
+                    new net.bullettrain.xenonpcs.combat.HakaiSweepTiming(target.getId(), progress, rate,
+                            owner.impactX, owner.impactY, owner.impactZ));
         }
     }
 
     private static void clearNow(LivingEntity target, Owner owner) {
-        if (target.level() instanceof ServerLevel) {
-            if (owner == null) owner = ownerFor(target);
-            owner.revision = ++nextRevision;
-            net.bullettrain.xenonpcs.api.network.AddonNetwork.sendToTrackingAndSelf(target,
-                    snapshot(target, owner, 0f, 0f, target.level().getGameTime()));
-            OWNERS.remove(ownerKey(target), owner);
-        }
+        net.bullettrain.xenonpcs.api.network.AddonNetwork.sendToTrackingAndSelf(target,
+                new net.bullettrain.xenonpcs.combat.HakaiSweepTiming(target.getId(), 0f, 0f,
+                        owner == null ? 0.5f : owner.impactX,
+                        owner == null ? 0.5f : owner.impactY,
+                        owner == null ? 0.5f : owner.impactZ));
         if (target.removeEffect(ModEffects.HAKAI_DISSOLVE)) {
             broadcast(target, new ClientboundRemoveMobEffectPacket(target.getId(), ModEffects.HAKAI_DISSOLVE));
         }
@@ -278,26 +255,6 @@ public final class NpcDissolve {
         }
     }
 
-    private static net.bullettrain.xenonpcs.combat.HakaiSweepSync snapshot(
-            LivingEntity target, Owner owner, float progress, float rate, long now) {
-        return new net.bullettrain.xenonpcs.combat.HakaiSweepSync(target.level().dimension().location(),
-                target.getUUID(), owner.revision, owner.startedTick, now,
-                new net.bullettrain.xenonpcs.combat.HakaiSweepTiming(target.getId(), progress, rate,
-                        owner.impactX, owner.impactY, owner.impactZ));
-    }
-
-    @net.neoforged.bus.api.SubscribeEvent
-    public static void tracking(net.neoforged.neoforge.event.entity.player.PlayerEvent.StartTracking event) {
-        if (!(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player)
-                || !(event.getTarget() instanceof LivingEntity target)) return;
-        Owner owner = OWNERS.get(ownerKey(target));
-        if (owner == null || !target.getUUID().equals(owner.target) || owner.sentTick == Long.MIN_VALUE) return;
-        // Replay the actual last accepted sample, never restart a late observer at zero.
-        owner.revision = ++nextRevision;
-        net.bullettrain.xenonpcs.api.network.AddonNetwork.sendToPlayer(player,
-                snapshot(target, owner, owner.prev, owner.sentRate, owner.prevTick));
-    }
-
     @net.neoforged.bus.api.SubscribeEvent
     public static void tick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
         if (OWNERS.isEmpty()) return;
@@ -309,15 +266,7 @@ public final class NpcDissolve {
             long now = level.getGameTime();
             if (now - owner.riseTick <= LIVE_TICKS) continue;
             if (owner.pendingClear) {
-                if (level.getEntity(entry.getKey().entityId()) instanceof LivingEntity living
-                        && living.getUUID().equals(owner.target)) {
-                    owner.revision = ++nextRevision;
-                    net.bullettrain.xenonpcs.api.network.AddonNetwork.sendToTrackingAndSelf(living,
-                            snapshot(living, owner, 0f, 0f, now));
-                    if (living.removeEffect(ModEffects.HAKAI_DISSOLVE))
-                        broadcast(living, new ClientboundRemoveMobEffectPacket(living.getId(), ModEffects.HAKAI_DISSOLVE));
-                    sendFade(living, 0);
-                }
+                if (level.getEntity(entry.getKey().entityId()) instanceof LivingEntity living) clearNow(living, owner);
                 it.remove();
             } else if (now - owner.riseTick > 20 * 60) {
                 it.remove(); // stale bookkeeping only; the entity's own state is untouched

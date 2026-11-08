@@ -16,6 +16,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class XenoNpcSavePolicyTest {
     @Test
+    void dmzAiDifficultyCanBeSavedFromTheBrainEditor() {
+        CompoundTag payload = new CompoundTag();
+        payload.putInt("DmzAiDifficulty", 4);
+
+        assertTrue(XenoNpcSavePolicy.validate(payload).accepted());
+        assertTrue(XenoNpcSavePolicy.profileShape().contains("DmzAiDifficulty"));
+    }
+
+    @Test
     void animationAssetSurvivesEditorSave() {
         CompoundTag payload = new CompoundTag();
         payload.putString("ModelAnimation", "mypack:animations/ogre_combat.animation.json");

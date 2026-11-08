@@ -189,6 +189,7 @@ public final class NpcCombatProfile {
     private static final String TAG_BRAIN_CHANCES = "BrainChances";
     private static final String TAG_BRAIN_MODIFIERS = "BrainModifiers";
     private static final String TAG_BRAIN_SPECIAL_CD = "BrainSpecialCooldown";
+    private static final String TAG_DMZ_AI_DIFFICULTY = "DmzAiDifficulty";
     private static final String TAG_BRAIN_XENO_SPECIALS = "BrainXenoSpecials";
     private static final String TAG_SCENE_TRIGGER = "SceneTrigger";
     private static final String TAG_HEALTH_REGEN = "HealthRegen";
@@ -472,6 +473,12 @@ public final class NpcCombatProfile {
     /** Missing NBT stays {@link NpcCombatBrainVersion#V1}. */
     /** V1 in XenoPixels; the XenoNPCs release, where V9 is the only brain, starts on V9. */
     public NpcCombatBrainVersion brainVersion = NpcBrainPolicy.resolve(NpcCombatBrainVersion.V1);
+    /** DMZ AI response tier, 1..4; 2 is the compatibility default. */
+    public int dmzAiDifficulty = 2;
+
+    public void setDmzAiDifficulty(int difficulty) {
+        dmzAiDifficulty = Math.max(1, Math.min(4, difficulty));
+    }
 
     /** Selects a brain version and applies V9's safe deflection defaults once. */
     public void setBrainVersion(NpcCombatBrainVersion version) {
@@ -1359,7 +1366,8 @@ public final class NpcCombatProfile {
         // 2026-09-30 owner: "fall damage off by default".
         profile.noFallDamage = true;
         profile.grantAllSkills(skillIds, maxLevel);
-        // 2026-09-30 owner: new NPCs start as DMZ body type 2 with hair on, hair style 1.
+        // 2026-11-02 owner: Full DMZ appearance, body type 1, hair style 1.
+        profile.appearance.mode = NpcDmzAppearance.Mode.FULL;
         profile.appearance.bodyType = FRESH_BODY_TYPE;
         profile.hairEnabled = true;
         profile.hairStyleId = FRESH_HAIR_STYLE;
@@ -1367,7 +1375,7 @@ public final class NpcCombatProfile {
     }
 
     /** DMZ body type a new NPC starts with. */
-    public static final int FRESH_BODY_TYPE = 2;
+    public static final int FRESH_BODY_TYPE = 1;
     /** DMZ hair style a new NPC starts with (0 would mean "the race's default"). */
     public static final int FRESH_HAIR_STYLE = 1;
 
@@ -3044,6 +3052,7 @@ public final class NpcCombatProfile {
         tag.putBoolean(TAG_BRAIN_DEFLECT_BLAST, brainDeflectBlast);
         tag.putBoolean(TAG_BRAIN_DEFLECT_WAVE, brainDeflectWave);
         tag.putInt(TAG_BRAIN_SPECIAL_CD, clampSpecialCooldown(brainSpecialCooldown));
+        tag.putInt(TAG_DMZ_AI_DIFFICULTY, Math.max(1, Math.min(4, dmzAiDifficulty)));
         CompoundTag chances = new CompoundTag();
         CompoundTag modifiers = new CompoundTag();
         for (String key : BRAIN_ACTION_KEYS) {
@@ -3153,6 +3162,8 @@ public final class NpcCombatProfile {
         brainDeflectWave = tag.getBoolean(TAG_BRAIN_DEFLECT_WAVE);
         brainSpecialCooldown = tag.contains(TAG_BRAIN_SPECIAL_CD)
                 ? clampSpecialCooldown(tag.getInt(TAG_BRAIN_SPECIAL_CD)) : 80;
+        dmzAiDifficulty = tag.contains(TAG_DMZ_AI_DIFFICULTY)
+                ? Math.max(1, Math.min(4, tag.getInt(TAG_DMZ_AI_DIFFICULTY))) : 2;
         brainChances.clear();
         brainModifiers.clear();
         loadBrainTuning(tag);
@@ -3197,6 +3208,9 @@ public final class NpcCombatProfile {
         if (tag.contains(TAG_BRAIN_DEFLECT_WAVE)) brainDeflectWave = tag.getBoolean(TAG_BRAIN_DEFLECT_WAVE);
         if (tag.contains(TAG_BRAIN_SPECIAL_CD)) {
             brainSpecialCooldown = clampSpecialCooldown(tag.getInt(TAG_BRAIN_SPECIAL_CD));
+        }
+        if (tag.contains(TAG_DMZ_AI_DIFFICULTY)) {
+            dmzAiDifficulty = Math.max(1, Math.min(4, tag.getInt(TAG_DMZ_AI_DIFFICULTY)));
         }
         loadBrainTuning(tag);
     }
