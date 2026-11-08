@@ -79,6 +79,10 @@ public final class MakerPreviewController {
         markDirty();
     }
 
+    public void bindScreen(net.minecraft.client.gui.screens.Screen screen, Minecraft mc) {
+        bindLocalPlayer(mc);
+    }
+
     public void setGlow(GlowTarget kind, String id) {
         this.glowTarget = kind == null ? GlowTarget.NONE : kind;
         this.glowId = id == null ? "" : id;

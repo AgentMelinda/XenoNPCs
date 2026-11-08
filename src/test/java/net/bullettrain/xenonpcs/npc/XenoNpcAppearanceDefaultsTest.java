@@ -57,14 +57,14 @@ class XenoNpcAppearanceDefaultsTest {
     }
 
     @Test
-    void aCreatureMimicsAnEntityInsteadOfWearingASkin() {
+    void aCreatureRoleAlsoStartsAsAHumanoidUntilItsAppearanceIsEdited() {
         NpcCombatProfile profile = new NpcCombatProfile();
         XenoNpcAppearanceDefaults.apply(profile, XenoNpcRole.CREATURE);
 
-        assertEquals(NpcCombatProfile.MODEL_ENTITY, profile.modelKind);
-        assertEquals("minecraft:wolf", profile.modelId);
-        // A creature is not a DMZ humanoid, so promoting it to FULL would be wrong.
-        assertEquals(NpcDmzAppearance.Mode.OFF, profile.appearance.mode);
+        assertEquals(NpcCombatProfile.MODEL_VANILLA, profile.modelKind);
+        assertTrue(profile.modelId == null || profile.modelId.isBlank());
+        // Creation defaults are the same for every role; an entity model is an explicit choice.
+        assertEquals(NpcDmzAppearance.Mode.FULL, profile.appearance.mode);
     }
 
     @Test

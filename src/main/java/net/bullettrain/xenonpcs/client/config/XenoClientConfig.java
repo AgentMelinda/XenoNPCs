@@ -27,7 +27,7 @@ public final class XenoClientConfig {
     /** Version 3 restores Guard while its dedicated key keeps right-click placement vanilla.
      * Version 8 adds the space sky mode; version 12 adds ambient fallen-star density; version 13
      * adds the opt-in outbound space camera coast. */
-    private static final int CURRENT_CONFIG_VERSION = 13;
+    private static final int CURRENT_CONFIG_VERSION = 14;
 
     // --- UI ---
     public static boolean xenoHudEnabled = true;
@@ -45,6 +45,19 @@ public final class XenoClientConfig {
      * the two can be compared in play rather than one being deleted on the strength of a preview.
      */
     public static boolean dialogueBubbles = true;
+
+    /**
+     * Draw NPC dialogue and quest offers as the interactive neon menu (panel, option buttons and
+     * portrait) instead of bubbles.
+     *
+     * <p>The bubbles and the older full-screen dialogue stay reachable: turn this off to get
+     * {@link #dialogueBubbles}'s choice back, and the three can be compared in play.
+     */
+    public static boolean dialogueNeonMenu = true;
+    /** Native DragonMineZ conversation screen and textures are the default presentation. */
+    public static boolean dialogueDmzNativeTextures = true;
+    /** New-quest notices use DragonMineZ's native quest toast by default. */
+    public static boolean dmzQuestToastNative = true;
 
     /**
      * Answer dialogue bubbles at the crosshair instead of through an invisible cursor screen.
@@ -496,6 +509,7 @@ public final class XenoClientConfig {
             Data data = GSON.fromJson(reader, Data.class);
             if (data == null) return;
             boolean migrateConfig = data.configVersion < CURRENT_CONFIG_VERSION;
+            boolean migrateDmzDialogueDefault = data.configVersion < 14;
             boolean migrateGuardDefault = data.configVersion < 3;
             // A build between versions 4 and 5 shipped these switched off, on the assumption that
             // each move's newer route -- a DragonMineZ slot, a combo terminator -- had replaced its
@@ -515,6 +529,10 @@ public final class XenoClientConfig {
             boolean migratePlanetProjectionMapDefault = PlanetProjectionMapPolicy
                     .shouldUpgradeToPerBodyDefault(data.configVersion, CURRENT_CONFIG_VERSION);
             apply(data);
+            if (migrateDmzDialogueDefault) {
+                dialogueDmzNativeTextures = true;
+                dmzQuestToastNative = true;
+            }
             if (migrateHakaiImpactDefault) hakaiEraseStyle = "impact";
             if (migratePlanetProjectionMapDefault) spacePlanetProjectionMaps = true;
             if (migrateDirectBinds) {
@@ -563,6 +581,9 @@ public final class XenoClientConfig {
         d.joinServerButton = joinServerButton;
         d.hudEditEnabled = hudEditEnabled;
         d.dialogueBubbles = dialogueBubbles;
+        d.dialogueNeonMenu = dialogueNeonMenu;
+        d.dialogueDmzNativeTextures = dialogueDmzNativeTextures;
+        d.dmzQuestToastNative = dmzQuestToastNative;
         d.dialogueCrosshair = dialogueCrosshair;
         d.dmzStudioChromeAtlas = dmzStudioChromeAtlas;
         d.senzuCooldownMessages = senzuCooldownMessages;
@@ -707,6 +728,9 @@ public final class XenoClientConfig {
         joinServerButton = d.joinServerButton;
         hudEditEnabled = d.hudEditEnabled;
         dialogueBubbles = d.dialogueBubbles;
+        dialogueNeonMenu = d.dialogueNeonMenu;
+        dialogueDmzNativeTextures = d.dialogueDmzNativeTextures;
+        dmzQuestToastNative = d.dmzQuestToastNative;
         dialogueCrosshair = d.dialogueCrosshair;
         dmzStudioChromeAtlas = d.dmzStudioChromeAtlas;
         senzuCooldownMessages = d.senzuCooldownMessages;
@@ -892,6 +916,9 @@ public final class XenoClientConfig {
         public boolean joinServerButton = true;
         public boolean hudEditEnabled = true;
         public boolean dialogueBubbles = true;
+        public boolean dialogueNeonMenu = true;
+        public boolean dialogueDmzNativeTextures = true;
+        public boolean dmzQuestToastNative = true;
         public boolean dialogueCrosshair = true;
         public boolean dmzStudioChromeAtlas = false;
         public boolean senzuCooldownMessages = true;

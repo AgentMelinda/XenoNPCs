@@ -2,6 +2,7 @@ package net.bullettrain.xenonpcs.client.compat.npc;
 
 import com.dragonminez.client.render.DMZPlayerRenderer;
 import com.dragonminez.client.render.DMZRendererCache;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import com.dragonminez.client.render.effects.AuraRenderer;
 import com.dragonminez.client.render.layer.DMZSkinLayer;
 import com.dragonminez.common.config.FormConfig;
@@ -92,7 +93,6 @@ public final class NpcFullDmzRenderer {
         public net.minecraft.resources.ResourceLocation getSkinTextureLocation() {
             return owner instanceof AbstractClientPlayer player ? player.getSkinTextureLocation() : super.getSkinTextureLocation();
         }
-
         @Override
         public String getModelName() {
             return owner instanceof AbstractClientPlayer player ? player.getModelName() : super.getModelName();
@@ -297,12 +297,12 @@ public final class NpcFullDmzRenderer {
         DMZSkinLayer.PREVIEW_MODE = true;
         try {
             net.bullettrain.xenonpcs.dmz.form.MakerFormPreviewContext.draw(stats.getCharacter(), draftForm, stackDraft,
-                    () -> net.minecraft.client.gui.screens.inventory.InventoryScreen.renderEntityInInventory(graphics, x, y, scale,
+                    () -> InventoryScreen.renderEntityInInventory(graphics, x, y, scale,
                     poseRotation, cameraRotation, proxy));
             if (showAura) {
                 stats.getStatus().setAuraActive(true);
                 stats.getStatus().setPermanentAura(true);
-                AuraRenderer.renderGuiAura(proxy, graphics.pose(), projection, x, y, scale, partialTick);
+                AuraRenderer.renderGuiAura(proxy, graphics.pose(), projection, x, y, (int) scale, partialTick);
             }
         } finally {
             stats.getStatus().setAuraActive(false);
@@ -463,7 +463,7 @@ public final class NpcFullDmzRenderer {
         // CustomNPC Display size and the explicit NPC aura-scale setting here.
         // Shared helper: a native Xeno NPC has no CustomNPCs display, so getSize answers 0 and
         // the old max(0.05, 0/5) shrank the aura to a twentieth of its size.
-        return NpcDisplayApply.sizeScale(owner, NpcAppearanceClient.renderProfile(owner)) * state.auraScale();
+        return NpcDisplayApply.sizeScale(owner) * state.auraScale();
     }
 
     private static TransformSnapshot syncTransformHold(StatsData stats, LivingEntity owner,
@@ -596,7 +596,6 @@ public final class NpcFullDmzRenderer {
             // IPlayerAnimatable by mixin, so javac can prove a final class does not implement it and
             // rejects the instanceof outright.
             if (proxy instanceof com.dragonminez.client.animation.IPlayerAnimatable animatable) {
-                if (!NpcAnimationClient.readyForPlayback(pending)) return;
                 NpcAnimationClient.apply(proxy, animatable, pending);
                 if (pending.hold() && !pending.stop()) {
                     net.bullettrain.xenonpcs.client.combat.ScriptAnimSpeedClient.put(

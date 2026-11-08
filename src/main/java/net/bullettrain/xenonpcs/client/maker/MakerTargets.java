@@ -60,8 +60,8 @@ public final class MakerTargets {
         var document = new HairMakerDocument();
         String code = target.draft.hairCode;
         try {
-            CustomHair[] styles = net.bullettrain.xenonpcs.compat.npc.NpcHairSet.parse(code);
-            CustomHair hair = styles == null ? null : styles[0];
+            CustomHair hair = com.dragonminez.common.hair.HairCodec.isFullSetCode(code) ? com.dragonminez.common.hair.HairCodec.fromFullSetCode(code).get(com.dragonminez.common.hair.HairStyleSlot.BASE)
+                    : com.dragonminez.common.hair.HairCodec.fromCode(code);
             if (hair != null) document.loadFromCustomHair(hair, "Base");
         } catch (RuntimeException ignored) { }
         document.globalColor(target.draft.hairColor);
@@ -80,13 +80,18 @@ public final class MakerTargets {
         if (target == null) { HairApplyService.applyClient(document); return; }
         target.apply(profile -> {
             CustomHair edited = HairApplyService.toCustomHair(HairApplyService.plan(document));
-            CustomHair[] existing = net.bullettrain.xenonpcs.compat.npc.NpcHairSet.parse(profile.hairCode);
-            var styles = new java.util.EnumMap<com.dragonminez.common.hair.HairStyleSlot, CustomHair>(com.dragonminez.common.hair.HairStyleSlot.class);
-            for (var slot : com.dragonminez.common.hair.HairStyleSlot.values()) {
-                styles.put(slot, net.bullettrain.xenonpcs.compat.npc.NpcHairSet.slot(existing, slot.index()));
-            }
-            styles.put(com.dragonminez.common.hair.HairStyleSlot.values()[HairApplyService.styleIndex(document.style())], edited);
-            profile.hairCode = com.dragonminez.common.hair.HairCodec.toFullSetCode(styles);
+            java.util.EnumMap<com.dragonminez.common.hair.HairStyleSlot, CustomHair> set =
+                    new java.util.EnumMap<>(com.dragonminez.common.hair.HairStyleSlot.class);
+            try {
+                if (com.dragonminez.common.hair.HairCodec.isFullSetCode(profile.hairCode)) set = com.dragonminez.common.hair.HairCodec.fromFullSetCode(profile.hairCode);
+                else {
+                    CustomHair existing = com.dragonminez.common.hair.HairCodec.fromCode(profile.hairCode);
+                    if (existing != null) for (var slot : com.dragonminez.common.hair.HairStyleSlot.values()) set.put(slot, existing.copy());
+                }
+            } catch (RuntimeException ignored) { }
+            for (var slot : com.dragonminez.common.hair.HairStyleSlot.values()) set.putIfAbsent(slot, new CustomHair());
+            set.put(com.dragonminez.common.hair.HairStyleSlot.byIndex(HairApplyService.styleIndex(document.style())), edited);
+            profile.hairCode = com.dragonminez.common.hair.HairCodec.toFullSetCode(set);
             profile.hairColor = document.globalColor();
             profile.hairEnabled = true;
             profile.appearance.mode = net.bullettrain.xenonpcs.compat.npc.NpcDmzAppearance.Mode.FULL;

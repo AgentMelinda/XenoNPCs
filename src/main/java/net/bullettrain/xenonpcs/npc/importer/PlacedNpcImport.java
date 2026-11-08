@@ -162,7 +162,7 @@ public final class PlacedNpcImport {
         return true;
     }
 
-    private static void mapDialogSlots(CompoundTag tag, String sourceMod, String npcId,
+    static void mapDialogSlots(CompoundTag tag, String sourceMod, String npcId,
                                        NpcImportReport report) {
         net.minecraft.nbt.ListTag sourceSlots = tag.getList("NPCDialogOptions",
                 net.minecraft.nbt.Tag.TAG_COMPOUND);
@@ -190,7 +190,7 @@ public final class PlacedNpcImport {
                 || id.getNamespace().equals("mynpcs")) && id.getPath().equals("customnpc");
     }
 
-    private static XenoNpcRole role(int sourceRole) {
+    static XenoNpcRole role(int sourceRole) {
         return switch (sourceRole) {
             case 1 -> XenoNpcRole.TRADER;
             case 3 -> XenoNpcRole.BANK;

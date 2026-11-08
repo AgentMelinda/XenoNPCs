@@ -67,7 +67,7 @@ public final class NpcSkillSet {
      */
     public static int configuredMaxLevel(String id) {
         String key = canonical(id);
-        if (key.isEmpty()) {
+        if (key.isEmpty() || !dmzConfigReady()) {
             return 0;
         }
         try {
@@ -86,6 +86,7 @@ public final class NpcSkillSet {
     /** Every skill id DMZ's config knows about, for script listings and the editor GUI. */
     public static List<String> knownIds() {
         try {
+            if (!dmzConfigReady()) return List.of();
             SkillsConfig config = ConfigManager.getSkillsConfig();
             if (config != null && config.getSkills() != null) {
                 List<String> ids = new ArrayList<>(config.getSkills().keySet());
@@ -100,9 +101,19 @@ public final class NpcSkillSet {
     /** DMZ's skills config object (or null), so a cache can tell when it has been reloaded. */
     static Object configIdentity() {
         try {
+            if (!dmzConfigReady()) return null;
             return ConfigManager.getSkillsConfig();
         } catch (Throwable ignored) {
             return null;
+        }
+    }
+
+    private static boolean dmzConfigReady() {
+        try {
+            return net.minecraftforge.fml.ModList.get().isLoaded("dragonminez");
+        } catch (Throwable ignored) {
+            // Unit tests and early boot can touch profiles before Forge has a live mod list.
+            return false;
         }
     }
 
@@ -132,6 +143,14 @@ public final class NpcSkillSet {
             return;
         }
         entries.put(key, new Entry(active, clampLevel(key, level)));
+    }
+
+    /** Adds an intrinsic default without querying optional DMZ config during profile construction. */
+    public void setDefault(String id, boolean active, int level) {
+        String key = canonical(id);
+        if (!key.isEmpty() && !entries.containsKey(key)) {
+            entries.put(key, new Entry(active, Math.max(1, level)));
+        }
     }
 
     /** Toggles a skill, keeping whatever level it already had (minimum 1 once configured). */

@@ -63,7 +63,7 @@ final class NpcTextureCatalog {
         if (mid.isBlank()) {
             return null;
         }
-        return new ResourceLocation(geo.getNamespace(), mid);
+        return ResourceLocation.fromNamespaceAndPath(geo.getNamespace(), mid);
     }
 
     static String category(ResourceLocation id) {

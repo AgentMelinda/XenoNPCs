@@ -5,17 +5,11 @@ import net.bullettrain.xenonpcs.compat.npc.NpcKiAim;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import net.bullettrain.xenonpcs.client.XenoServerClientState;
-import net.bullettrain.xenonpcs.client.combat.v3.V3ClientState;
-import net.minecraft.client.Minecraft;
 
 /**
  * Target: {@code LockOnEvent} acquire/persist/HUD.
@@ -23,35 +17,11 @@ import net.minecraft.client.Minecraft;
  *         accepts non-players. CNPC {@code isInvisible()} is a visibility flag, not potion
  *         invisibility; {@code hitboxState==1} makes the AABB paper-thin so the look-ray
  *         misses; kisense acquire/hold is {@code 15+5*level} (20 at level 1).
- * Version: Forge 1.20.1 / DMZ 2.2 (CurseMaven 9282248)
+ * Version: Forge 1.20.1 / DMZ 2.2.1 (CurseMaven 9376736)
  * Side: client.
  */
 @Mixin(value = LockOnEvent.class, remap = false)
 public abstract class DmzLockOnNpcMixin {
-    @Unique private static boolean xenopixels$v3WasActive;
-
-    @Inject(method = "toggleLock", at = @At("HEAD"), cancellable = true)
-    private static void xenopixels$v3RequestLock(CallbackInfo ci) {
-        if (!XenoServerClientState.v3Controller()) return;
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null && mc.screen == null) V3ClientState.toggleLock();
-        ci.cancel();
-    }
-
-    @Inject(method = "onClientTick", at = @At("HEAD"), cancellable = true)
-    private static void xenopixels$v3RetainApprovedTarget(net.minecraftforge.event.TickEvent.ClientTickEvent event, CallbackInfo ci) {
-        if (event.phase != net.minecraftforge.event.TickEvent.Phase.END) return;
-        if (!XenoServerClientState.v3Controller()) {
-            if (xenopixels$v3WasActive) {
-                DmzLockOnAccessor.xenopixels$setLockedTarget(null);
-                xenopixels$v3WasActive = false;
-            }
-            return;
-        }
-        xenopixels$v3WasActive = true;
-        V3ClientState.syncNativeLock();
-        ci.cancel();
-    }
 
     @Redirect(
             method = "findTargetInFront",

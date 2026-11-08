@@ -16,6 +16,12 @@ import java.util.Set;
 import java.util.UUID;
 
 public class XenoPlayerData {
+    private net.bullettrain.xenonpcs.features.taotto.TaottoDocument taotto = net.bullettrain.xenonpcs.features.taotto.TaottoDocument.blank();
+    public net.bullettrain.xenonpcs.features.taotto.TaottoDocument taotto() { return taotto; }
+    public void taotto(net.bullettrain.xenonpcs.features.taotto.TaottoDocument document) {
+        taotto = document == null ? net.bullettrain.xenonpcs.features.taotto.TaottoDocument.blank() : document.copy();
+    }
+
     private float ki = 100f;
     private float maxKi = 100f;
     private float stamina = 100f;
@@ -72,18 +78,6 @@ public class XenoPlayerData {
      */
     private CompoundTag appearanceSteals = new CompoundTag();
     public CompoundTag appearanceSteals() { return appearanceSteals; }
-    private net.bullettrain.xenonpcs.features.taotto.TaottoDocument taotto =
-            net.bullettrain.xenonpcs.features.taotto.TaottoDocument.blank();
-
-    public net.bullettrain.xenonpcs.features.taotto.TaottoDocument taotto() {
-        return taotto;
-    }
-
-    public void taotto(net.bullettrain.xenonpcs.features.taotto.TaottoDocument document) {
-        this.taotto = document == null
-                ? net.bullettrain.xenonpcs.features.taotto.TaottoDocument.blank()
-                : document.copy();
-    }
     /** Shared dialogue ids the player has opened, for availability before/after gates. */
     private final Set<String> viewedDialogues = new LinkedHashSet<>();
     private static final int MAX_VIEWED_DIALOGUES = 4096;
@@ -381,6 +375,7 @@ public class XenoPlayerData {
     }
 
     public void copyFrom(XenoPlayerData other) {
+        taotto(other.taotto);
         this.ki = other.ki;
         this.maxKi = other.maxKi;
         this.stamina = other.stamina;
@@ -415,10 +410,10 @@ public class XenoPlayerData {
         this.bankAccounts.clear();
         other.bankAccounts.forEach((id, account) -> this.bankAccounts.put(id,
                 net.bullettrain.xenonpcs.npc.bank.BankAccount.load(id, account.save())));
-        this.taotto = other.taotto.copy();
     }
 
     public void saveNBT(CompoundTag tag) {
+        CompoundTag overlay = new CompoundTag(); taotto.saveNbt(overlay); tag.put("Taotto", overlay);
         tag.putFloat("Ki", ki);
         tag.putFloat("MaxKi", maxKi);
         tag.putFloat("Stamina", stamina);
@@ -484,12 +479,10 @@ public class XenoPlayerData {
         tag.putLong("DummyTotal", dummyTotalDamage);
         tag.putLong("DummySession", dummySessionDamage);
         tag.putInt("DummyHits", dummyHits);
-        CompoundTag taottoTag = new CompoundTag();
-        taotto.saveNbt(taottoTag);
-        tag.put("Taotto", taottoTag);
     }
 
     public void loadNBT(CompoundTag tag) {
+        taotto = net.bullettrain.xenonpcs.features.taotto.TaottoDocument.loadNbt(tag.getCompound("Taotto"));
         // Guarded like every field below them. Unguarded, a tag without MaxKi read as 0, and setKi
         // then clamped ki to 0 as well - a player silently lost both pools instead of keeping the
         // constructor's 100f. saveNBT always writes them, so this only bit on a hand-edited or
@@ -576,10 +569,6 @@ public class XenoPlayerData {
         dummyTotalDamage = tag.getLong("DummyTotal");
         dummySessionDamage = tag.getLong("DummySession");
         dummyHits = tag.getInt("DummyHits");
-        if (tag.contains("Taotto", Tag.TAG_COMPOUND)) {
-            taotto = net.bullettrain.xenonpcs.features.taotto.TaottoDocument.loadNbt(
-                    tag.getCompound("Taotto"));
-        }
     }
 
     /**

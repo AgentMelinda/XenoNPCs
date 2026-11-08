@@ -136,7 +136,7 @@ final class XenoNpcSavePolicy {
             "BrainBoneCrusher", "BrainKiBlast", "BrainKiWave", "BrainKiDisk", "BrainKiNamed",
             "BrainFly", "CanUseFlight", "BrainLand", "BrainAscend", "BrainDisengage", "BrainVanish",
             "BrainZanzoken", "BrainChase", "BrainDeflectBlast", "BrainDeflectWave",
-            "BrainSpecialCooldown", "BrainChances", "BrainModifiers",
+            "BrainSpecialCooldown", "BrainChances", "BrainModifiers", "DmzAiDifficulty",
             // Whether the Xeno layer on top of the DragonMineZ port may fire - the BT3 combo
             // choreography and the repositioning moves. NpcCombatProfile.allowXenoSpecial reads it
             // and NpcCombatMoves asks before every reposition, so the key goes in with its

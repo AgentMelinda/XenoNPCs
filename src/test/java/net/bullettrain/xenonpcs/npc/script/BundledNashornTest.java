@@ -125,8 +125,7 @@ class BundledNashornTest {
         Path folder = Path.of(System.getProperty("xenopixels.projectDir"),
                 "examples", "customnpcs");
         try (var files = Files.list(folder)) {
-            // Existing examples plus the native Lord Slug replacement/regen script and the
-            // v29 appearance borrow.
+            // Cross-runtime examples; native-only xenoapi_* examples have their own check.
             var scripts = files.filter(path -> path.toString().endsWith(".js")
                     && path.getFileName().toString().startsWith("xenopixels_")).sorted().toList();
             assertEquals(24, scripts.size());

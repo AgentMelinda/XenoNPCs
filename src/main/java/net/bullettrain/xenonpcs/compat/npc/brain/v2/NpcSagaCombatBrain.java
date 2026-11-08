@@ -307,7 +307,15 @@ public final class NpcSagaCombatBrain {
         if (next != null && serverTick < next) {
             return;
         }
-        NEXT_DECISION.put(npc.getUUID(), serverTick + DECISION_INTERVAL);
+        int interval = profile.brainVersion == net.bullettrain.xenonpcs.compat.npc.NpcCombatBrainVersion.V8
+                ? switch (Math.max(1, Math.min(4, profile.dmzAiDifficulty))) {
+                    case 1 -> 12;
+                    case 2 -> 6;
+                    case 3 -> 4;
+                    default -> 2;
+                }
+                : DECISION_INTERVAL;
+        NEXT_DECISION.put(npc.getUUID(), serverTick + interval);
         NpcSagaCombatContext ctx = NpcSagaCombatContext.snapshot(npc, victim, profile);
         ctx.comboReady = ctx.comboReady && !NpcSagaCombos.active(npc.getUUID());
         if (net.bullettrain.xenonpcs.compat.npc.NpcCombatMotionPolicy.active(npc)) ctx.vanishReady = false;

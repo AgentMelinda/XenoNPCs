@@ -12,7 +12,7 @@ import net.minecraft.world.entity.player.Player;
 
 /**
  * Temporary Character mutations for maker live preview. Apply before
- * {@code EntityPreviewRenderContext.renderEntityInInventory}; restore in finally.
+ * {@code ForgeMakerPreviewRender.renderEntityInInventory}; restore in finally.
  *
  * <p>Never sends C2S. Uses verified DMZ Character setters only
  * ({@code NpcFullDmzRenderer#syncCharacter} / {@link HairApplyService} mirror path).
@@ -38,7 +38,37 @@ public final class MakerPreviewAppearance {
     private String formGroup;
     private String formId;
     private boolean clearForm;
+    private boolean stackForm;
+    public boolean stackForm() { return stackForm; }
+    public MakerPreviewAppearance activeStackForm(String group, String form) {
+        activeForm(group, form); stackForm = true; return this;
+    }
 
+    public net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile npcDraft(net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile seed) {
+        var p = net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile.fromTag(seed.toTag());
+        var a = p.appearance;
+        a.mode = net.bullettrain.xenonpcs.compat.npc.NpcDmzAppearance.Mode.FULL;
+        if (race != null) p.raceId = race;
+        if (gender != null) a.gender = gender;
+        if (bodyType != null) a.bodyType = bodyType;
+        if (eyesType != null) a.eyesType = eyesType;
+        if (noseType != null) a.noseType = noseType;
+        if (mouthType != null) a.mouthType = mouthType;
+        if (tattooType != null) a.tattooType = tattooType;
+        if (bodyColor != null) a.bodyColor = bodyColor;
+        if (bodyColor2 != null) a.bodyColor2 = bodyColor2;
+        if (bodyColor3 != null) a.bodyColor3 = bodyColor3;
+        if (eye1Color != null) a.eye1Color = eye1Color;
+        if (eye2Color != null) a.eye2Color = eye2Color;
+        if (hairColor != null) p.hairColor = hairColor;
+        if (hairIndex != null) p.hairStyleId = hairIndex;
+        if (hair != null) { p.hairCode = com.dragonminez.common.hair.HairCodec.toCode(hair); p.hairEnabled = true; p.hairStyleId = 0; }
+        if (auraColor != null) p.auraColor = net.bullettrain.xenonpcs.compat.npc.NpcCombatProfile.parseHexColor(auraColor).orElse(p.auraColor);
+        if (clearForm) { p.formGroup = ""; p.formId = ""; p.stackGroup = ""; p.stackId = ""; }
+        else if (formGroup != null && stackForm) { p.stackGroup = formGroup; p.stackId = formId; }
+        else if (formGroup != null) { p.formGroup = formGroup; p.formId = formId; }
+        return p;
+    }
     public MakerPreviewAppearance() {
     }
 
@@ -71,7 +101,7 @@ public final class MakerPreviewAppearance {
             return;
         }
         var strand = hair.getStrand(face, strandIndex);
-        if (strand == null || !strand.isVisible()) {
+        if (strand == null || strand.getLength() <= 0) {
             return;
         }
         strand.setColor(SEGMENT_HIGHLIGHT_COLOR);
@@ -204,10 +234,10 @@ public final class MakerPreviewAppearance {
         return new Snapshot(
                 c.getRace(),
                 c.getHairId(),
-                copyHair(c.getOwnHairStyle(com.dragonminez.common.hair.HairStyleSlot.BASE)),
-                copyHair(c.getOwnHairStyle(com.dragonminez.common.hair.HairStyleSlot.SSJ)),
-                copyHair(c.getOwnHairStyle(com.dragonminez.common.hair.HairStyleSlot.SSJ2)),
-                copyHair(c.getOwnHairStyle(com.dragonminez.common.hair.HairStyleSlot.SSJ3)),
+                copyHair(c.getHairBase()),
+                copyHair(c.getHairStyle(com.dragonminez.common.hair.HairStyleSlot.SSJ)),
+                copyHair(c.getHairStyle(com.dragonminez.common.hair.HairStyleSlot.SSJ2)),
+                copyHair(c.getHairStyle(com.dragonminez.common.hair.HairStyleSlot.SSJ3)),
                 c.getHairColor(),
                 c.getBodyColor(),
                 c.getBodyColor2(),
@@ -291,7 +321,8 @@ public final class MakerPreviewAppearance {
         if (clearForm) {
             c.clearActiveForm();
         } else if (formGroup != null && formId != null) {
-            c.setActiveForm(formGroup, formId);
+            if (stackForm) c.setActiveStackForm(formGroup, formId);
+            else c.setActiveForm(formGroup, formId);
         }
     }
 

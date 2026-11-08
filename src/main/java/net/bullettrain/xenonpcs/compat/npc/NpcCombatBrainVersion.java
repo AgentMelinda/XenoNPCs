@@ -183,8 +183,8 @@ public enum NpcCombatBrainVersion {
             case V5 -> "v5";
             case V6 -> "v6";
             case V7 -> "v7";
-            case V8 -> "v8";
-            case V9 -> "v9";
+            case V8 -> "DMZ AI";
+            case V9 -> "Combat Brain 9";
         };
     }
 

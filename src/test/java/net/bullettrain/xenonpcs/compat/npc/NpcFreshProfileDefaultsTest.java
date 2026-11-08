@@ -58,10 +58,11 @@ class NpcFreshProfileDefaultsTest {
     }
 
     @Test
-    void aFreshNpcHasBodyTypeTwoAndHairStyleOne() {
-        // 2026-09-30 owner: "default of dmz body type 2 hair on by default and hair number 1".
+    void aFreshNpcHasFullAppearanceBodyTypeOneAndHairStyleOne() {
+        // 2026-11-02 owner: Full appearance, body type 1, hair number 1.
         NpcCombatProfile fresh = NpcCombatProfile.freshDefaults(true, IDS, NpcFreshProfileDefaultsTest::max);
-        assertEquals(2, fresh.appearance.bodyType);
+        assertEquals(1, fresh.appearance.bodyType);
+        assertEquals(NpcDmzAppearance.Mode.FULL, fresh.appearance.mode);
         assertTrue(fresh.hairEnabled);
         assertEquals(1, fresh.hairStyleId);
     }

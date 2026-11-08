@@ -109,7 +109,7 @@ public final class DialogueBubbleInput {
      * conversation instead of needing a restart.
      */
     private static boolean usesCrosshair() {
-        return net.bullettrain.xenonpcs.client.config.XenoClientConfig.dialogueBubbles
+        return NeonDialogueMode.current() == NeonDialogueMode.BUBBLES
                 && net.bullettrain.xenonpcs.client.config.XenoClientConfig.dialogueCrosshair;
     }
 }

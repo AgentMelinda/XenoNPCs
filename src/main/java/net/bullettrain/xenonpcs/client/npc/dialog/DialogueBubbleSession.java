@@ -47,6 +47,14 @@ public final class DialogueBubbleSession {
     }
 
     /** The conversation in progress, or null. */
+    /**
+     * The conversation, but only when it is being shown as bubbles. The neon menu shares the
+     * session and must not also grow bubbles above the NPC.
+     */
+    static DialogueBubbleSession activeForBubbles() {
+        return NeonDialogueMode.current() == NeonDialogueMode.NEON ? null : active;
+    }
+
     public static DialogueBubbleSession active() {
         return active;
     }

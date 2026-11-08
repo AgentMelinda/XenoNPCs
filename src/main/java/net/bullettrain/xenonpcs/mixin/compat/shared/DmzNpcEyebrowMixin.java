@@ -17,6 +17,8 @@ public abstract class DmzNpcEyebrowMixin {
             "Lnet/minecraft/client/renderer/MultiBufferSource;" +
             "Ljava/lang/String;[FFIIF)V";
 
+    // 2.2.1 variants can change the set/order of face layers. Eyebrow overrides are optional
+    // cosmetics, so a missing invocation must not prevent the client from completing reload.
     @ModifyArg(method = "renderHumanFace", at = @At(value = "INVOKE", target = COLORED_LAYER, ordinal = 3),
             index = 4, require = 0)
     private String xenopixels$baseEyebrows(String path) {

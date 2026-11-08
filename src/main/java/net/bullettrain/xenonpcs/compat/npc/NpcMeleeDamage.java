@@ -316,7 +316,7 @@ public final class NpcMeleeDamage {
                     NpcFormLookup.multiplier(defender, "DEF"), defender.releaseMultiplier());
             var combat = ConfigManager.getCombatConfig();
             double scale = Math.max(12.0, (defender.resistance + 20.0)
-                    * combat.getDefenseReductionScale());
+                    * 1.0);
             double mitigated = NpcStatMath.mitigate(event.getAmount(), defense, scale,
                     combat.getBaseDamageReductionCap());
             // A guarding NPC takes the same kind of flat reduction a guarding player does.

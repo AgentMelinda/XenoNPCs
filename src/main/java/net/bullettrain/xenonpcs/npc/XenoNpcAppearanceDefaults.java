@@ -18,9 +18,6 @@ public final class XenoNpcAppearanceDefaults {
 
     private static final String SKIN_ROOT = "minecraft:textures/entity/player/wide/";
 
-    /** The stand-in a creature mimics until an operator picks something else. */
-    private static final String DEFAULT_CREATURE = "minecraft:wolf";
-
     private XenoNpcAppearanceDefaults() {
     }
 
@@ -35,19 +32,6 @@ public final class XenoNpcAppearanceDefaults {
             return;
         }
         XenoNpcRole resolved = role == null ? XenoNpcRole.HUMANOID : role;
-
-        if (resolved.creature()) {
-            // The creature role declares body_family "creature"; mimicking a real mob is what makes
-            // that mean something, since every role otherwise renders as the same humanoid.
-            if (isBlank(profile.modelKind) || NpcCombatProfile.MODEL_VANILLA
-                    .equals(NpcCombatProfile.normalizeModelKind(profile.modelKind))) {
-                profile.modelKind = NpcCombatProfile.MODEL_ENTITY;
-            }
-            if (isBlank(profile.modelId)) {
-                profile.modelId = DEFAULT_CREATURE;
-            }
-            return;
-        }
 
         if (isBlank(profile.modelKind)) {
             profile.modelKind = NpcCombatProfile.MODEL_VANILLA;
